@@ -35,6 +35,7 @@ else()
     else()
         add_executable(exam_records
             ${PROJECT_SOURCES}
+            resoure.qrc
         )
     endif()
 endif()
