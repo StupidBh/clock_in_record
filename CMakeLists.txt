@@ -56,6 +56,22 @@ set_target_properties(exam_records PROPERTIES
     WIN32_EXECUTABLE TRUE
 )
 
+# 在你的 CMakeLists.txt 中添加
+if(WIN32)
+    # 创建资源文件
+    set(RC_FILE "${CMAKE_CURRENT_BINARY_DIR}/app_icon.rc")
+
+    file(WRITE ${RC_FILE} "
+#include <windows.h>
+IDI_ICON1 ICON \"${CMAKE_CURRENT_SOURCE_DIR}/icon.ico\"
+")
+
+    # 添加到目标
+    target_sources(exam_records PRIVATE ${RC_FILE})
+endif()
+
+
+
 include(GNUInstallDirs)
 install(TARGETS exam_records
     BUNDLE DESTINATION .

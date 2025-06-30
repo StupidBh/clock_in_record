@@ -456,7 +456,7 @@ class AttendanceMainWindow : public QMainWindow {
 
 public:
     AttendanceMainWindow(QWidget* parent = nullptr) : QMainWindow(parent) {
-        setWindowIcon(QIcon(":icon.ico"));
+
         setWindowTitle(QString("打卡管理系统"));
         setMinimumSize(800, 600);
 
@@ -633,7 +633,7 @@ private:
     QLabel* m_statsLabel;
 };
 
-#include "main.moc"
+
 
 int main(int argc, char *argv[])
 {
@@ -645,7 +645,7 @@ int main(int argc, char *argv[])
 #endif
     // 在main.cpp中设置应用图标
 
-
+    app.setWindowIcon(QIcon(":icon.ico"));
 
     // 设置应用程序信息
     app.setApplicationName("AttendanceApp");
@@ -662,3 +662,4 @@ int main(int argc, char *argv[])
 
     return app.exec();
 }
+#include "main.moc"
