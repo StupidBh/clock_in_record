@@ -1,4 +1,4 @@
-#include <QtWidgets>
+ï»¿#include <QtWidgets>
 #include <QApplication>
 #include <QMainWindow>
 #include <QVBoxLayout>
@@ -27,30 +27,31 @@
 #include <QMouseEvent>
 #pragma execution_character_set("utf-8")
 #if defined(_MSC_VER) && (_MSC_VER >= 1600)
-# pragma execution_character_set("utf-8")
+    #pragma execution_character_set("utf-8")
 #endif
 
-// ×Ô¶¨Òå¿ÉÕÛµşµÄ·Ö×é
+// è‡ªå®šä¹‰å¯æŠ˜å çš„åˆ†ç»„
 class CollapsibleGroupBox : public QWidget {
-    Q_OBJECT // ĞèÒªQ_OBJECTºêÀ´Ö§³ÖĞÅºÅ²Û
+Q_OBJECT // éœ€è¦Q_OBJECTå®æ¥æ”¯æŒä¿¡å·æ§½
 
-public:
-    CollapsibleGroupBox(const QString &title, QWidget *parent = nullptr)
-        : QWidget(parent), m_collapsed(true), m_title(title) {
-
+    public :
+    CollapsibleGroupBox(const QString& title, QWidget* parent = nullptr) :
+    QWidget(parent),
+    m_collapsed(true),
+    m_title(title)
+    {
         m_toggleButton = new QPushButton();
         m_toggleButton->setCheckable(true);
         m_toggleButton->setChecked(false);
         m_toggleButton->setStyleSheet(
             "QPushButton { text-align: left; border: none; font-weight: bold; padding: 5px; }"
-            "QPushButton:checked { background-color: #e0e0e0; }"
-            );
+            "QPushButton:checked { background-color: #e0e0e0; }");
 
         m_contentWidget = new QWidget();
         m_contentWidget->setWindowFlags(Qt::Popup);
         m_contentWidget->setVisible(false);
 
-        QVBoxLayout *layout = new QVBoxLayout(this);
+        QVBoxLayout* layout = new QVBoxLayout(this);
         layout->addWidget(m_toggleButton);
         // layout->addWidget(m_contentWidget);
         layout->setContentsMargins(0, 0, 0, 0);
@@ -60,53 +61,57 @@ public:
         updateButtonText();
     }
 
-    void setContentLayout(QLayout *layout) {
+    void setContentLayout(QLayout* layout)
+    {
         m_contentWidget->setLayout(layout);
         auto pw = this->parentWidget();
-        if(pw){
-            pw->resize(pw->size().width(),pw->sizeHint().height());
+        if (pw) {
+            pw->resize(pw->size().width(), pw->sizeHint().height());
         }
     }
 
-    QWidget* contentWidget() const {
-        return m_contentWidget;
-    }
+    QWidget* contentWidget() const { return m_contentWidget; }
 
 private slots:
-    void toggle(bool checked) {
+
+    void toggle(bool checked)
+    {
         m_collapsed = !checked;
         m_contentWidget->setVisible(checked);
         QPoint globalPos = m_toggleButton->mapToGlobal(QPoint(0, 0));
         int x = globalPos.x();
-        int y = globalPos.y() + m_toggleButton->height(); // ÏÔÊ¾ÔÚ°´Å¥ÏÂ·½
+        int y = globalPos.y() + m_toggleButton->height(); // æ˜¾ç¤ºåœ¨æŒ‰é’®ä¸‹æ–¹
         m_contentWidget->move(x, y);
         updateButtonText();
     }
 
 private:
-    void updateButtonText() {
+    void updateButtonText()
+    {
         QString arrow = m_collapsed ? ">" : "v";
         m_toggleButton->setText(arrow + " " + m_title);
     }
 
-    QPushButton *m_toggleButton;
-    QWidget *m_contentWidget;
+    QPushButton* m_toggleButton;
+    QWidget* m_contentWidget;
     bool m_collapsed;
     QString m_title;
 };
 
-// ´ò¿¨¼ÇÂ¼½á¹¹Ìå
-struct AttendanceRecord {
-    QTime arrivalTime;      // µ½´ï¹«Ë¾Ê±¼ä
-    QTime departureTime;    // Àë¿ª¹«Ë¾Ê±¼ä
-    QTime workStartTime;    // ±ê×¼ÉÏ°àÊ±¼ä
-    QTime workEndTime;      // ±ê×¼ÏÂ°àÊ±¼ä
-    QTime lunchBreakStart;  // Îç²Í¿ªÊ¼Ê±¼ä
-    QTime lunchBreakEnd;    // Îç²Í½áÊøÊ±¼ä
-    QTime dinnerBreakStart; // Íí²Í¿ªÊ¼Ê±¼ä
-    QTime dinnerBreakEnd;   // Íí²Í½áÊøÊ±¼ä
+// æ‰“å¡è®°å½•ç»“æ„ä½“
+struct AttendanceRecord
+{
+    QTime arrivalTime;      // åˆ°è¾¾å…¬å¸æ—¶é—´
+    QTime departureTime;    // ç¦»å¼€å…¬å¸æ—¶é—´
+    QTime workStartTime;    // æ ‡å‡†ä¸Šç­æ—¶é—´
+    QTime workEndTime;      // æ ‡å‡†ä¸‹ç­æ—¶é—´
+    QTime lunchBreakStart;  // åˆé¤å¼€å§‹æ—¶é—´
+    QTime lunchBreakEnd;    // åˆé¤ç»“æŸæ—¶é—´
+    QTime dinnerBreakStart; // æ™šé¤å¼€å§‹æ—¶é—´
+    QTime dinnerBreakEnd;   // æ™šé¤ç»“æŸæ—¶é—´
 
-    AttendanceRecord() {
+    AttendanceRecord()
+    {
         arrivalTime = QTime(9, 0);
         departureTime = QTime(18, 0);
         workStartTime = QTime(9, 0);
@@ -118,43 +123,48 @@ struct AttendanceRecord {
     }
 };
 
-// ¹¤×÷Ê±¼ä¼ÆËã½á¹û
-struct WorkTimeResult {
-    int actualWorkMinutes = 0;      // Êµ¼Ê¹¤×÷Ê±¼ä£¨·ÖÖÓ£©
-    int standardWorkMinutes = 0;    // ±ê×¼¹¤×÷Ê±¼ä£¨·ÖÖÓ£©
-    int lateMinutes = 0;           // ³Ùµ½Ê±¼ä£¨·ÖÖÓ£©
+// å·¥ä½œæ—¶é—´è®¡ç®—ç»“æœ
+struct WorkTimeResult
+{
+    int actualWorkMinutes = 0;   // å®é™…å·¥ä½œæ—¶é—´ï¼ˆåˆ†é’Ÿï¼‰
+    int standardWorkMinutes = 0; // æ ‡å‡†å·¥ä½œæ—¶é—´ï¼ˆåˆ†é’Ÿï¼‰
+    int lateMinutes = 0;         // è¿Ÿåˆ°æ—¶é—´ï¼ˆåˆ†é’Ÿï¼‰
     int lateSize = 0;
-    int earlyLeaveMinutes = 0;     // ÔçÍËÊ±¼ä£¨·ÖÖÓ£©
+    int earlyLeaveMinutes = 0;   // æ—©é€€æ—¶é—´ï¼ˆåˆ†é’Ÿï¼‰
     int earlyLeaveSize = 0;
-    int overtimeMinutes = 0;       // ¼Ó°àÊ±¼ä£¨·ÖÖÓ£©
-    int totalBreakMinutes = 0;     // ×ÜĞİÏ¢Ê±¼ä£¨·ÖÖÓ£©
+    int overtimeMinutes = 0;     // åŠ ç­æ—¶é—´ï¼ˆåˆ†é’Ÿï¼‰
+    int totalBreakMinutes = 0;   // æ€»ä¼‘æ¯æ—¶é—´ï¼ˆåˆ†é’Ÿï¼‰
 };
 
-// ¹¤×÷Ê±¼ä¼ÆËã¹¤¾ßÀà
+// å·¥ä½œæ—¶é—´è®¡ç®—å·¥å…·ç±»
 class WorkTimeCalculator {
 public:
-    static WorkTimeResult calculateWorkTimeResult(const AttendanceRecord& record) {
+    static WorkTimeResult calculateWorkTimeResult(const AttendanceRecord& record)
+    {
         WorkTimeResult result;
 
-        // ¼ÆËã³Ùµ½Ê±¼ä
+        // è®¡ç®—è¿Ÿåˆ°æ—¶é—´
         if (record.arrivalTime > record.workStartTime) {
             result.lateMinutes = record.workStartTime.secsTo(record.arrivalTime) / 60;
         }
 
-        // ¼ÆËãÔçÍËÊ±¼ä
+        // è®¡ç®—æ—©é€€æ—¶é—´
         if (record.departureTime < record.workEndTime) {
             result.earlyLeaveMinutes = record.departureTime.secsTo(record.workEndTime) / 60;
         }
 
-        // ¼ÆËãÔÚ¹«Ë¾×ÜÊ±¼ä
+        // è®¡ç®—åœ¨å…¬å¸æ€»æ—¶é—´
         int totalMinutesAtWork = record.arrivalTime.secsTo(record.departureTime) / 60;
 
-        // ¼ÆËãÊµ¼ÊĞİÏ¢Ê±¼ä
+        // è®¡ç®—å®é™…ä¼‘æ¯æ—¶é—´
         result.totalBreakMinutes = 0;
 
-        // Îç²ÍÊ±¼ä
-        if (isTimeRangeOverlap(record.arrivalTime, record.departureTime,
-                               record.lunchBreakStart, record.lunchBreakEnd)) {
+        // åˆé¤æ—¶é—´
+        if (isTimeRangeOverlap(
+                record.arrivalTime,
+                record.departureTime,
+                record.lunchBreakStart,
+                record.lunchBreakEnd)) {
             QTime lunchStart = maxTime(record.arrivalTime, record.lunchBreakStart);
             QTime lunchEnd = minTime(record.departureTime, record.lunchBreakEnd);
             if (lunchStart < lunchEnd) {
@@ -162,9 +172,12 @@ public:
             }
         }
 
-        // Íí²ÍÊ±¼ä
-        if (isTimeRangeOverlap(record.arrivalTime, record.departureTime,
-                               record.dinnerBreakStart, record.dinnerBreakEnd)) {
+        // æ™šé¤æ—¶é—´
+        if (isTimeRangeOverlap(
+                record.arrivalTime,
+                record.departureTime,
+                record.dinnerBreakStart,
+                record.dinnerBreakEnd)) {
             QTime dinnerStart = maxTime(record.arrivalTime, record.dinnerBreakStart);
             QTime dinnerEnd = minTime(record.departureTime, record.dinnerBreakEnd);
             if (dinnerStart < dinnerEnd) {
@@ -172,21 +185,20 @@ public:
             }
         }
 
-        // Êµ¼Ê¹¤×÷Ê±¼ä = ÔÚ¹«Ë¾Ê±¼ä - ĞİÏ¢Ê±¼ä
+        // å®é™…å·¥ä½œæ—¶é—´ = åœ¨å…¬å¸æ—¶é—´ - ä¼‘æ¯æ—¶é—´
         result.actualWorkMinutes = totalMinutesAtWork - result.totalBreakMinutes;
 
-        // ±ê×¼¹¤×÷Ê±¼ä
+        // æ ‡å‡†å·¥ä½œæ—¶é—´
         int standardTotalMinutes = record.workStartTime.secsTo(record.workEndTime) / 60;
         int standardBreakMinutes = 0;
 
-        // ±ê×¼Îç²ÍÊ±¼ä
+        // æ ‡å‡†åˆé¤æ—¶é—´
         if (record.lunchBreakStart < record.lunchBreakEnd) {
             standardBreakMinutes += record.lunchBreakStart.secsTo(record.lunchBreakEnd) / 60;
         }
 
-        // ±ê×¼Íí²ÍÊ±¼ä£¨Èç¹ûÔÚ¹¤×÷Ê±¼äÄÚ£©
-        if (record.dinnerBreakStart >= record.workStartTime &&
-            record.dinnerBreakStart < record.workEndTime) {
+        // æ ‡å‡†æ™šé¤æ—¶é—´ï¼ˆå¦‚æœåœ¨å·¥ä½œæ—¶é—´å†…ï¼‰
+        if (record.dinnerBreakStart >= record.workStartTime && record.dinnerBreakStart < record.workEndTime) {
             QTime dinnerEnd = minTime(record.dinnerBreakEnd, record.workEndTime);
             if (record.dinnerBreakStart < dinnerEnd) {
                 standardBreakMinutes += record.dinnerBreakStart.secsTo(dinnerEnd) / 60;
@@ -195,36 +207,34 @@ public:
 
         result.standardWorkMinutes = standardTotalMinutes - standardBreakMinutes;
 
-        // ¼Ó°àÊ±¼ä
+        // åŠ ç­æ—¶é—´
         result.overtimeMinutes = result.actualWorkMinutes - result.standardWorkMinutes;
 
         return result;
     }
 
 private:
-    // ¸¨Öúº¯Êı
-    static bool isTimeRangeOverlap(const QTime& start1, const QTime& end1,
-                                   const QTime& start2, const QTime& end2) {
+    // è¾…åŠ©å‡½æ•°
+    static bool isTimeRangeOverlap(const QTime& start1, const QTime& end1, const QTime& start2, const QTime& end2)
+    {
         return start1 < end2 && start2 < end1;
     }
 
-    static QTime maxTime(const QTime& time1, const QTime& time2) {
-        return time1 > time2 ? time1 : time2;
-    }
+    static QTime maxTime(const QTime& time1, const QTime& time2) { return time1 > time2 ? time1 : time2; }
 
-    static QTime minTime(const QTime& time1, const QTime& time2) {
-        return time1 < time2 ? time1 : time2;
-    }
+    static QTime minTime(const QTime& time1, const QTime& time2) { return time1 < time2 ? time1 : time2; }
 };
 
-// Ê±¼äÉèÖÃ¶Ô»°¿ò
+// æ—¶é—´è®¾ç½®å¯¹è¯æ¡†
 class TimeSettingDialog : public QDialog {
     Q_OBJECT
 
 public:
-    TimeSettingDialog(const QDate& date, QWidget* parent = nullptr)
-        : QDialog(parent), m_date(date) {
-        setWindowTitle(QString("ÉèÖÃ´ò¿¨Ê±¼ä - %1").arg(date.toString("yyyy-MM-dd")));
+    TimeSettingDialog(const QDate& date, QWidget* parent = nullptr) :
+        QDialog(parent),
+        m_date(date)
+    {
+        setWindowTitle(QString("è®¾ç½®æ‰“å¡æ—¶é—´ - %1").arg(date.toString("yyyy-MM-dd")));
         setModal(true);
         resize(450, 400);
 
@@ -232,7 +242,8 @@ public:
         loadRecord();
     }
 
-    AttendanceRecord getRecord() const {
+    AttendanceRecord getRecord() const
+    {
         AttendanceRecord record;
         record.arrivalTime = m_arrivalTimeEdit->time();
         record.departureTime = m_departureTimeEdit->time();
@@ -246,120 +257,118 @@ public:
     }
 
 private slots:
-    void calculateWorkTime() {
+
+    void calculateWorkTime()
+    {
         AttendanceRecord record = getRecord();
         WorkTimeResult result = WorkTimeCalculator::calculateWorkTimeResult(record);
 
         QString resultText;
 
-        // ÏÔÊ¾³Ùµ½ÔçÍË
+        // æ˜¾ç¤ºè¿Ÿåˆ°æ—©é€€
         if (result.lateMinutes > 0) {
-            resultText += QString("[³Ùµ½] %1Ğ¡Ê±%2·ÖÖÓ\n")
-                              .arg(result.lateMinutes / 60)
-                              .arg(result.lateMinutes % 60);
+            resultText += QString("[è¿Ÿåˆ°] %1å°æ—¶%2åˆ†é’Ÿ\n").arg(result.lateMinutes / 60).arg(result.lateMinutes % 60);
         }
 
         if (result.earlyLeaveMinutes > 0) {
-            resultText += QString("[ÔçÍË] %1Ğ¡Ê±%2·ÖÖÓ\n")
-                              .arg(result.earlyLeaveMinutes / 60)
-                              .arg(result.earlyLeaveMinutes % 60);
+            resultText +=
+                QString("[æ—©é€€] %1å°æ—¶%2åˆ†é’Ÿ\n").arg(result.earlyLeaveMinutes / 60).arg(result.earlyLeaveMinutes % 60);
         }
 
-        // ÏÔÊ¾¹¤×÷Ê±¼ä
-        resultText += QString("[Êµ¼Ê¹¤×÷] %1Ğ¡Ê±%2·ÖÖÓ\n")
-                          .arg(result.actualWorkMinutes / 60)
-                          .arg(result.actualWorkMinutes % 60);
+        // æ˜¾ç¤ºå·¥ä½œæ—¶é—´
+        resultText +=
+            QString("[å®é™…å·¥ä½œ] %1å°æ—¶%2åˆ†é’Ÿ\n").arg(result.actualWorkMinutes / 60).arg(result.actualWorkMinutes % 60);
 
-        resultText += QString("[±ê×¼¹¤×÷] %1Ğ¡Ê±%2·ÖÖÓ\n")
+        resultText += QString("[æ ‡å‡†å·¥ä½œ] %1å°æ—¶%2åˆ†é’Ÿ\n")
                           .arg(result.standardWorkMinutes / 60)
                           .arg(result.standardWorkMinutes % 60);
 
-        resultText += QString("[×ÜĞİÏ¢] %1Ğ¡Ê±%2·ÖÖÓ\n")
-                          .arg(result.totalBreakMinutes / 60)
-                          .arg(result.totalBreakMinutes % 60);
+        resultText +=
+            QString("[æ€»ä¼‘æ¯] %1å°æ—¶%2åˆ†é’Ÿ\n").arg(result.totalBreakMinutes / 60).arg(result.totalBreakMinutes % 60);
 
-        // ÏÔÊ¾¼Ó°à»òÇ·Ê±
+        // æ˜¾ç¤ºåŠ ç­æˆ–æ¬ æ—¶
         if (result.overtimeMinutes > 0) {
-            resultText += QString("[¼Ó°àÊ±¼ä] %1Ğ¡Ê±%2·ÖÖÓ")
-                              .arg(result.overtimeMinutes / 60)
-                              .arg(result.overtimeMinutes % 60);
-        } else if (result.overtimeMinutes < 0) {
-            resultText += QString("[Ç·È±Ê±¼ä] %1Ğ¡Ê±%2·ÖÖÓ")
+            resultText +=
+                QString("[åŠ ç­æ—¶é—´] %1å°æ—¶%2åˆ†é’Ÿ").arg(result.overtimeMinutes / 60).arg(result.overtimeMinutes % 60);
+        }
+        else if (result.overtimeMinutes < 0) {
+            resultText += QString("[æ¬ ç¼ºæ—¶é—´] %1å°æ—¶%2åˆ†é’Ÿ")
                               .arg((-result.overtimeMinutes) / 60)
                               .arg((-result.overtimeMinutes) % 60);
-        } else {
-            resultText += QString("[Íê³É±ê×¼Ê±¼ä]");
+        }
+        else {
+            resultText += QString("[å®Œæˆæ ‡å‡†æ—¶é—´]");
         }
 
         m_resultLabel->setText(resultText);
     }
 
-    void saveAndClose() {
+    void saveAndClose()
+    {
         saveRecord();
         accept();
     }
 
 private:
-    void setupUI() {
+    void setupUI()
+    {
         QVBoxLayout* mainLayout = new QVBoxLayout(this);
 
-        // »ù±¾Ê±¼äÉèÖÃ×é
-        QGroupBox* basicTimeGroup = new QGroupBox(QString("»ù±¾Ê±¼ä"));
+        // åŸºæœ¬æ—¶é—´è®¾ç½®ç»„
+        QGroupBox* basicTimeGroup = new QGroupBox(QString("åŸºæœ¬æ—¶é—´"));
         QGridLayout* basicTimeLayout = new QGridLayout(basicTimeGroup);
 
-        basicTimeLayout->addWidget(new QLabel(QString("µ½´ï¹«Ë¾Ê±¼ä:")), 0, 0);
+        basicTimeLayout->addWidget(new QLabel(QString("åˆ°è¾¾å…¬å¸æ—¶é—´:")), 0, 0);
         m_arrivalTimeEdit = new QTimeEdit();
         m_arrivalTimeEdit->setDisplayFormat("hh:mm");
         basicTimeLayout->addWidget(m_arrivalTimeEdit, 0, 1);
 
-        basicTimeLayout->addWidget(new QLabel(QString("Àë¿ª¹«Ë¾Ê±¼ä:")), 1, 0);
+        basicTimeLayout->addWidget(new QLabel(QString("ç¦»å¼€å…¬å¸æ—¶é—´:")), 1, 0);
         m_departureTimeEdit = new QTimeEdit();
         m_departureTimeEdit->setDisplayFormat("hh:mm");
         basicTimeLayout->addWidget(m_departureTimeEdit, 1, 1);
 
         mainLayout->addWidget(basicTimeGroup);
 
-        // ¿ÉÕÛµşµÄÏêÏ¸ÉèÖÃ
-        CollapsibleGroupBox* detailsGroup = new CollapsibleGroupBox(QString("ÏêÏ¸ÉèÖÃ"), this);
+        // å¯æŠ˜å çš„è¯¦ç»†è®¾ç½®
+        CollapsibleGroupBox* detailsGroup = new CollapsibleGroupBox(QString("è¯¦ç»†è®¾ç½®"), this);
 
         QVBoxLayout* detailsLayout = new QVBoxLayout();
 
-        // ±ê×¼¹¤×÷Ê±¼ä
-        QGroupBox* standardGroup = new QGroupBox(QString("±ê×¼¹¤×÷Ê±¼ä"));
+        // æ ‡å‡†å·¥ä½œæ—¶é—´
+        QGroupBox* standardGroup = new QGroupBox(QString("æ ‡å‡†å·¥ä½œæ—¶é—´"));
         QGridLayout* standardLayout = new QGridLayout(standardGroup);
 
-        standardLayout->addWidget(new QLabel(QString("±ê×¼ÉÏ°àÊ±¼ä:")), 0, 0);
+        standardLayout->addWidget(new QLabel(QString("æ ‡å‡†ä¸Šç­æ—¶é—´:")), 0, 0);
         m_workStartTimeEdit = new QTimeEdit();
         m_workStartTimeEdit->setDisplayFormat("hh:mm");
         standardLayout->addWidget(m_workStartTimeEdit, 0, 1);
 
-        standardLayout->addWidget(new QLabel(QString("±ê×¼ÏÂ°àÊ±¼ä:")), 1, 0);
+        standardLayout->addWidget(new QLabel(QString("æ ‡å‡†ä¸‹ç­æ—¶é—´:")), 1, 0);
         m_workEndTimeEdit = new QTimeEdit();
         m_workEndTimeEdit->setDisplayFormat("hh:mm");
         standardLayout->addWidget(m_workEndTimeEdit, 1, 1);
 
-
-
-        // ĞİÏ¢Ê±¼äÉèÖÃ
-        QGroupBox* breakGroup = new QGroupBox(QString("ĞİÏ¢Ê±¼äÉèÖÃ"));
+        // ä¼‘æ¯æ—¶é—´è®¾ç½®
+        QGroupBox* breakGroup = new QGroupBox(QString("ä¼‘æ¯æ—¶é—´è®¾ç½®"));
         QGridLayout* breakLayout = new QGridLayout(breakGroup);
 
-        breakLayout->addWidget(new QLabel(QString("Îç²Í¿ªÊ¼Ê±¼ä:")), 0, 0);
+        breakLayout->addWidget(new QLabel(QString("åˆé¤å¼€å§‹æ—¶é—´:")), 0, 0);
         m_lunchBreakStartEdit = new QTimeEdit();
         m_lunchBreakStartEdit->setDisplayFormat("hh:mm");
         breakLayout->addWidget(m_lunchBreakStartEdit, 0, 1);
 
-        breakLayout->addWidget(new QLabel(QString("Îç²Í½áÊøÊ±¼ä:")), 1, 0);
+        breakLayout->addWidget(new QLabel(QString("åˆé¤ç»“æŸæ—¶é—´:")), 1, 0);
         m_lunchBreakEndEdit = new QTimeEdit();
         m_lunchBreakEndEdit->setDisplayFormat("hh:mm");
         breakLayout->addWidget(m_lunchBreakEndEdit, 1, 1);
 
-        breakLayout->addWidget(new QLabel(QString("Íí²Í¿ªÊ¼Ê±¼ä:")), 2, 0);
+        breakLayout->addWidget(new QLabel(QString("æ™šé¤å¼€å§‹æ—¶é—´:")), 2, 0);
         m_dinnerBreakStartEdit = new QTimeEdit();
         m_dinnerBreakStartEdit->setDisplayFormat("hh:mm");
         breakLayout->addWidget(m_dinnerBreakStartEdit, 2, 1);
 
-        breakLayout->addWidget(new QLabel(QString("Íí²Í½áÊøÊ±¼ä:")), 3, 0);
+        breakLayout->addWidget(new QLabel(QString("æ™šé¤ç»“æŸæ—¶é—´:")), 3, 0);
         m_dinnerBreakEndEdit = new QTimeEdit();
         m_dinnerBreakEndEdit->setDisplayFormat("hh:mm");
         breakLayout->addWidget(m_dinnerBreakEndEdit, 3, 1);
@@ -368,11 +377,8 @@ private:
         detailsLayout->addWidget(breakGroup);
         detailsGroup->setContentLayout(detailsLayout);
 
-
-
-
-        // ½á¹ûÏÔÊ¾
-        QGroupBox* resultGroup = new QGroupBox(QString("¼ÆËã½á¹û"));
+        // ç»“æœæ˜¾ç¤º
+        QGroupBox* resultGroup = new QGroupBox(QString("è®¡ç®—ç»“æœ"));
         QVBoxLayout* resultLayout = new QVBoxLayout(resultGroup);
         m_resultLabel = new QLabel(QString(""));
         m_resultLabel->setWordWrap(true);
@@ -381,10 +387,10 @@ private:
         mainLayout->addWidget(resultGroup);
         mainLayout->addWidget(detailsGroup);
 
-        // °´Å¥²¼¾Ö
+        // æŒ‰é’®å¸ƒå±€
         QHBoxLayout* buttonLayout = new QHBoxLayout();
-        QPushButton* saveBtn = new QPushButton(QString("±£´æ"));
-        QPushButton* cancelBtn = new QPushButton(QString("È¡Ïû"));
+        QPushButton* saveBtn = new QPushButton(QString("ä¿å­˜"));
+        QPushButton* cancelBtn = new QPushButton(QString("å–æ¶ˆ"));
 
         connect(saveBtn, &QPushButton::clicked, this, &TimeSettingDialog::saveAndClose);
         connect(cancelBtn, &QPushButton::clicked, this, &QDialog::reject);
@@ -394,7 +400,7 @@ private:
         buttonLayout->addWidget(cancelBtn);
         mainLayout->addLayout(buttonLayout);
 
-        // ¼àÌıÊ±¼ä±ä»¯ĞÅºÅ£¬×Ô¶¯¸üĞÂ¼ÆËã
+        // ç›‘å¬æ—¶é—´å˜åŒ–ä¿¡å·ï¼Œè‡ªåŠ¨æ›´æ–°è®¡ç®—
         connect(m_arrivalTimeEdit, &QTimeEdit::timeChanged, this, &TimeSettingDialog::calculateWorkTime);
         connect(m_departureTimeEdit, &QTimeEdit::timeChanged, this, &TimeSettingDialog::calculateWorkTime);
         connect(m_workStartTimeEdit, &QTimeEdit::timeChanged, this, &TimeSettingDialog::calculateWorkTime);
@@ -405,7 +411,8 @@ private:
         connect(m_dinnerBreakEndEdit, &QTimeEdit::timeChanged, this, &TimeSettingDialog::calculateWorkTime);
     }
 
-    void loadRecord() {
+    void loadRecord()
+    {
         QSettings settings;
         QString key = m_date.toString("yyyy-MM-dd");
 
@@ -429,7 +436,8 @@ private:
             QTime::fromString(settings.value(key + "/dinnerEnd", "18:30").toString(), "hh:mm"));
     }
 
-    void saveRecord() {
+    void saveRecord()
+    {
         QSettings settings;
         QString key = m_date.toString("yyyy-MM-dd");
 
@@ -456,49 +464,57 @@ private:
     QLabel* m_resultLabel;
 };
 
-// ×Ô¶¨ÒåÈÕÀú¿Ø¼ş£¬Ö§³ÖÓÒ¼ü²Ëµ¥
+// è‡ªå®šä¹‰æ—¥å†æ§ä»¶ï¼Œæ”¯æŒå³é”®èœå•
 class CustomCalendarWidget : public QCalendarWidget {
     Q_OBJECT
 private:
-    QTableView* m_tableView{nullptr};
+    QTableView* m_tableView { nullptr };
+
 public:
-    CustomCalendarWidget(QWidget* parent = nullptr) : QCalendarWidget(parent) {
+    CustomCalendarWidget(QWidget* parent = nullptr) :
+        QCalendarWidget(parent)
+    {
         setContextMenuPolicy(Qt::CustomContextMenu);
         connect(this, &QWidget::customContextMenuRequested, this, &CustomCalendarWidget::showContextMenu);
         setupEventFilters();
     }
+
     void setupEventFilters()
     {
         m_tableView = this->findChild<QTableView*>();
         if (m_tableView) {
-            // Ö»¼àÌıÓÒ¼ü£¬Ë«»÷ÓÃÖØĞ´µÄ·½·¨´¦Àí
+            // åªç›‘å¬å³é”®ï¼ŒåŒå‡»ç”¨é‡å†™çš„æ–¹æ³•å¤„ç†
             m_tableView->installEventFilter(this);
         }
     }
+
 signals:
     void deleteRequested(const QDate& date);
 
 private slots:
-    void showContextMenu(const QPoint& pos) {
-        // »ñÈ¡µã»÷Î»ÖÃ¶ÔÓ¦µÄÈÕÆÚ
+
+    void showContextMenu(const QPoint& pos)
+    {
+        // è·å–ç‚¹å‡»ä½ç½®å¯¹åº”çš„æ—¥æœŸ
         QDate clickedDate = dateAt(pos);
         if (!clickedDate.isValid()) {
             return;
         }
 
-        // ¼ì²é¸ÃÈÕÆÚÊÇ·ñÓĞ¼ÇÂ¼
+        // æ£€æŸ¥è¯¥æ—¥æœŸæ˜¯å¦æœ‰è®°å½•
         QSettings settings;
         QString key = clickedDate.toString("yyyy-MM-dd");
         if (!settings.contains(key + "/arrival")) {
-            return; // Ã»ÓĞ¼ÇÂ¼£¬²»ÏÔÊ¾²Ëµ¥
+            return; // æ²¡æœ‰è®°å½•ï¼Œä¸æ˜¾ç¤ºèœå•
         }
 
-        // ´´½¨ÓÒ¼ü²Ëµ¥
+        // åˆ›å»ºå³é”®èœå•
         QMenu contextMenu(this);
-        QAction* deleteAction = contextMenu.addAction(QString("É¾³ı %1 µÄ¼ÇÂ¼").arg(clickedDate.toString("yyyy-MM-dd")));
+        QAction* deleteAction =
+            contextMenu.addAction(QString("åˆ é™¤ %1 çš„è®°å½•").arg(clickedDate.toString("yyyy-MM-dd")));
         deleteAction->setIcon(style()->standardIcon(QStyle::SP_TrashIcon));
 
-        // ÏÔÊ¾²Ëµ¥²¢´¦ÀíÑ¡Ôñ
+        // æ˜¾ç¤ºèœå•å¹¶å¤„ç†é€‰æ‹©
         QAction* selectedAction = contextMenu.exec(mapToGlobal(pos));
         if (selectedAction == deleteAction) {
             emit deleteRequested(clickedDate);
@@ -506,12 +522,14 @@ private slots:
     }
 
 private:
-    QDate dateAt(const QPoint& pos) {
-        // ÕâÊÇÒ»¸ö¼ò»¯µÄÊµÏÖ£¬ÔÚÊµ¼ÊÊ¹ÓÃÖĞ¿ÉÄÜĞèÒª¸ü¾«È·µÄ¼ÆËã
-        // Ê¹ÓÃselectedDate×÷Îª½üËÆÖµ
-        return getDateFromPosition(QPoint(pos.x(),pos.y()-20));
+    QDate dateAt(const QPoint& pos)
+    {
+        // è¿™æ˜¯ä¸€ä¸ªç®€åŒ–çš„å®ç°ï¼Œåœ¨å®é™…ä½¿ç”¨ä¸­å¯èƒ½éœ€è¦æ›´ç²¾ç¡®çš„è®¡ç®—
+        // ä½¿ç”¨selectedDateä½œä¸ºè¿‘ä¼¼å€¼
+        return getDateFromPosition(QPoint(pos.x(), pos.y() - 20));
     }
-    QDate getDateFromPosition(const QPoint &pos)
+
+    QDate getDateFromPosition(const QPoint& pos)
     {
         if (!m_tableView) {
             return QDate();
@@ -522,101 +540,102 @@ private:
             return QDate();
         }
 
-        // »ñÈ¡Ä£ĞÍ
-        QAbstractItemModel *model = m_tableView->model();
+        // è·å–æ¨¡å‹
+        QAbstractItemModel* model = m_tableView->model();
         if (!model) {
             return QDate();
         }
 
-        // ³¢ÊÔ²»Í¬µÄ½ÇÉ«»ñÈ¡ÈÕÆÚÊı¾İ
+        // å°è¯•ä¸åŒçš„è§’è‰²è·å–æ—¥æœŸæ•°æ®
         QVariant dateData;
 
-        // ³¢ÊÔ Qt::UserRole
+        // å°è¯• Qt::UserRole
         dateData = model->data(index, Qt::UserRole);
         if (dateData.canConvert<QDate>()) {
             return dateData.toDate();
         }
 
-        // ³¢ÊÔ Qt::UserRole + 1
+        // å°è¯• Qt::UserRole + 1
         dateData = model->data(index, Qt::UserRole + 1);
         if (dateData.canConvert<QDate>()) {
             return dateData.toDate();
         }
 
-        // Èç¹û¶¼»ñÈ¡²»µ½£¬Ê¹ÓÃ¸Ä½øµÄ¼ÆËã·½·¨
+        // å¦‚æœéƒ½è·å–ä¸åˆ°ï¼Œä½¿ç”¨æ”¹è¿›çš„è®¡ç®—æ–¹æ³•
         return calculateDateFromRowCol(index.row(), index.column());
     }
 
     QDate calculateDateFromRowCol(int row, int col)
     {
-        // »ñÈ¡µ±Ç°ÏÔÊ¾µÄÄêÔÂ
+        // è·å–å½“å‰æ˜¾ç¤ºçš„å¹´æœˆ
         int year = yearShown();
         int month = monthShown();
         QDate firstDay(year, month, 1);
 
-        // »ñÈ¡ÈÕÀúµÄµÚÒ»ÌìÉèÖÃ
+        // è·å–æ—¥å†çš„ç¬¬ä¸€å¤©è®¾ç½®
         Qt::DayOfWeek startDay = firstDayOfWeek();
 
-        // ¼ÆËãµÚÒ»ÌìÔÚ±í¸ñÖĞµÄÎ»ÖÃ
+        // è®¡ç®—ç¬¬ä¸€å¤©åœ¨è¡¨æ ¼ä¸­çš„ä½ç½®
         int firstDayColumn;
         if (startDay == Qt::Sunday) {
             firstDayColumn = firstDay.dayOfWeek() % 7; // Sunday = 0
-        } else {
+        }
+        else {
             firstDayColumn = firstDay.dayOfWeek() - 1; // Monday = 0
         }
 
-        // ¼ÆËãµ±Ç°Î»ÖÃ¶ÔÓ¦µÄÌìÊı
-        int totalCells = (row-1) * 7 + col -1;
+        // è®¡ç®—å½“å‰ä½ç½®å¯¹åº”çš„å¤©æ•°
+        int totalCells = (row - 1) * 7 + col - 1;
         int dayNumber = totalCells - firstDayColumn + 1;
 
         if (dayNumber <= 0) {
-            // ÉÏ¸öÔÂµÄÈÕÆÚ
+            // ä¸Šä¸ªæœˆçš„æ—¥æœŸ
             QDate prevMonth = firstDay.addMonths(-1);
-            return QDate(prevMonth.year(), prevMonth.month(),
-                         prevMonth.daysInMonth() + dayNumber);
-        } else if (dayNumber > firstDay.daysInMonth()) {
-            // ÏÂ¸öÔÂµÄÈÕÆÚ
+            return QDate(prevMonth.year(), prevMonth.month(), prevMonth.daysInMonth() + dayNumber);
+        }
+        else if (dayNumber > firstDay.daysInMonth()) {
+            // ä¸‹ä¸ªæœˆçš„æ—¥æœŸ
             QDate nextMonth = firstDay.addMonths(1);
-            return QDate(nextMonth.year(), nextMonth.month(),
-                         dayNumber - firstDay.daysInMonth());
-        } else {
-            // µ±Ç°ÔÂµÄÈÕÆÚ
+            return QDate(nextMonth.year(), nextMonth.month(), dayNumber - firstDay.daysInMonth());
+        }
+        else {
+            // å½“å‰æœˆçš„æ—¥æœŸ
             return QDate(year, month, dayNumber);
         }
     }
-
-
 };
 
-// Ö÷´°¿Ú
+// ä¸»çª—å£
 class AttendanceMainWindow : public QMainWindow {
     Q_OBJECT
 
 public:
-    AttendanceMainWindow(QWidget* parent = nullptr) : QMainWindow(parent) {
-
-        setWindowTitle(QString("´ò¿¨¹ÜÀíÏµÍ³"));
+    AttendanceMainWindow(QWidget* parent = nullptr) :
+        QMainWindow(parent)
+    {
+        setWindowTitle(QString("æ‰“å¡ç®¡ç†ç³»ç»Ÿ"));
         setMinimumSize(800, 600);
 
-        resize(900,660);
+        resize(900, 660);
 
         setupUI();
         loadAttendanceData();
     }
 
 protected:
-    void mousePressEvent(QMouseEvent* event) override {
-        // ¼ì²éµã»÷Î»ÖÃÊÇ·ñÔÚÈÕÀúÇøÓòÍâ
+    void mousePressEvent(QMouseEvent* event) override
+    {
+        // æ£€æŸ¥ç‚¹å‡»ä½ç½®æ˜¯å¦åœ¨æ—¥å†åŒºåŸŸå¤–
         if (m_calendar) {
             QPoint calendarPos = m_calendar->mapFromGlobal(event->globalPos());
             QRect calendarRect = m_calendar->rect();
 
-            // Èç¹ûµã»÷ÔÚÈÕÀúÍâ£¬ÖØÖÃÑ¡Ôñ×´Ì¬
+            // å¦‚æœç‚¹å‡»åœ¨æ—¥å†å¤–ï¼Œé‡ç½®é€‰æ‹©çŠ¶æ€
             if (!calendarRect.contains(calendarPos)) {
-                // ½«Ñ¡ÔñÖØÖÃÎª¿´²»¼ûµÄÈÕÆÚ£¬²¢½«Ò³Ãæµ÷»Øµ±Ç°Ò³Ãæ£¬ÕâÑù¿´ÆğÀ´ÏñÊ§È¥½¹µã
+                // å°†é€‰æ‹©é‡ç½®ä¸ºçœ‹ä¸è§çš„æ—¥æœŸï¼Œå¹¶å°†é¡µé¢è°ƒå›å½“å‰é¡µé¢ï¼Œè¿™æ ·çœ‹èµ·æ¥åƒå¤±å»ç„¦ç‚¹
                 // m_calendar->setSelectedDate(QDate::currentDate());
                 m_calendar->setSelectedDate(QDate::currentDate().addDays(365));
-                m_calendar->setCurrentPage(QDate::currentDate().year(),QDate::currentDate().month());
+                m_calendar->setCurrentPage(QDate::currentDate().year(), QDate::currentDate().month());
             }
         }
 
@@ -624,7 +643,9 @@ protected:
     }
 
 private slots:
-    void onDateClicked(const QDate& date) {
+
+    void onDateClicked(const QDate& date)
+    {
         TimeSettingDialog dialog(date, this);
         if (dialog.exec() == QDialog::Accepted) {
             updateCalendarAppearance();
@@ -632,18 +653,21 @@ private slots:
         }
     }
 
-    void onMonthChanged() {
+    void onMonthChanged()
+    {
         updateCalendarAppearance();
         updateMonthlyStatistics();
     }
 
-    void onDeleteRequested(const QDate& date) {
-        // È·ÈÏÉ¾³ı
-        int ret = QMessageBox::question(this,
-                                        QString("È·ÈÏÉ¾³ı"),
-                                        QString("È·¶¨ÒªÉ¾³ı %1 µÄ¿¼ÇÚ¼ÇÂ¼Âğ£¿").arg(date.toString("yyyy-MM-dd")),
-                                        QMessageBox::Yes | QMessageBox::No,
-                                        QMessageBox::No);
+    void onDeleteRequested(const QDate& date)
+    {
+        // ç¡®è®¤åˆ é™¤
+        int ret = QMessageBox::question(
+            this,
+            QString("ç¡®è®¤åˆ é™¤"),
+            QString("ç¡®å®šè¦åˆ é™¤ %1 çš„è€ƒå‹¤è®°å½•å—ï¼Ÿ").arg(date.toString("yyyy-MM-dd")),
+            QMessageBox::Yes | QMessageBox::No,
+            QMessageBox::No);
 
         if (ret == QMessageBox::Yes) {
             deleteAttendanceRecord(date);
@@ -651,47 +675,51 @@ private slots:
     }
 
 private:
-    void setupUI() {
+    void setupUI()
+    {
         QWidget* centralWidget = new QWidget();
         setCentralWidget(centralWidget);
 
         QHBoxLayout* mainLayout = new QHBoxLayout(centralWidget);
 
-        // ×ó²à£ºÈÕÀú
+        // å·¦ä¾§ï¼šæ—¥å†
         QVBoxLayout* leftLayout = new QVBoxLayout();
 
-        QLabel* titleLabel = new QLabel(QString("¿¼ÇÚÈÕÀú"));
+        QLabel* titleLabel = new QLabel(QString("è€ƒå‹¤æ—¥å†"));
         titleLabel->setAlignment(Qt::AlignCenter);
         titleLabel->setStyleSheet("font-size: 18px; font-weight: bold; padding: 10px;");
         leftLayout->addWidget(titleLabel);
 
-        // Ê¹ÓÃ×Ô¶¨ÒåÈÕÀú¿Ø¼ş
+        // ä½¿ç”¨è‡ªå®šä¹‰æ—¥å†æ§ä»¶
         m_calendar = new CustomCalendarWidget();
         m_calendar->setLocale(QLocale::Chinese);
         m_calendar->setFirstDayOfWeek(Qt::Monday);
         m_calendar->setGridVisible(true);
         leftLayout->addWidget(m_calendar);
 
-        // Ìí¼ÓÊ¹ÓÃËµÃ÷
-        QLabel* helpLabel = new QLabel(QString("Ê¹ÓÃËµÃ÷£º\n? ×ó¼üµã»÷ÈÕÆÚÉèÖÃ¿¼ÇÚÊ±¼ä\n? ÓÒ¼üµã»÷ÓĞ¼ÇÂ¼µÄÈÕÆÚ¿ÉÉ¾³ı¼ÇÂ¼\n? µã»÷ÈÕÀúÍâÇøÓò¿ÉÖØÖÃÑ¡Ôñ×´Ì¬"));
-        helpLabel->setStyleSheet("color: #666; font-size: 12px; padding: 10px; background-color: #f5f5f5; border-radius: 5px;");
+        // æ·»åŠ ä½¿ç”¨è¯´æ˜
+        QLabel* helpLabel =
+            new QLabel(QString("ä½¿ç”¨è¯´æ˜ï¼š\n? å·¦é”®ç‚¹å‡»æ—¥æœŸè®¾ç½®è€ƒå‹¤æ—¶é—´\n? å³é”®ç‚¹å‡»æœ‰è®°å½•çš„æ—¥æœŸå¯åˆ é™¤è®°å½•\n? "
+                               "ç‚¹å‡»æ—¥å†å¤–åŒºåŸŸå¯é‡ç½®é€‰æ‹©çŠ¶æ€"));
+        helpLabel->setStyleSheet(
+            "color: #666; font-size: 12px; padding: 10px; background-color: #f5f5f5; border-radius: 5px;");
         helpLabel->setWordWrap(true);
         leftLayout->addWidget(helpLabel);
 
-        // ÓÒ²à£ºÍ³¼ÆºÍ¹ÜÀí
+        // å³ä¾§ï¼šç»Ÿè®¡å’Œç®¡ç†
         QVBoxLayout* rightLayout = new QVBoxLayout();
 
-        // ÔÂ¶ÈÍ³¼Æ
-        QGroupBox* statsGroup = new QGroupBox(QString("ÔÂ¶ÈÍ³¼Æ"));
+        // æœˆåº¦ç»Ÿè®¡
+        QGroupBox* statsGroup = new QGroupBox(QString("æœˆåº¦ç»Ÿè®¡"));
         QVBoxLayout* statsLayout = new QVBoxLayout(statsGroup);
-        m_statsLabel = new QLabel(QString("ÇëÑ¡ÔñÔÂ·İ²é¿´Í³¼Æ"));
+        m_statsLabel = new QLabel(QString("è¯·é€‰æ‹©æœˆä»½æŸ¥çœ‹ç»Ÿè®¡"));
         m_statsLabel->setWordWrap(true);
         m_statsLabel->setStyleSheet("padding: 10px; background-color: #f9f9f9; border-radius: 5px;");
         statsLayout->addWidget(m_statsLabel);
         rightLayout->addWidget(statsGroup);
         rightLayout->addStretch();
 
-        // Ê¹ÓÃ·Ö¸îÆ÷
+        // ä½¿ç”¨åˆ†å‰²å™¨
         QSplitter* splitter = new QSplitter(Qt::Horizontal);
 
         QWidget* leftWidget = new QWidget();
@@ -708,51 +736,46 @@ private:
 
         mainLayout->addWidget(splitter);
 
-        // Á¬½ÓĞÅºÅ
+        // è¿æ¥ä¿¡å·
         connect(m_calendar, &QCalendarWidget::clicked, this, &AttendanceMainWindow::onDateClicked);
-        connect(m_calendar, &QCalendarWidget::currentPageChanged,
-                this, &AttendanceMainWindow::onMonthChanged);
-        connect(m_calendar, &CustomCalendarWidget::deleteRequested,
-                this, &AttendanceMainWindow::onDeleteRequested);
+        connect(m_calendar, &QCalendarWidget::currentPageChanged, this, &AttendanceMainWindow::onMonthChanged);
+        connect(m_calendar, &CustomCalendarWidget::deleteRequested, this, &AttendanceMainWindow::onDeleteRequested);
 
         updateCalendarAppearance();
         updateMonthlyStatistics();
     }
 
-    void loadAttendanceData() {
-        // Êı¾İÍ¨¹ıQSettings×Ô¶¯¼ÓÔØ
+    void loadAttendanceData()
+    {
+        // æ•°æ®é€šè¿‡QSettingsè‡ªåŠ¨åŠ è½½
     }
 
-    void deleteAttendanceRecord(const QDate& date) {
+    void deleteAttendanceRecord(const QDate& date)
+    {
         QSettings settings;
         QString key = date.toString("yyyy-MM-dd");
 
-        // É¾³ıËùÓĞÏà¹ØµÄÉèÖÃÏî
-        QStringList keys = {
-            key + "/arrival",
-            key + "/departure",
-            key + "/workStart",
-            key + "/workEnd",
-            key + "/lunchStart",
-            key + "/lunchEnd",
-            key + "/dinnerStart",
-            key + "/dinnerEnd"
-        };
+        // åˆ é™¤æ‰€æœ‰ç›¸å…³çš„è®¾ç½®é¡¹
+        QStringList keys = { key + "/arrival",    key + "/departure", key + "/workStart",   key + "/workEnd",
+                             key + "/lunchStart", key + "/lunchEnd",  key + "/dinnerStart", key + "/dinnerEnd" };
 
         for (const QString& k : keys) {
             settings.remove(k);
         }
 
-        // ¸üĞÂ½çÃæ
+        // æ›´æ–°ç•Œé¢
         updateCalendarAppearance();
         updateMonthlyStatistics();
 
-        // ÏÔÊ¾É¾³ı³É¹¦ÏûÏ¢
-        QMessageBox::information(this, QString("É¾³ı³É¹¦"),
-                                 QString("ÒÑ³É¹¦É¾³ı %1 µÄ¿¼ÇÚ¼ÇÂ¼").arg(date.toString("yyyy-MM-dd")));
+        // æ˜¾ç¤ºåˆ é™¤æˆåŠŸæ¶ˆæ¯
+        QMessageBox::information(
+            this,
+            QString("åˆ é™¤æˆåŠŸ"),
+            QString("å·²æˆåŠŸåˆ é™¤ %1 çš„è€ƒå‹¤è®°å½•").arg(date.toString("yyyy-MM-dd")));
     }
 
-    void updateCalendarAppearance() {
+    void updateCalendarAppearance()
+    {
         int year = m_calendar->yearShown();
         int month = m_calendar->monthShown();
         QDate startDate(year, month, 1);
@@ -765,19 +788,21 @@ private:
             QString key = date.toString("yyyy-MM-dd");
 
             if (settings.contains(key + "/arrival")) {
-                // ÓĞ´ò¿¨¼ÇÂ¼£¬ÏÔÊ¾ÂÌÉ«±³¾°
+                // æœ‰æ‰“å¡è®°å½•ï¼Œæ˜¾ç¤ºç»¿è‰²èƒŒæ™¯
                 QTextCharFormat format;
-                format.setBackground(QColor(144, 238, 144)); // Ç³ÂÌÉ«
+                format.setBackground(QColor(144, 238, 144)); // æµ…ç»¿è‰²
                 m_calendar->setDateTextFormat(date, format);
-            } else {
-                // Çå³ı¸ñÊ½
+            }
+            else {
+                // æ¸…é™¤æ ¼å¼
                 m_calendar->setDateTextFormat(date, QTextCharFormat());
             }
             date = date.addDays(1);
         }
     }
 
-    void updateMonthlyStatistics() {
+    void updateMonthlyStatistics()
+    {
         int year = m_calendar->yearShown();
         int month = m_calendar->monthShown();
         QDate startDate(year, month, 1);
@@ -796,18 +821,23 @@ private:
             if (settings.contains(key + "/arrival")) {
                 workDays++;
 
-                // ¼ÓÔØ¼ÇÂ¼²¢¼ÆËã
+                // åŠ è½½è®°å½•å¹¶è®¡ç®—
                 AttendanceRecord record;
                 record.arrivalTime = QTime::fromString(settings.value(key + "/arrival").toString(), "hh:mm");
                 record.departureTime = QTime::fromString(settings.value(key + "/departure").toString(), "hh:mm");
-                record.workStartTime = QTime::fromString(settings.value(key + "/workStart", "09:00").toString(), "hh:mm");
+                record.workStartTime =
+                    QTime::fromString(settings.value(key + "/workStart", "09:00").toString(), "hh:mm");
                 record.workEndTime = QTime::fromString(settings.value(key + "/workEnd", "18:00").toString(), "hh:mm");
-                record.lunchBreakStart = QTime::fromString(settings.value(key + "/lunchStart", "12:30").toString(), "hh:mm");
-                record.lunchBreakEnd = QTime::fromString(settings.value(key + "/lunchEnd", "13:30").toString(), "hh:mm");
-                record.dinnerBreakStart = QTime::fromString(settings.value(key + "/dinnerStart", "18:00").toString(), "hh:mm");
-                record.dinnerBreakEnd = QTime::fromString(settings.value(key + "/dinnerEnd", "18:30").toString(), "hh:mm");
+                record.lunchBreakStart =
+                    QTime::fromString(settings.value(key + "/lunchStart", "12:30").toString(), "hh:mm");
+                record.lunchBreakEnd =
+                    QTime::fromString(settings.value(key + "/lunchEnd", "13:30").toString(), "hh:mm");
+                record.dinnerBreakStart =
+                    QTime::fromString(settings.value(key + "/dinnerStart", "18:00").toString(), "hh:mm");
+                record.dinnerBreakEnd =
+                    QTime::fromString(settings.value(key + "/dinnerEnd", "18:30").toString(), "hh:mm");
 
-                // ¼ÆËã¹¤×÷Ê±¼äÊı¾İ
+                // è®¡ç®—å·¥ä½œæ—¶é—´æ•°æ®
                 WorkTimeResult result = WorkTimeCalculator::calculateWorkTimeResult(record);
 
                 if (result.overtimeMinutes > 0) {
@@ -819,19 +849,11 @@ private:
             date = date.addDays(1);
         }
 
-        QString stats = QString("Í³¼ÆÔÂ·İ: %1Äê%2ÔÂ\n")
-                            .arg(year)
-                            .arg(month);
-        stats += QString("¹¤×÷ÌìÊı: %1Ìì\n").arg(workDays);
-        stats += QString("×Ü¼Ó°àÊ±¼ä: %1Ğ¡Ê±%2·ÖÖÓ\n")
-                     .arg(totalOvertimeMinutes / 60)
-                     .arg(totalOvertimeMinutes % 60);
-        stats += QString("×Ü³Ùµ½Ê±¼ä: %1Ğ¡Ê±%2·ÖÖÓ\n")
-                     .arg(totalLateMinutes / 60)
-                     .arg(totalLateMinutes % 60);
-        stats += QString("×ÜÔçÍËÊ±¼ä: %1Ğ¡Ê±%2·ÖÖÓ")
-                     .arg(totalEarlyLeaveMinutes / 60)
-                     .arg(totalEarlyLeaveMinutes % 60);
+        QString stats = QString("ç»Ÿè®¡æœˆä»½: %1å¹´%2æœˆ\n").arg(year).arg(month);
+        stats += QString("å·¥ä½œå¤©æ•°: %1å¤©\n").arg(workDays);
+        stats += QString("æ€»åŠ ç­æ—¶é—´: %1å°æ—¶%2åˆ†é’Ÿ\n").arg(totalOvertimeMinutes / 60).arg(totalOvertimeMinutes % 60);
+        stats += QString("æ€»è¿Ÿåˆ°æ—¶é—´: %1å°æ—¶%2åˆ†é’Ÿ\n").arg(totalLateMinutes / 60).arg(totalLateMinutes % 60);
+        stats += QString("æ€»æ—©é€€æ—¶é—´: %1å°æ—¶%2åˆ†é’Ÿ").arg(totalEarlyLeaveMinutes / 60).arg(totalEarlyLeaveMinutes % 60);
 
         m_statsLabel->setText(stats);
     }
@@ -841,25 +863,23 @@ private:
     QLabel* m_statsLabel;
 };
 
-
-
-int main(int argc, char *argv[])
+int main(int argc, char* argv[])
 {
     QApplication app(argc, argv);
 
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-    // Qt5µÄ±àÂëÉèÖÃ
+    // Qt5çš„ç¼–ç è®¾ç½®
     QTextCodec::setCodecForLocale(QTextCodec::codecForName("UTF-8"));
 #endif
-    // ÔÚmain.cppÖĞÌí¼ÓÓ¦ÓÃÍ¼±ê
+    // åœ¨main.cppä¸­æ·»åŠ åº”ç”¨å›¾æ ‡
 
     app.setWindowIcon(QIcon(":icon.ico"));
 
-    // ÉèÖÃÓ¦ÓÃ³ÌĞòĞÅÏ¢
+    // è®¾ç½®åº”ç”¨ç¨‹åºä¿¡æ¯
     app.setApplicationName("AttendanceApp");
     app.setOrganizationName("MyCompany");
 
-    // ÉèÖÃÄ¬ÈÏ×ÖÌå
+    // è®¾ç½®é»˜è®¤å­—ä½“
     QFont font = app.font();
     font.setFamily("Microsoft YaHei");
     font.setPointSize(9);
@@ -870,4 +890,5 @@ int main(int argc, char *argv[])
 
     return app.exec();
 }
+
 #include "main.moc"
