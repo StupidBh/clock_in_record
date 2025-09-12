@@ -30,9 +30,9 @@
     #pragma execution_character_set("utf-8")
 #endif
 
-// �Զ�����۵��ķ���
+// 自定义可折叠的分组
 class CollapsibleGroupBox : public QWidget {
-Q_OBJECT // ��ҪQ_OBJECT����֧���źŲ�
+Q_OBJECT // 需要Q_OBJECT宏来支持信号槽
 
     public :
     CollapsibleGroupBox(const QString& title, QWidget* parent = nullptr) :
@@ -80,7 +80,7 @@ private slots:
         m_contentWidget->setVisible(checked);
         QPoint globalPos = m_toggleButton->mapToGlobal(QPoint(0, 0));
         int x = globalPos.x();
-        int y = globalPos.y() + m_toggleButton->height(); // ��ʾ�ڰ�ť�·�
+        int y = globalPos.y() + m_toggleButton->height(); // 显示在按钮下方
         m_contentWidget->move(x, y);
         updateButtonText();
     }
@@ -98,17 +98,18 @@ private:
     QString m_title;
 };
 
-// �򿨼�¼�ṹ��
-struct AttendanceRecord {
+// 打卡记录结构体
+struct AttendanceRecord
+{
     bool needAverageCal;    // 是否加入平均加班计算
-    QTime arrivalTime;      // ���﹫˾ʱ��
-    QTime departureTime;    // �뿪��˾ʱ��
-    QTime workStartTime;    // ��׼�ϰ�ʱ��
-    QTime workEndTime;      // ��׼�°�ʱ��
-    QTime lunchBreakStart;  // ��Ϳ�ʼʱ��
-    QTime lunchBreakEnd;    // ��ͽ���ʱ��
-    QTime dinnerBreakStart; // ��Ϳ�ʼʱ��
-    QTime dinnerBreakEnd;   // ��ͽ���ʱ��
+    QTime arrivalTime;      // 到达公司时间
+    QTime departureTime;    // 离开公司时间
+    QTime workStartTime;    // 标准上班时间
+    QTime workEndTime;      // 标准下班时间
+    QTime lunchBreakStart;  // 午餐开始时间
+    QTime lunchBreakEnd;    // 午餐结束时间
+    QTime dinnerBreakStart; // 晚餐开始时间
+    QTime dinnerBreakEnd;   // 晚餐结束时间
 
     AttendanceRecord()
     {
@@ -123,43 +124,43 @@ struct AttendanceRecord {
     }
 };
 
-// ����ʱ�������
+// 工作时间计算结果
 struct WorkTimeResult
 {
-    int actualWorkMinutes = 0;   // ʵ�ʹ���ʱ�䣨���ӣ�
-    int standardWorkMinutes = 0; // ��׼����ʱ�䣨���ӣ�
-    int lateMinutes = 0;         // �ٵ�ʱ�䣨���ӣ�
+    int actualWorkMinutes = 0;   // 实际工作时间（分钟）
+    int standardWorkMinutes = 0; // 标准工作时间（分钟）
+    int lateMinutes = 0;         // 迟到时间（分钟）
     int lateSize = 0;
-    int earlyLeaveMinutes = 0;   // ����ʱ�䣨���ӣ�
+    int earlyLeaveMinutes = 0;   // 早退时间（分钟）
     int earlyLeaveSize = 0;
-    int overtimeMinutes = 0;     // �Ӱ�ʱ�䣨���ӣ�
-    int totalBreakMinutes = 0;   // ����Ϣʱ�䣨���ӣ�
+    int overtimeMinutes = 0;     // 加班时间（分钟）
+    int totalBreakMinutes = 0;   // 总休息时间（分钟）
 };
 
-// ����ʱ����㹤����
+// 工作时间计算工具类
 class WorkTimeCalculator {
 public:
     static WorkTimeResult calculateWorkTimeResult(const AttendanceRecord& record)
     {
         WorkTimeResult result;
 
-        // ����ٵ�ʱ��
+        // 计算迟到时间
         if (record.arrivalTime > record.workStartTime) {
             result.lateMinutes = record.workStartTime.secsTo(record.arrivalTime) / 60;
         }
 
-        // ��������ʱ��
+        // 计算早退时间
         if (record.departureTime < record.workEndTime) {
             result.earlyLeaveMinutes = record.departureTime.secsTo(record.workEndTime) / 60;
         }
 
-        // �����ڹ�˾��ʱ��
+        // 计算在公司总时间
         int totalMinutesAtWork = record.arrivalTime.secsTo(record.departureTime) / 60;
 
-        // ����ʵ����Ϣʱ��
+        // 计算实际休息时间
         result.totalBreakMinutes = 0;
 
-        // ���ʱ��
+        // 午餐时间
         if (isTimeRangeOverlap(
                 record.arrivalTime,
                 record.departureTime,
@@ -172,7 +173,7 @@ public:
             }
         }
 
-        // ���ʱ��
+        // 晚餐时间
         if (isTimeRangeOverlap(
                 record.arrivalTime,
                 record.departureTime,
@@ -185,21 +186,20 @@ public:
             }
         }
 
-        // ʵ�ʹ���ʱ�� = �ڹ�˾ʱ�� - ��Ϣʱ��
+        // 实际工作时间 = 在公司时间 - 休息时间
         result.actualWorkMinutes = totalMinutesAtWork - result.totalBreakMinutes;
 
-        // ��׼����ʱ��
+        // 标准工作时间
         int standardTotalMinutes = record.workStartTime.secsTo(record.workEndTime) / 60;
         int standardBreakMinutes = 0;
 
-        // ��׼���ʱ��
-        if (record.lunchBreakStart>=record.workStartTime &&
-            record.lunchBreakStart<record.workEndTime&&
+        // 标准午餐时间
+        if (record.lunchBreakStart >= record.workStartTime && record.lunchBreakStart < record.workEndTime &&
             record.lunchBreakStart < record.lunchBreakEnd) {
             standardBreakMinutes += record.lunchBreakStart.secsTo(record.lunchBreakEnd) / 60;
         }
-        //qDebug()<<standardBreakMinutes;
-        // ��׼���ʱ�䣨����ڹ���ʱ���ڣ�
+        // qDebug()<<standardBreakMinutes;
+        //  标准晚餐时间（如果在工作时间内）
         if (record.dinnerBreakStart >= record.workStartTime && record.dinnerBreakStart < record.workEndTime) {
             QTime dinnerEnd = minTime(record.dinnerBreakEnd, record.workEndTime);
             if (record.dinnerBreakStart < dinnerEnd) {
@@ -207,18 +207,16 @@ public:
             }
         }
 
-
-
         result.standardWorkMinutes = standardTotalMinutes - standardBreakMinutes;
 
-        // �Ӱ�ʱ��
+        // 加班时间
         result.overtimeMinutes = result.actualWorkMinutes - result.standardWorkMinutes;
 
         return result;
     }
 
 private:
-    // ��������
+    // 辅助函数
     static bool isTimeRangeOverlap(const QTime& start1, const QTime& end1, const QTime& start2, const QTime& end2)
     {
         return start1 < end2 && start2 < end1;
@@ -229,7 +227,7 @@ private:
     static QTime minTime(const QTime& time1, const QTime& time2) { return time1 < time2 ? time1 : time2; }
 };
 
-// ʱ�����öԻ���
+// 时间设置对话框
 class TimeSettingDialog : public QDialog {
     Q_OBJECT
 
@@ -238,7 +236,7 @@ public:
         QDialog(parent),
         m_date(date)
     {
-        setWindowTitle(QString("���ô�ʱ�� - %1").arg(date.toString("yyyy-MM-dd")));
+        setWindowTitle(QString("设置打卡时间 - %1").arg(date.toString("yyyy-MM-dd")));
         setModal(true);
         resize(450, 400);
 
@@ -270,39 +268,39 @@ private slots:
 
         QString resultText;
 
-        // ��ʾ�ٵ�����
+        // 显示迟到早退
         if (result.lateMinutes > 0) {
-            resultText += QString("[�ٵ�] %1Сʱ%2����\n").arg(result.lateMinutes / 60).arg(result.lateMinutes % 60);
+            resultText += QString("[迟到] %1小时%2分钟\n").arg(result.lateMinutes / 60).arg(result.lateMinutes % 60);
         }
 
         if (result.earlyLeaveMinutes > 0) {
             resultText +=
-                QString("[����] %1Сʱ%2����\n").arg(result.earlyLeaveMinutes / 60).arg(result.earlyLeaveMinutes % 60);
+                QString("[早退] %1小时%2分钟\n").arg(result.earlyLeaveMinutes / 60).arg(result.earlyLeaveMinutes % 60);
         }
 
-        // ��ʾ����ʱ��
+        // 显示工作时间
         resultText +=
-            QString("[ʵ�ʹ���] %1Сʱ%2����\n").arg(result.actualWorkMinutes / 60).arg(result.actualWorkMinutes % 60);
+            QString("[实际工作] %1小时%2分钟\n").arg(result.actualWorkMinutes / 60).arg(result.actualWorkMinutes % 60);
 
-        resultText += QString("[��׼����] %1Сʱ%2����\n")
+        resultText += QString("[标准工作] %1小时%2分钟\n")
                           .arg(result.standardWorkMinutes / 60)
                           .arg(result.standardWorkMinutes % 60);
 
         resultText +=
-            QString("[����Ϣ] %1Сʱ%2����\n").arg(result.totalBreakMinutes / 60).arg(result.totalBreakMinutes % 60);
+            QString("[总休息] %1小时%2分钟\n").arg(result.totalBreakMinutes / 60).arg(result.totalBreakMinutes % 60);
 
-        // ��ʾ�Ӱ��Ƿʱ
+        // 显示加班或欠时
         if (result.overtimeMinutes > 0) {
             resultText +=
-                QString("[�Ӱ�ʱ��] %1Сʱ%2����").arg(result.overtimeMinutes / 60).arg(result.overtimeMinutes % 60);
+                QString("[加班时间] %1小时%2分钟").arg(result.overtimeMinutes / 60).arg(result.overtimeMinutes % 60);
         }
         else if (result.overtimeMinutes < 0) {
-            resultText += QString("[Ƿȱʱ��] %1Сʱ%2����")
+            resultText += QString("[欠缺时间] %1小时%2分钟")
                               .arg((-result.overtimeMinutes) / 60)
                               .arg((-result.overtimeMinutes) % 60);
         }
         else {
-            resultText += QString("[��ɱ�׼ʱ��]");
+            resultText += QString("[完成标准时间]");
         }
 
         m_resultLabel->setText(resultText);
@@ -319,69 +317,68 @@ private:
     {
         QVBoxLayout* mainLayout = new QVBoxLayout(this);
 
-        // ����ʱ��������
-        QGroupBox* basicTimeGroup = new QGroupBox(QString("����ʱ��"));
+        // 基本时间设置组
+        QGroupBox* basicTimeGroup = new QGroupBox(QString("基本时间"));
         QGridLayout* basicTimeLayout = new QGridLayout(basicTimeGroup);
 
-        basicTimeLayout->addWidget(new QLabel(QString("���﹫˾ʱ��:")), 0, 0);
+        basicTimeLayout->addWidget(new QLabel(QString("到达公司时间:")), 0, 0);
         m_arrivalTimeEdit = new QTimeEdit();
         m_arrivalTimeEdit->setDisplayFormat("hh:mm");
         basicTimeLayout->addWidget(m_arrivalTimeEdit, 0, 1);
 
-        basicTimeLayout->addWidget(new QLabel(QString("�뿪��˾ʱ��:")), 1, 0);
+        basicTimeLayout->addWidget(new QLabel(QString("离开公司时间:")), 1, 0);
         m_departureTimeEdit = new QTimeEdit();
         m_departureTimeEdit->setDisplayFormat("hh:mm");
         basicTimeLayout->addWidget(m_departureTimeEdit, 1, 1);
 
         mainLayout->addWidget(basicTimeGroup);
 
-        // ���۵�����ϸ����
-        CollapsibleGroupBox* detailsGroup = new CollapsibleGroupBox(QString("��ϸ����"), this);
+        // 可折叠的详细设置
+        CollapsibleGroupBox* detailsGroup = new CollapsibleGroupBox(QString("详细设置"), this);
 
         QVBoxLayout* detailsLayout = new QVBoxLayout();
-        // ����ƽ���Ӱ�ʱ��ѡ���
+        // 计入平均加班时间选择框
         QGroupBox* needAverageGroup = new QGroupBox(QString(""));
         QGridLayout* needAverageLayout = new QGridLayout(needAverageGroup);
-        m_needAverageCalCheckBox = new QCheckBox("����ƽ���Ӱ���㣺");
+        m_needAverageCalCheckBox = new QCheckBox("计入平均加班计算：");
         m_needAverageCalCheckBox->setLayoutDirection(Qt::RightToLeft);
         m_needAverageCalCheckBox->setChecked(true);
         needAverageLayout->addWidget(m_needAverageCalCheckBox);
 
-
-        // ��׼����ʱ��
-        QGroupBox* standardGroup = new QGroupBox(QString("��׼����ʱ��"));
+        // 标准工作时间
+        QGroupBox* standardGroup = new QGroupBox(QString("标准工作时间"));
         QGridLayout* standardLayout = new QGridLayout(standardGroup);
 
-        standardLayout->addWidget(new QLabel(QString("��׼�ϰ�ʱ��:")), 0, 0);
+        standardLayout->addWidget(new QLabel(QString("标准上班时间:")), 0, 0);
         m_workStartTimeEdit = new QTimeEdit();
         m_workStartTimeEdit->setDisplayFormat("hh:mm");
         standardLayout->addWidget(m_workStartTimeEdit, 0, 1);
 
-        standardLayout->addWidget(new QLabel(QString("��׼�°�ʱ��:")), 1, 0);
+        standardLayout->addWidget(new QLabel(QString("标准下班时间:")), 1, 0);
         m_workEndTimeEdit = new QTimeEdit();
         m_workEndTimeEdit->setDisplayFormat("hh:mm");
         standardLayout->addWidget(m_workEndTimeEdit, 1, 1);
 
-        // ��Ϣʱ������
-        QGroupBox* breakGroup = new QGroupBox(QString("��Ϣʱ������"));
+        // 休息时间设置
+        QGroupBox* breakGroup = new QGroupBox(QString("休息时间设置"));
         QGridLayout* breakLayout = new QGridLayout(breakGroup);
 
-        breakLayout->addWidget(new QLabel(QString("��Ϳ�ʼʱ��:")), 0, 0);
+        breakLayout->addWidget(new QLabel(QString("午餐开始时间:")), 0, 0);
         m_lunchBreakStartEdit = new QTimeEdit();
         m_lunchBreakStartEdit->setDisplayFormat("hh:mm");
         breakLayout->addWidget(m_lunchBreakStartEdit, 0, 1);
 
-        breakLayout->addWidget(new QLabel(QString("��ͽ���ʱ��:")), 1, 0);
+        breakLayout->addWidget(new QLabel(QString("午餐结束时间:")), 1, 0);
         m_lunchBreakEndEdit = new QTimeEdit();
         m_lunchBreakEndEdit->setDisplayFormat("hh:mm");
         breakLayout->addWidget(m_lunchBreakEndEdit, 1, 1);
 
-        breakLayout->addWidget(new QLabel(QString("��Ϳ�ʼʱ��:")), 2, 0);
+        breakLayout->addWidget(new QLabel(QString("晚餐开始时间:")), 2, 0);
         m_dinnerBreakStartEdit = new QTimeEdit();
         m_dinnerBreakStartEdit->setDisplayFormat("hh:mm");
         breakLayout->addWidget(m_dinnerBreakStartEdit, 2, 1);
 
-        breakLayout->addWidget(new QLabel(QString("��ͽ���ʱ��:")), 3, 0);
+        breakLayout->addWidget(new QLabel(QString("晚餐结束时间:")), 3, 0);
         m_dinnerBreakEndEdit = new QTimeEdit();
         m_dinnerBreakEndEdit->setDisplayFormat("hh:mm");
         breakLayout->addWidget(m_dinnerBreakEndEdit, 3, 1);
@@ -391,8 +388,8 @@ private:
         detailsLayout->addWidget(breakGroup);
         detailsGroup->setContentLayout(detailsLayout);
 
-        // �����ʾ
-        QGroupBox* resultGroup = new QGroupBox(QString("������"));
+        // 结果显示
+        QGroupBox* resultGroup = new QGroupBox(QString("计算结果"));
         QVBoxLayout* resultLayout = new QVBoxLayout(resultGroup);
         m_resultLabel = new QLabel(QString(""));
         m_resultLabel->setWordWrap(true);
@@ -401,10 +398,10 @@ private:
         mainLayout->addWidget(resultGroup);
         mainLayout->addWidget(detailsGroup);
 
-        // ��ť����
+        // 按钮布局
         QHBoxLayout* buttonLayout = new QHBoxLayout();
-        QPushButton* saveBtn = new QPushButton(QString("����"));
-        QPushButton* cancelBtn = new QPushButton(QString("ȡ��"));
+        QPushButton* saveBtn = new QPushButton(QString("保存"));
+        QPushButton* cancelBtn = new QPushButton(QString("取消"));
 
         connect(saveBtn, &QPushButton::clicked, this, &TimeSettingDialog::saveAndClose);
         connect(cancelBtn, &QPushButton::clicked, this, &QDialog::reject);
@@ -414,8 +411,8 @@ private:
         buttonLayout->addWidget(cancelBtn);
         mainLayout->addLayout(buttonLayout);
 
-        // ����ʱ��仯�źţ��Զ����¼���
-        //connect(m_needAverageCalCheckBox, &QCheckBox::stateChanged, this, &TimeSettingDialog::calculateWorkTime);
+        // 监听时间变化信号，自动更新计算
+        // connect(m_needAverageCalCheckBox, &QCheckBox::stateChanged, this, &TimeSettingDialog::calculateWorkTime);
         connect(m_arrivalTimeEdit, &QTimeEdit::timeChanged, this, &TimeSettingDialog::calculateWorkTime);
         connect(m_departureTimeEdit, &QTimeEdit::timeChanged, this, &TimeSettingDialog::calculateWorkTime);
         connect(m_workStartTimeEdit, &QTimeEdit::timeChanged, this, &TimeSettingDialog::calculateWorkTime);
@@ -431,24 +428,26 @@ private:
         QSettings settings;
         QString key = m_date.toString("yyyy-MM-dd");
 
-        m_needAverageCalCheckBox->setChecked(
-            settings.value(key + "/needAverageCal", true).toBool());
-        m_arrivalTimeEdit->setTime(QTime::fromString(
-            settings.value(key + "/arrival", "09:00").toString(), "hh:mm"));
-        m_departureTimeEdit->setTime(QTime::fromString(
-            settings.value(key + "/departure", "18:00").toString(), "hh:mm"));
-        m_workStartTimeEdit->setTime(QTime::fromString(
-            settings.value(key + "/workStart", "09:00").toString(), "hh:mm"));
-        m_workEndTimeEdit->setTime(QTime::fromString(
-            settings.value(key + "/workEnd", "18:00").toString(), "hh:mm"));
-        m_lunchBreakStartEdit->setTime(QTime::fromString(
-            settings.value(key + "/lunchStart", "12:30").toString(), "hh:mm"));
-        m_lunchBreakEndEdit->setTime(QTime::fromString(
-            settings.value(key + "/lunchEnd", "13:30").toString(), "hh:mm"));
-        m_dinnerBreakStartEdit->setTime(QTime::fromString(
-            settings.value(key + "/dinnerStart", "18:00").toString(), "hh:mm"));
-        m_dinnerBreakEndEdit->setTime(QTime::fromString(
-            settings.value(key + "/dinnerEnd", "18:30").toString(), "hh:mm"));
+        m_needAverageCalCheckBox->setChecked(settings.value(key + "/needAverageCal", true).toBool());
+
+        QTime defaultTime = QTime::currentTime();
+        QTime arrivalTime =
+            QTime::fromString(settings.value(key + "/arrival", defaultTime.toString("hh:mm")).toString(), "hh:mm");
+        m_arrivalTimeEdit->setTime(arrivalTime);
+
+        m_departureTimeEdit->setTime(
+            QTime::fromString(settings.value(key + "/departure", "21:01").toString(), "hh:mm"));
+
+        m_workStartTimeEdit->setTime(
+            QTime::fromString(settings.value(key + "/workStart", "09:00").toString(), "hh:mm"));
+        m_workEndTimeEdit->setTime(QTime::fromString(settings.value(key + "/workEnd", "18:00").toString(), "hh:mm"));
+        m_lunchBreakStartEdit->setTime(
+            QTime::fromString(settings.value(key + "/lunchStart", "12:30").toString(), "hh:mm"));
+        m_lunchBreakEndEdit->setTime(QTime::fromString(settings.value(key + "/lunchEnd", "13:30").toString(), "hh:mm"));
+        m_dinnerBreakStartEdit->setTime(
+            QTime::fromString(settings.value(key + "/dinnerStart", "18:00").toString(), "hh:mm"));
+        m_dinnerBreakEndEdit->setTime(
+            QTime::fromString(settings.value(key + "/dinnerEnd", "18:30").toString(), "hh:mm"));
     }
 
     void saveRecord()
@@ -481,7 +480,7 @@ private:
     QLabel* m_resultLabel;
 };
 
-// �Զ��������ؼ���֧���Ҽ��˵�
+// 自定义日历控件，支持右键菜单
 class CustomCalendarWidget : public QCalendarWidget {
     Q_OBJECT
 private:
@@ -500,7 +499,7 @@ public:
     {
         m_tableView = this->findChild<QTableView*>();
         if (m_tableView) {
-            // ֻ�����Ҽ���˫������д�ķ�������
+            // 只监听右键，双击用重写的方法处理
             m_tableView->installEventFilter(this);
         }
     }
@@ -512,26 +511,26 @@ private slots:
 
     void showContextMenu(const QPoint& pos)
     {
-        // ��ȡ���λ�ö�Ӧ������
+        // 获取点击位置对应的日期
         QDate clickedDate = dateAt(pos);
         if (!clickedDate.isValid()) {
             return;
         }
 
-        // ���������Ƿ��м�¼
+        // 检查该日期是否有记录
         QSettings settings;
         QString key = clickedDate.toString("yyyy-MM-dd");
         if (!settings.contains(key + "/arrival")) {
-            return; // û�м�¼������ʾ�˵�
+            return; // 没有记录，不显示菜单
         }
 
-        // �����Ҽ��˵�
+        // 创建右键菜单
         QMenu contextMenu(this);
         QAction* deleteAction =
-            contextMenu.addAction(QString("ɾ�� %1 �ļ�¼").arg(clickedDate.toString("yyyy-MM-dd")));
+            contextMenu.addAction(QString("删除 %1 的记录").arg(clickedDate.toString("yyyy-MM-dd")));
         deleteAction->setIcon(style()->standardIcon(QStyle::SP_TrashIcon));
 
-        // ��ʾ�˵�������ѡ��
+        // 显示菜单并处理选择
         QAction* selectedAction = contextMenu.exec(mapToGlobal(pos));
         if (selectedAction == deleteAction) {
             emit deleteRequested(clickedDate);
@@ -541,8 +540,8 @@ private slots:
 private:
     QDate dateAt(const QPoint& pos)
     {
-        // ����һ���򻯵�ʵ�֣���ʵ��ʹ���п�����Ҫ����ȷ�ļ���
-        // ʹ��selectedDate��Ϊ����ֵ
+        // 这是一个简化的实现，在实际使用中可能需要更精确的计算
+        // 使用selectedDate作为近似值
         return getDateFromPosition(QPoint(pos.x(), pos.y() - 20));
     }
 
@@ -557,42 +556,42 @@ private:
             return QDate();
         }
 
-        // ��ȡģ��
+        // 获取模型
         QAbstractItemModel* model = m_tableView->model();
         if (!model) {
             return QDate();
         }
 
-        // ���Բ�ͬ�Ľ�ɫ��ȡ��������
+        // 尝试不同的角色获取日期数据
         QVariant dateData;
 
-        // ���� Qt::UserRole
+        // 尝试 Qt::UserRole
         dateData = model->data(index, Qt::UserRole);
         if (dateData.canConvert<QDate>()) {
             return dateData.toDate();
         }
 
-        // ���� Qt::UserRole + 1
+        // 尝试 Qt::UserRole + 1
         dateData = model->data(index, Qt::UserRole + 1);
         if (dateData.canConvert<QDate>()) {
             return dateData.toDate();
         }
 
-        // �������ȡ������ʹ�øĽ��ļ��㷽��
+        // 如果都获取不到，使用改进的计算方法
         return calculateDateFromRowCol(index.row(), index.column());
     }
 
     QDate calculateDateFromRowCol(int row, int col)
     {
-        // ��ȡ��ǰ��ʾ������
+        // 获取当前显示的年月
         int year = yearShown();
         int month = monthShown();
         QDate firstDay(year, month, 1);
 
-        // ��ȡ�����ĵ�һ������
+        // 获取日历的第一天设置
         Qt::DayOfWeek startDay = firstDayOfWeek();
 
-        // �����һ���ڱ���е�λ��
+        // 计算第一天在表格中的位置
         int firstDayColumn;
         if (startDay == Qt::Sunday) {
             firstDayColumn = firstDay.dayOfWeek() % 7; // Sunday = 0
@@ -601,28 +600,28 @@ private:
             firstDayColumn = firstDay.dayOfWeek() - 1; // Monday = 0
         }
 
-        // ���㵱ǰλ�ö�Ӧ������
+        // 计算当前位置对应的天数
         int totalCells = (row - 1) * 7 + col - 1;
         int dayNumber = totalCells - firstDayColumn + 1;
 
         if (dayNumber <= 0) {
-            // �ϸ��µ�����
+            // 上个月的日期
             QDate prevMonth = firstDay.addMonths(-1);
             return QDate(prevMonth.year(), prevMonth.month(), prevMonth.daysInMonth() + dayNumber);
         }
         else if (dayNumber > firstDay.daysInMonth()) {
-            // �¸��µ�����
+            // 下个月的日期
             QDate nextMonth = firstDay.addMonths(1);
             return QDate(nextMonth.year(), nextMonth.month(), dayNumber - firstDay.daysInMonth());
         }
         else {
-            // ��ǰ�µ�����
+            // 当前月的日期
             return QDate(year, month, dayNumber);
         }
     }
 };
 
-// ������
+// 主窗口
 class AttendanceMainWindow : public QMainWindow {
     Q_OBJECT
 
@@ -630,7 +629,7 @@ public:
     AttendanceMainWindow(QWidget* parent = nullptr) :
         QMainWindow(parent)
     {
-        setWindowTitle(QString("�򿨹���ϵͳ"));
+        setWindowTitle(QString("打卡管理系统"));
         setMinimumSize(800, 600);
 
         resize(900, 660);
@@ -642,14 +641,14 @@ public:
 protected:
     void mousePressEvent(QMouseEvent* event) override
     {
-        // �����λ���Ƿ�������������
+        // 检查点击位置是否在日历区域外
         if (m_calendar) {
             QPoint calendarPos = m_calendar->mapFromGlobal(event->globalPos());
             QRect calendarRect = m_calendar->rect();
 
-            // �������������⣬����ѡ��״̬
+            // 如果点击在日历外，重置选择状态
             if (!calendarRect.contains(calendarPos)) {
-                // ��ѡ������Ϊ�����������ڣ�����ҳ����ص�ǰҳ�棬������������ʧȥ����
+                // 将选择重置为看不见的日期，并将页面调回当前页面，这样看起来像失去焦点
                 // m_calendar->setSelectedDate(QDate::currentDate());
                 m_calendar->setSelectedDate(QDate::currentDate().addDays(365));
                 m_calendar->setCurrentPage(QDate::currentDate().year(), QDate::currentDate().month());
@@ -678,11 +677,11 @@ private slots:
 
     void onDeleteRequested(const QDate& date)
     {
-        // ȷ��ɾ��
+        // 确认删除
         int ret = QMessageBox::question(
             this,
-            QString("ȷ��ɾ��"),
-            QString("ȷ��Ҫɾ�� %1 �Ŀ��ڼ�¼��").arg(date.toString("yyyy-MM-dd")),
+            QString("确认删除"),
+            QString("确定要删除 %1 的考勤记录吗？").arg(date.toString("yyyy-MM-dd")),
             QMessageBox::Yes | QMessageBox::No,
             QMessageBox::No);
 
@@ -699,44 +698,44 @@ private:
 
         QHBoxLayout* mainLayout = new QHBoxLayout(centralWidget);
 
-        // ��ࣺ����
+        // 左侧：日历
         QVBoxLayout* leftLayout = new QVBoxLayout();
 
-        QLabel* titleLabel = new QLabel(QString("��������"));
+        QLabel* titleLabel = new QLabel(QString("考勤日历"));
         titleLabel->setAlignment(Qt::AlignCenter);
         titleLabel->setStyleSheet("font-size: 18px; font-weight: bold; padding: 10px;");
         leftLayout->addWidget(titleLabel);
 
-        // ʹ���Զ��������ؼ�
+        // 使用自定义日历控件
         m_calendar = new CustomCalendarWidget();
         m_calendar->setLocale(QLocale::Chinese);
         m_calendar->setFirstDayOfWeek(Qt::Monday);
         m_calendar->setGridVisible(true);
         leftLayout->addWidget(m_calendar);
 
-        // ���ʹ��˵��
+        // 添加使用说明
         QLabel* helpLabel =
-            new QLabel(QString("ʹ��˵����\n? �������������ÿ���ʱ��\n? �Ҽ�����м�¼�����ڿ�ɾ����¼\n? "
-                               "������������������ѡ��״̬"));
+            new QLabel(QString("使用说明：\n? 左键点击日期设置考勤时间\n? 右键点击有记录的日期可删除记录\n? "
+                               "点击日历外区域可重置选择状态"));
         helpLabel->setStyleSheet(
             "color: #666; font-size: 12px; padding: 10px; background-color: #f5f5f5; border-radius: 5px;");
         helpLabel->setWordWrap(true);
         leftLayout->addWidget(helpLabel);
 
-        // �Ҳࣺͳ�ƺ͹���
+        // 右侧：统计和管理
         QVBoxLayout* rightLayout = new QVBoxLayout();
 
-        // �¶�ͳ��
-        QGroupBox* statsGroup = new QGroupBox(QString("�¶�ͳ��"));
+        // 月度统计
+        QGroupBox* statsGroup = new QGroupBox(QString("月度统计"));
         QVBoxLayout* statsLayout = new QVBoxLayout(statsGroup);
-        m_statsLabel = new QLabel(QString("��ѡ���·ݲ鿴ͳ��"));
+        m_statsLabel = new QLabel(QString("请选择月份查看统计"));
         m_statsLabel->setWordWrap(true);
         m_statsLabel->setStyleSheet("padding: 10px; background-color: #f9f9f9; border-radius: 5px;");
         statsLayout->addWidget(m_statsLabel);
         rightLayout->addWidget(statsGroup);
         rightLayout->addStretch();
 
-        // ʹ�÷ָ���
+        // 使用分割器
         QSplitter* splitter = new QSplitter(Qt::Horizontal);
 
         QWidget* leftWidget = new QWidget();
@@ -753,7 +752,7 @@ private:
 
         mainLayout->addWidget(splitter);
 
-        // �����ź�
+        // 连接信号
         connect(m_calendar, &QCalendarWidget::clicked, this, &AttendanceMainWindow::onDateClicked);
         connect(m_calendar, &QCalendarWidget::currentPageChanged, this, &AttendanceMainWindow::onMonthChanged);
         connect(m_calendar, &CustomCalendarWidget::deleteRequested, this, &AttendanceMainWindow::onDeleteRequested);
@@ -764,7 +763,7 @@ private:
 
     void loadAttendanceData()
     {
-        // ����ͨ��QSettings�Զ�����
+        // 数据通过QSettings自动加载
     }
 
     void deleteAttendanceRecord(const QDate& date)
@@ -772,32 +771,24 @@ private:
         QSettings settings;
         QString key = date.toString("yyyy-MM-dd");
 
-        // ɾ��������ص�������
-        QStringList keys = {
-            key + "/needAverageCal",
-            key + "/arrival",
-            key + "/departure",
-            key + "/workStart",
-            key + "/workEnd",
-            key + "/lunchStart",
-            key + "/lunchEnd",
-            key + "/dinnerStart",
-            key + "/dinnerEnd"
-        };
+        // 删除所有相关的设置项
+        QStringList keys = { key + "/needAverageCal", key + "/arrival",     key + "/departure",
+                             key + "/workStart",      key + "/workEnd",     key + "/lunchStart",
+                             key + "/lunchEnd",       key + "/dinnerStart", key + "/dinnerEnd" };
 
         for (const QString& k : keys) {
             settings.remove(k);
         }
 
-        // ���½���
+        // 更新界面
         updateCalendarAppearance();
         updateMonthlyStatistics();
 
-        // ��ʾɾ���ɹ���Ϣ
+        // 显示删除成功消息
         QMessageBox::information(
             this,
-            QString("ɾ���ɹ�"),
-            QString("�ѳɹ�ɾ�� %1 �Ŀ��ڼ�¼").arg(date.toString("yyyy-MM-dd")));
+            QString("删除成功"),
+            QString("已成功删除 %1 的考勤记录").arg(date.toString("yyyy-MM-dd")));
     }
 
     void updateCalendarAppearance()
@@ -814,19 +805,19 @@ private:
             QString key = date.toString("yyyy-MM-dd");
 
             if (settings.contains(key + "/arrival")) {
-                // �д򿨼�¼����ʾ��ɫ����
+                // 有打卡记录，显示绿色背景
                 QTextCharFormat format;
-                QColor defaultCol(144, 238, 144); // ǳ��ɫ
+                QColor defaultCol(144, 238, 144); // 浅绿色
                 if (settings.contains(key + "/needAverageCal")) {
                     if (!settings.value(key + "/needAverageCal").toBool()) {
-                        defaultCol = QColor("#acfdea"); 
+                        defaultCol = QColor("#acfdea");
                     }
                 }
                 format.setBackground(defaultCol);
                 m_calendar->setDateTextFormat(date, format);
             }
             else {
-                // �����ʽ
+                // 清除格式
                 m_calendar->setDateTextFormat(date, QTextCharFormat());
             }
             date = date.addDays(1);
@@ -853,7 +844,7 @@ private:
             if (settings.contains(key + "/arrival")) {
                 workDays++;
 
-                // ���ؼ�¼������
+                // 加载记录并计算
                 AttendanceRecord record;
                 record.needAverageCal = settings.value(key + "/needAverageCal").toBool();
                 record.arrivalTime = QTime::fromString(settings.value(key + "/arrival").toString(), "hh:mm");
@@ -870,9 +861,10 @@ private:
                 record.dinnerBreakEnd =
                     QTime::fromString(settings.value(key + "/dinnerEnd", "18:30").toString(), "hh:mm");
 
-
-                if (!record.needAverageCal)workDays--;
-                // ���㹤��ʱ������
+                if (!record.needAverageCal) {
+                    workDays--;
+                }
+                // 计算工作时间数据
                 WorkTimeResult result = WorkTimeCalculator::calculateWorkTimeResult(record);
 
                 if (result.overtimeMinutes > 0) {
@@ -884,22 +876,15 @@ private:
             date = date.addDays(1);
         }
 
-        QString stats = QString("ͳ���·�: %1��%2��\n").arg(year).arg(month);
-        stats += QString("��������: %1��\n").arg(workDays);
-        stats += QString("总加班时间: %1小时%2分钟\n")
-                     .arg(totalOvertimeMinutes / 60)
-                     .arg(totalOvertimeMinutes % 60);
-        stats += QString("总迟到时间: %1小时%2分钟\n")
-                     .arg(totalLateMinutes / 60)
-                     .arg(totalLateMinutes % 60);
-        stats += QString("总早退时间: %1小时%2分钟\n")
-                     .arg(totalEarlyLeaveMinutes / 60)
-                     .arg(totalEarlyLeaveMinutes % 60);
+        QString stats = QString("统计月份: %1年%2月\n").arg(year).arg(month);
+        stats += QString("工作天数: %1天\n").arg(workDays);
+        stats += QString("总加班时间: %1小时%2分钟\n").arg(totalOvertimeMinutes / 60).arg(totalOvertimeMinutes % 60);
+        stats += QString("总迟到时间: %1小时%2分钟\n").arg(totalLateMinutes / 60).arg(totalLateMinutes % 60);
+        stats +=
+            QString("总早退时间: %1小时%2分钟\n").arg(totalEarlyLeaveMinutes / 60).arg(totalEarlyLeaveMinutes % 60);
         if (workDays) {
-            stats += QString("平均加班时间: %1小时")
-                .arg(totalOvertimeMinutes / (60.0*workDays));
+            stats += QString("平均加班时间: %1小时").arg(totalOvertimeMinutes / (60.0 * workDays));
         }
-
 
         m_statsLabel->setText(stats);
     }
@@ -914,18 +899,18 @@ int main(int argc, char* argv[])
     QApplication app(argc, argv);
 
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-    // Qt5�ı�������
+    // Qt5的编码设置
     QTextCodec::setCodecForLocale(QTextCodec::codecForName("UTF-8"));
 #endif
-    // ��main.cpp�����Ӧ��ͼ��
+    // 在main.cpp中添加应用图标
 
     app.setWindowIcon(QIcon(":icon.ico"));
 
-    // ����Ӧ�ó�����Ϣ
+    // 设置应用程序信息
     app.setApplicationName("AttendanceApp");
     app.setOrganizationName("MyCompany");
 
-    // ����Ĭ������
+    // 设置默认字体
     QFont font = app.font();
     font.setFamily("Microsoft YaHei");
     font.setPointSize(9);
