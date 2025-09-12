@@ -97,6 +97,7 @@ private:
 
 // 打卡记录结构体
 struct AttendanceRecord {
+    bool needAverageCal;    // 是否加入平均加班计算
     QTime arrivalTime;      // 到达公司时间
     QTime departureTime;    // 离开公司时间
     QTime workStartTime;    // 标准上班时间
@@ -180,10 +181,12 @@ public:
         int standardBreakMinutes = 0;
 
         // 标准午餐时间
-        if (record.lunchBreakStart < record.lunchBreakEnd) {
+        if (record.lunchBreakStart>=record.workStartTime &&
+            record.lunchBreakStart<record.workEndTime&&
+            record.lunchBreakStart < record.lunchBreakEnd) {
             standardBreakMinutes += record.lunchBreakStart.secsTo(record.lunchBreakEnd) / 60;
         }
-
+        //qDebug()<<standardBreakMinutes;
         // 标准晚餐时间（如果在工作时间内）
         if (record.dinnerBreakStart >= record.workStartTime &&
             record.dinnerBreakStart < record.workEndTime) {
@@ -192,6 +195,8 @@ public:
                 standardBreakMinutes += record.dinnerBreakStart.secsTo(dinnerEnd) / 60;
             }
         }
+
+
 
         result.standardWorkMinutes = standardTotalMinutes - standardBreakMinutes;
 
@@ -234,6 +239,7 @@ public:
 
     AttendanceRecord getRecord() const {
         AttendanceRecord record;
+        record.needAverageCal = m_needAverageCalCheckBox->isChecked();
         record.arrivalTime = m_arrivalTimeEdit->time();
         record.departureTime = m_departureTimeEdit->time();
         record.workStartTime = m_workStartTimeEdit->time();
@@ -323,6 +329,14 @@ private:
         CollapsibleGroupBox* detailsGroup = new CollapsibleGroupBox(QString("详细设置"), this);
 
         QVBoxLayout* detailsLayout = new QVBoxLayout();
+        // 计入平均加班时间选择框
+        QGroupBox* needAverageGroup = new QGroupBox(QString(""));
+        QGridLayout* needAverageLayout = new QGridLayout(needAverageGroup);
+        m_needAverageCalCheckBox = new QCheckBox("计入平均加班计算：");
+        m_needAverageCalCheckBox->setLayoutDirection(Qt::RightToLeft);
+        m_needAverageCalCheckBox->setChecked(true);
+        needAverageLayout->addWidget(m_needAverageCalCheckBox);
+
 
         // 标准工作时间
         QGroupBox* standardGroup = new QGroupBox(QString("标准工作时间"));
@@ -364,6 +378,7 @@ private:
         m_dinnerBreakEndEdit->setDisplayFormat("hh:mm");
         breakLayout->addWidget(m_dinnerBreakEndEdit, 3, 1);
 
+        detailsLayout->addWidget(needAverageGroup);
         detailsLayout->addWidget(standardGroup);
         detailsLayout->addWidget(breakGroup);
         detailsGroup->setContentLayout(detailsLayout);
@@ -395,6 +410,7 @@ private:
         mainLayout->addLayout(buttonLayout);
 
         // 监听时间变化信号，自动更新计算
+        //connect(m_needAverageCalCheckBox, &QCheckBox::stateChanged, this, &TimeSettingDialog::calculateWorkTime);
         connect(m_arrivalTimeEdit, &QTimeEdit::timeChanged, this, &TimeSettingDialog::calculateWorkTime);
         connect(m_departureTimeEdit, &QTimeEdit::timeChanged, this, &TimeSettingDialog::calculateWorkTime);
         connect(m_workStartTimeEdit, &QTimeEdit::timeChanged, this, &TimeSettingDialog::calculateWorkTime);
@@ -409,6 +425,8 @@ private:
         QSettings settings;
         QString key = m_date.toString("yyyy-MM-dd");
 
+        m_needAverageCalCheckBox->setChecked(
+            settings.value(key + "/needAverageCal", true).toBool());
         m_arrivalTimeEdit->setTime(QTime::fromString(
             settings.value(key + "/arrival", "09:00").toString(), "hh:mm"));
         m_departureTimeEdit->setTime(QTime::fromString(
@@ -431,6 +449,7 @@ private:
         QSettings settings;
         QString key = m_date.toString("yyyy-MM-dd");
 
+        settings.setValue(key + "/needAverageCal", m_needAverageCalCheckBox->isChecked());
         settings.setValue(key + "/arrival", m_arrivalTimeEdit->time().toString("hh:mm"));
         settings.setValue(key + "/departure", m_departureTimeEdit->time().toString("hh:mm"));
         settings.setValue(key + "/workStart", m_workStartTimeEdit->time().toString("hh:mm"));
@@ -443,6 +462,7 @@ private:
 
 private:
     QDate m_date;
+    QCheckBox* m_needAverageCalCheckBox;
     QTimeEdit* m_arrivalTimeEdit;
     QTimeEdit* m_departureTimeEdit;
     QTimeEdit* m_workStartTimeEdit;
@@ -727,6 +747,7 @@ private:
 
         // 删除所有相关的设置项
         QStringList keys = {
+            key + "/needAverageCal",
             key + "/arrival",
             key + "/departure",
             key + "/workStart",
@@ -765,7 +786,13 @@ private:
             if (settings.contains(key + "/arrival")) {
                 // 有打卡记录，显示绿色背景
                 QTextCharFormat format;
-                format.setBackground(QColor(144, 238, 144)); // 浅绿色
+                QColor defaultCol(144, 238, 144); // 浅绿色
+                if (settings.contains(key + "/needAverageCal")) {
+                    if (!settings.value(key + "/needAverageCal").toBool()) {
+                        defaultCol = QColor("#acfdea"); 
+                    }
+                }
+                format.setBackground(defaultCol);
                 m_calendar->setDateTextFormat(date, format);
             } else {
                 // 清除格式
@@ -796,6 +823,7 @@ private:
 
                 // 加载记录并计算
                 AttendanceRecord record;
+                record.needAverageCal = settings.value(key + "/needAverageCal").toBool();
                 record.arrivalTime = QTime::fromString(settings.value(key + "/arrival").toString(), "hh:mm");
                 record.departureTime = QTime::fromString(settings.value(key + "/departure").toString(), "hh:mm");
                 record.workStartTime = QTime::fromString(settings.value(key + "/workStart", "09:00").toString(), "hh:mm");
@@ -805,6 +833,8 @@ private:
                 record.dinnerBreakStart = QTime::fromString(settings.value(key + "/dinnerStart", "18:00").toString(), "hh:mm");
                 record.dinnerBreakEnd = QTime::fromString(settings.value(key + "/dinnerEnd", "18:30").toString(), "hh:mm");
 
+
+                if (!record.needAverageCal)workDays--;
                 // 计算工作时间数据
                 WorkTimeResult result = WorkTimeCalculator::calculateWorkTimeResult(record);
 
@@ -827,9 +857,14 @@ private:
         stats += QString("总迟到时间: %1小时%2分钟\n")
                      .arg(totalLateMinutes / 60)
                      .arg(totalLateMinutes % 60);
-        stats += QString("总早退时间: %1小时%2分钟")
+        stats += QString("总早退时间: %1小时%2分钟\n")
                      .arg(totalEarlyLeaveMinutes / 60)
                      .arg(totalEarlyLeaveMinutes % 60);
+        if (workDays) {
+            stats += QString("平均加班时间: %1小时")
+                .arg(totalOvertimeMinutes / (60.0*workDays));
+        }
+
 
         m_statsLabel->setText(stats);
     }
