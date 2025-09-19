@@ -1,18 +1,17 @@
-#ifndef WORKTIMECALCULATOR_H
+ï»¿#ifndef WORKTIMECALCULATOR_H
 #define WORKTIMECALCULATOR_H
 
 #include "AttendanceTypes.h"
 #include <QTime>
 
-// ¹¤×÷Ê±¼ä¼ÆËã¹¤¾ßÀà
+// å·¥ä½œæ—¶é—´è®¡ç®—å·¥å…·ç±»
 class WorkTimeCalculator {
 public:
     static WorkTimeResult calculateWorkTimeResult(const AttendanceRecord& record);
 
 private:
-    // ¸¨Öúº¯Êý
-    static bool isTimeRangeOverlap(const QTime& start1, const QTime& end1,
-        const QTime& start2, const QTime& end2);
+    // è¾…åŠ©å‡½æ•°
+    static bool isTimeRangeOverlap(const QTime& start1, const QTime& end1, const QTime& start2, const QTime& end2);
     static QTime maxTime(const QTime& time1, const QTime& time2);
     static QTime minTime(const QTime& time1, const QTime& time2);
 };

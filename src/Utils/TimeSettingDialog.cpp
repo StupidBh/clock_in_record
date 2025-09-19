@@ -1,4 +1,4 @@
-#include "TimeSettingDialog.h"
+﻿#include "TimeSettingDialog.h"
 #include "CollapsibleGroupBox.h"
 #include "WorkTimeCalculator.h"
 #include <QVBoxLayout>
@@ -9,8 +9,10 @@
 #include <QSettings>
 #include <qDebug>
 
-TimeSettingDialog::TimeSettingDialog(const QDate& date, QWidget* parent)
-    : QDialog(parent), m_date(date) {
+TimeSettingDialog::TimeSettingDialog(const QDate& date, QWidget* parent) :
+    QDialog(parent),
+    m_date(date)
+{
     setWindowTitle(QString("设置打卡时间 - %1").arg(date.toString("yyyy-MM-dd")));
     setModal(true);
     resize(450, 400);
@@ -19,7 +21,8 @@ TimeSettingDialog::TimeSettingDialog(const QDate& date, QWidget* parent)
     loadRecord();
 }
 
-AttendanceRecord TimeSettingDialog::getRecord() const {
+AttendanceRecord TimeSettingDialog::getRecord() const
+{
     AttendanceRecord record;
     record.needAverageCal = m_needAverageCalCheckBox->isChecked();
     record.arrivalTime = m_arrivalTimeEdit->time();
@@ -33,7 +36,8 @@ AttendanceRecord TimeSettingDialog::getRecord() const {
     return record;
 }
 
-void TimeSettingDialog::calculateWorkTime() {
+void TimeSettingDialog::calculateWorkTime()
+{
     AttendanceRecord record = getRecord();
     WorkTimeResult result = WorkTimeCalculator::calculateWorkTimeResult(record);
 
@@ -41,40 +45,32 @@ void TimeSettingDialog::calculateWorkTime() {
 
     // 显示迟到早退
     if (result.lateMinutes > 0) {
-        resultText += QString("[迟到] %1小时%2分钟\n")
-            .arg(result.lateMinutes / 60)
-            .arg(result.lateMinutes % 60);
+        resultText += QString("[迟到] %1小时%2分钟\n").arg(result.lateMinutes / 60).arg(result.lateMinutes % 60);
     }
 
     if (result.earlyLeaveMinutes > 0) {
-        resultText += QString("[早退] %1小时%2分钟\n")
-            .arg(result.earlyLeaveMinutes / 60)
-            .arg(result.earlyLeaveMinutes % 60);
+        resultText +=
+            QString("[早退] %1小时%2分钟\n").arg(result.earlyLeaveMinutes / 60).arg(result.earlyLeaveMinutes % 60);
     }
 
     // 显示工作时间
-    resultText += QString("[实际工作] %1小时%2分钟\n")
-        .arg(result.actualWorkMinutes / 60)
-        .arg(result.actualWorkMinutes % 60);
+    resultText +=
+        QString("[实际工作] %1小时%2分钟\n").arg(result.actualWorkMinutes / 60).arg(result.actualWorkMinutes % 60);
 
-    resultText += QString("[标准工作] %1小时%2分钟\n")
-        .arg(result.standardWorkMinutes / 60)
-        .arg(result.standardWorkMinutes % 60);
+    resultText +=
+        QString("[标准工作] %1小时%2分钟\n").arg(result.standardWorkMinutes / 60).arg(result.standardWorkMinutes % 60);
 
-    resultText += QString("[总休息] %1小时%2分钟\n")
-        .arg(result.totalBreakMinutes / 60)
-        .arg(result.totalBreakMinutes % 60);
+    resultText +=
+        QString("[总休息] %1小时%2分钟\n").arg(result.totalBreakMinutes / 60).arg(result.totalBreakMinutes % 60);
 
     // 显示加班或欠时
     if (result.overtimeMinutes > 0) {
-        resultText += QString("[加班时间] %1小时%2分钟")
-            .arg(result.overtimeMinutes / 60)
-            .arg(result.overtimeMinutes % 60);
+        resultText +=
+            QString("[加班时间] %1小时%2分钟").arg(result.overtimeMinutes / 60).arg(result.overtimeMinutes % 60);
     }
     else if (result.overtimeMinutes < 0) {
-        resultText += QString("[欠缺时间] %1小时%2分钟")
-            .arg((-result.overtimeMinutes) / 60)
-            .arg((-result.overtimeMinutes) % 60);
+        resultText +=
+            QString("[欠缺时间] %1小时%2分钟").arg((-result.overtimeMinutes) / 60).arg((-result.overtimeMinutes) % 60);
     }
     else {
         resultText += QString("[完成标准时间]");
@@ -83,12 +79,14 @@ void TimeSettingDialog::calculateWorkTime() {
     m_resultLabel->setText(resultText);
 }
 
-void TimeSettingDialog::saveAndClose() {
+void TimeSettingDialog::saveAndClose()
+{
     saveRecord();
     accept();
 }
 
-void TimeSettingDialog::setupUI() {
+void TimeSettingDialog::setupUI()
+{
     QVBoxLayout* mainLayout = new QVBoxLayout(this);
 
     // 基本时间设置组
@@ -196,32 +194,31 @@ void TimeSettingDialog::setupUI() {
     connect(m_dinnerBreakEndEdit, &QTimeEdit::timeChanged, this, &TimeSettingDialog::calculateWorkTime);
 }
 
-void TimeSettingDialog::loadRecord() {
+void TimeSettingDialog::loadRecord()
+{
     QSettings settings;
     QString key = m_date.toString("yyyy-MM-dd");
 
-    m_needAverageCalCheckBox->setChecked(
-        settings.value(key + "/needAverageCal", true).toBool());
-    m_arrivalTimeEdit->setTime(QTime::fromString(
-        settings.value(key + "/arrival", "09:00").toString(), "hh:mm"));
-    m_departureTimeEdit->setTime(QTime::fromString(
-        settings.value(key + "/departure", "18:00").toString(), "hh:mm"));
-    m_workStartTimeEdit->setTime(QTime::fromString(
-        settings.value(key + "/workStart", "09:00").toString(), "hh:mm"));
-    m_workEndTimeEdit->setTime(QTime::fromString(
-        settings.value(key + "/workEnd", "18:00").toString(), "hh:mm"));
-    m_lunchBreakStartEdit->setTime(QTime::fromString(
-        settings.value(key + "/lunchStart", "12:30").toString(), "hh:mm"));
-    m_lunchBreakEndEdit->setTime(QTime::fromString(
-        settings.value(key + "/lunchEnd", "13:30").toString(), "hh:mm"));
-    m_dinnerBreakStartEdit->setTime(QTime::fromString(
-        settings.value(key + "/dinnerStart", "18:00").toString(), "hh:mm"));
-    m_dinnerBreakEndEdit->setTime(QTime::fromString(
-        settings.value(key + "/dinnerEnd", "18:30").toString(), "hh:mm"));
+    m_needAverageCalCheckBox->setChecked(settings.value(key + "/needAverageCal", true).toBool());
+
+    // m_arrivalTimeEdit->setTime(QTime::fromString(settings.value(key + "/arrival", "09:00").toString(), "hh:mm"));
+    QTime defaultTime = QTime::currentTime();
+    QTime arrivalTime =
+        QTime::fromString(settings.value(key + "/arrival", defaultTime.toString("hh:mm")).toString(), "hh:mm");
+    m_arrivalTimeEdit->setTime(arrivalTime);
+    m_departureTimeEdit->setTime(QTime::fromString(settings.value(key + "/departure", "21:01").toString(), "hh:mm"));
+
+    m_workStartTimeEdit->setTime(QTime::fromString(settings.value(key + "/workStart", "09:00").toString(), "hh:mm"));
+    m_workEndTimeEdit->setTime(QTime::fromString(settings.value(key + "/workEnd", "18:00").toString(), "hh:mm"));
+    m_lunchBreakStartEdit->setTime(QTime::fromString(settings.value(key + "/lunchStart", "12:30").toString(), "hh:mm"));
+    m_lunchBreakEndEdit->setTime(QTime::fromString(settings.value(key + "/lunchEnd", "13:30").toString(), "hh:mm"));
+    m_dinnerBreakStartEdit->setTime(
+        QTime::fromString(settings.value(key + "/dinnerStart", "18:00").toString(), "hh:mm"));
+    m_dinnerBreakEndEdit->setTime(QTime::fromString(settings.value(key + "/dinnerEnd", "18:30").toString(), "hh:mm"));
 }
 
-void TimeSettingDialog::saveRecord() {
-
+void TimeSettingDialog::saveRecord()
+{
     QSettings settings;
     QString key = m_date.toString("yyyy-MM-dd");
 

@@ -1,4 +1,4 @@
-#ifndef CUSTOMCALENDARWIDGET_H
+ï»¿#ifndef CUSTOMCALENDARWIDGET_H
 #define CUSTOMCALENDARWIDGET_H
 
 #include <QCalendarWidget>
@@ -7,7 +7,7 @@
 #include <QAction>
 #include <QDate>
 
-// ×Ô¶¨ÒåÈÕÀú¿Ø¼ş£¬Ö§³ÖÓÒ¼ü²Ëµ¥
+// è‡ªå®šä¹‰æ—¥å†æ§ä»¶ï¼Œæ”¯æŒå³é”®èœå•
 class CustomCalendarWidget : public QCalendarWidget {
     Q_OBJECT
 

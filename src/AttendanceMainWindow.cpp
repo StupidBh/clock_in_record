@@ -11,7 +11,9 @@
 #include <QSettings>
 #include <QMessageBox>
 
-AttendanceMainWindow::AttendanceMainWindow(QWidget* parent) : QMainWindow(parent) {
+AttendanceMainWindow::AttendanceMainWindow(QWidget* parent) :
+    QMainWindow(parent)
+{
     setWindowTitle(QString("打卡管理系统"));
     setMinimumSize(800, 600);
     resize(900, 660);
@@ -20,7 +22,8 @@ AttendanceMainWindow::AttendanceMainWindow(QWidget* parent) : QMainWindow(parent
     loadAttendanceData();
 }
 
-void AttendanceMainWindow::mousePressEvent(QMouseEvent* event) {
+void AttendanceMainWindow::mousePressEvent(QMouseEvent* event)
+{
     // 检查点击位置是否在日历区域外
     if (m_calendar) {
         QPoint calendarPos = m_calendar->mapFromGlobal(event->globalPos());
@@ -37,7 +40,8 @@ void AttendanceMainWindow::mousePressEvent(QMouseEvent* event) {
     QMainWindow::mousePressEvent(event);
 }
 
-void AttendanceMainWindow::onDateClicked(const QDate& date) {
+void AttendanceMainWindow::onDateClicked(const QDate& date)
+{
     TimeSettingDialog dialog(date, this);
     if (dialog.exec() == QDialog::Accepted) {
         updateCalendarAppearance();
@@ -45,14 +49,17 @@ void AttendanceMainWindow::onDateClicked(const QDate& date) {
     }
 }
 
-void AttendanceMainWindow::onMonthChanged() {
+void AttendanceMainWindow::onMonthChanged()
+{
     updateCalendarAppearance();
     updateMonthlyStatistics();
 }
 
-void AttendanceMainWindow::onDeleteRequested(const QDate& date) {
+void AttendanceMainWindow::onDeleteRequested(const QDate& date)
+{
     // 确认删除
-    int ret = QMessageBox::question(this,
+    int ret = QMessageBox::question(
+        this,
         QString("确认删除"),
         QString("确定要删除 %1 的考勤记录吗？").arg(date.toString("yyyy-MM-dd")),
         QMessageBox::Yes | QMessageBox::No,
@@ -63,7 +70,8 @@ void AttendanceMainWindow::onDeleteRequested(const QDate& date) {
     }
 }
 
-void AttendanceMainWindow::setupUI() {
+void AttendanceMainWindow::setupUI()
+{
     QWidget* centralWidget = new QWidget();
     setCentralWidget(centralWidget);
 
@@ -85,8 +93,10 @@ void AttendanceMainWindow::setupUI() {
     leftLayout->addWidget(m_calendar);
 
     // 添加使用说明
-    QLabel* helpLabel = new QLabel(QString("使用说明：\n• 左键点击日期设置考勤时间\n• 右键点击有记录的日期可删除记录\n• 点击日历外区域可重置选择状态"));
-    helpLabel->setStyleSheet("color: #666; font-size: 12px; padding: 10px; background-color: #f5f5f5; border-radius: 5px;");
+    QLabel* helpLabel = new QLabel(QString(
+        "使用说明：\n• 左键点击日期设置考勤时间\n• 右键点击有记录的日期可删除记录\n• 点击日历外区域可重置选择状态"));
+    helpLabel->setStyleSheet(
+        "color: #666; font-size: 12px; padding: 10px; background-color: #f5f5f5; border-radius: 5px;");
     helpLabel->setWordWrap(true);
     leftLayout->addWidget(helpLabel);
 
@@ -122,35 +132,27 @@ void AttendanceMainWindow::setupUI() {
 
     // 连接信号
     connect(m_calendar, &QCalendarWidget::clicked, this, &AttendanceMainWindow::onDateClicked);
-    connect(m_calendar, &QCalendarWidget::currentPageChanged,
-        this, &AttendanceMainWindow::onMonthChanged);
-    connect(m_calendar, &CustomCalendarWidget::deleteRequested,
-        this, &AttendanceMainWindow::onDeleteRequested);
+    connect(m_calendar, &QCalendarWidget::currentPageChanged, this, &AttendanceMainWindow::onMonthChanged);
+    connect(m_calendar, &CustomCalendarWidget::deleteRequested, this, &AttendanceMainWindow::onDeleteRequested);
 
     updateCalendarAppearance();
     updateMonthlyStatistics();
 }
 
-void AttendanceMainWindow::loadAttendanceData() {
+void AttendanceMainWindow::loadAttendanceData()
+{
     // 数据通过QSettings自动加载
 }
 
-void AttendanceMainWindow::deleteAttendanceRecord(const QDate& date) {
+void AttendanceMainWindow::deleteAttendanceRecord(const QDate& date)
+{
     QSettings settings;
     QString key = date.toString("yyyy-MM-dd");
 
     // 删除所有相关的设置项
-    QStringList keys = {
-        key + "/needAverageCal",
-        key + "/arrival",
-        key + "/departure",
-        key + "/workStart",
-        key + "/workEnd",
-        key + "/lunchStart",
-        key + "/lunchEnd",
-        key + "/dinnerStart",
-        key + "/dinnerEnd"
-    };
+    QStringList keys = { key + "/needAverageCal", key + "/arrival",     key + "/departure",
+                         key + "/workStart",      key + "/workEnd",     key + "/lunchStart",
+                         key + "/lunchEnd",       key + "/dinnerStart", key + "/dinnerEnd" };
 
     for (const QString& k : keys) {
         settings.remove(k);
@@ -161,11 +163,14 @@ void AttendanceMainWindow::deleteAttendanceRecord(const QDate& date) {
     updateMonthlyStatistics();
 
     // 显示删除成功消息
-    QMessageBox::information(this, QString("删除成功"),
+    QMessageBox::information(
+        this,
+        QString("删除成功"),
         QString("已成功删除 %1 的考勤记录").arg(date.toString("yyyy-MM-dd")));
 }
 
-void AttendanceMainWindow::updateCalendarAppearance() {
+void AttendanceMainWindow::updateCalendarAppearance()
+{
     int year = m_calendar->yearShown();
     int month = m_calendar->monthShown();
     QDate startDate(year, month, 1);
@@ -197,7 +202,8 @@ void AttendanceMainWindow::updateCalendarAppearance() {
     }
 }
 
-void AttendanceMainWindow::updateMonthlyStatistics() {
+void AttendanceMainWindow::updateMonthlyStatistics()
+{
     int year = m_calendar->yearShown();
     int month = m_calendar->monthShown();
     QDate startDate(year, month, 1);
@@ -221,14 +227,20 @@ void AttendanceMainWindow::updateMonthlyStatistics() {
             record.needAverageCal = settings.value(key + "/needAverageCal").toBool();
             record.arrivalTime = QTime::fromString(settings.value(key + "/arrival").toString(), "hh:mm");
             record.departureTime = QTime::fromString(settings.value(key + "/departure").toString(), "hh:mm");
+
             record.workStartTime = QTime::fromString(settings.value(key + "/workStart", "09:00").toString(), "hh:mm");
             record.workEndTime = QTime::fromString(settings.value(key + "/workEnd", "18:00").toString(), "hh:mm");
-            record.lunchBreakStart = QTime::fromString(settings.value(key + "/lunchStart", "12:30").toString(), "hh:mm");
+
+            record.lunchBreakStart =
+                QTime::fromString(settings.value(key + "/lunchStart", "12:30").toString(), "hh:mm");
             record.lunchBreakEnd = QTime::fromString(settings.value(key + "/lunchEnd", "13:30").toString(), "hh:mm");
-            record.dinnerBreakStart = QTime::fromString(settings.value(key + "/dinnerStart", "18:00").toString(), "hh:mm");
+            record.dinnerBreakStart =
+                QTime::fromString(settings.value(key + "/dinnerStart", "18:00").toString(), "hh:mm");
             record.dinnerBreakEnd = QTime::fromString(settings.value(key + "/dinnerEnd", "18:30").toString(), "hh:mm");
 
-            if (!record.needAverageCal) workDays--;
+            if (!record.needAverageCal) {
+                workDays--;
+            }
 
             // 计算工作时间数据
             WorkTimeResult result = WorkTimeCalculator::calculateWorkTimeResult(record);
@@ -242,23 +254,14 @@ void AttendanceMainWindow::updateMonthlyStatistics() {
         date = date.addDays(1);
     }
 
-    QString stats = QString("统计月份: %1年%2月\n")
-        .arg(year)
-        .arg(month);
+    QString stats = QString("统计月份: %1年%2月\n").arg(year).arg(month);
     stats += QString("工作天数: %1天\n").arg(workDays);
-    stats += QString("总加班时间: %1小时%2分钟\n")
-        .arg(totalOvertimeMinutes / 60)
-        .arg(totalOvertimeMinutes % 60);
-    stats += QString("总迟到时间: %1小时%2分钟\n")
-        .arg(totalLateMinutes / 60)
-        .arg(totalLateMinutes % 60);
-    stats += QString("总早退时间: %1小时%2分钟\n")
-        .arg(totalEarlyLeaveMinutes / 60)
-        .arg(totalEarlyLeaveMinutes % 60);
     if (workDays > 0) {
-        stats += QString("平均加班时间: %1小时")
-            .arg(totalOvertimeMinutes / (60.0 * workDays), 0, 'f', 3);
+        stats += QString("平均加班时间: %1小时\n").arg(totalOvertimeMinutes / (60.0 * workDays), 0, 'f', 3);
     }
+    stats += QString("总加班时间: %1小时%2分钟\n").arg(totalOvertimeMinutes / 60).arg(totalOvertimeMinutes % 60);
+    stats += QString("总迟到时间: %1小时%2分钟").arg(totalLateMinutes / 60).arg(totalLateMinutes % 60);
+    //stats += QString("总早退时间: %1小时%2分钟\n").arg(totalEarlyLeaveMinutes / 60).arg(totalEarlyLeaveMinutes % 60);
 
     m_statsLabel->setText(stats);
 }

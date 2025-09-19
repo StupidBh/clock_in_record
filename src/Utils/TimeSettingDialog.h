@@ -1,4 +1,4 @@
-#ifndef TIMESETTINGDIALOG_H
+ï»¿#ifndef TIMESETTINGDIALOG_H
 #define TIMESETTINGDIALOG_H
 
 #include "AttendanceTypes.h"
@@ -10,7 +10,7 @@
 
 class CollapsibleGroupBox;
 
-// Ê±¼äÉèÖÃ¶Ô»°¿ò
+// æ—¶é—´è®¾ç½®å¯¹è¯æ¡†
 class TimeSettingDialog : public QDialog {
     Q_OBJECT
 

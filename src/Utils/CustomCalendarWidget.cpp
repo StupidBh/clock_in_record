@@ -1,19 +1,23 @@
-#include "CustomCalendarWidget.h"
+﻿#include "CustomCalendarWidget.h"
 #include <QSettings>
 #include <QStyle>
 #include <QApplication>
 #include <qDebug>
 #include <QAbstractItemModel>
 
-CustomCalendarWidget::CustomCalendarWidget(QWidget* parent) : QCalendarWidget(parent), m_tableView(nullptr) {
+CustomCalendarWidget::CustomCalendarWidget(QWidget* parent) :
+    QCalendarWidget(parent),
+    m_tableView(nullptr)
+{
     setContextMenuPolicy(Qt::CustomContextMenu);
-    connect(this, &QWidget::customContextMenuRequested, this, [this](const QPoint& pos){
-        showContextMenu(QPoint(pos.x(), pos.y() - 70));  // 实际点击时垂直方向存在偏移
-        });
+    connect(this, &QWidget::customContextMenuRequested, this, [this](const QPoint& pos) {
+        showContextMenu(QPoint(pos.x(), pos.y() - 70)); // 实际点击时垂直方向存在偏移
+    });
     setupEventFilters();
 }
 
-void CustomCalendarWidget::setupEventFilters() {
+void CustomCalendarWidget::setupEventFilters()
+{
     m_tableView = this->findChild<QTableView*>();
     if (m_tableView) {
         // 只监听右键，双击用重写的方法处理
@@ -21,7 +25,8 @@ void CustomCalendarWidget::setupEventFilters() {
     }
 }
 
-void CustomCalendarWidget::showContextMenu(const QPoint& pos) {
+void CustomCalendarWidget::showContextMenu(const QPoint& pos)
+{
     // 获取点击位置对应的日期
     QDate clickedDate = dateAt(pos);
     if (!clickedDate.isValid()) {
@@ -41,19 +46,22 @@ void CustomCalendarWidget::showContextMenu(const QPoint& pos) {
     deleteAction->setIcon(style()->standardIcon(QStyle::SP_TrashIcon));
 
     // 显示菜单并处理选择
-    QAction* selectedAction = contextMenu.exec(mapToGlobal(QPoint(pos.x(),pos.y()+70))); // 显示的时候把判断时加的偏移复位
+    QAction* selectedAction =
+        contextMenu.exec(mapToGlobal(QPoint(pos.x(), pos.y() + 70))); // 显示的时候把判断时加的偏移复位
     if (selectedAction == deleteAction) {
         emit deleteRequested(clickedDate);
     }
 }
 
-QDate CustomCalendarWidget::dateAt(const QPoint& pos) {
+QDate CustomCalendarWidget::dateAt(const QPoint& pos)
+{
     // 这是一个简化的实现，在实际使用中可能需要更精确的计算
     // 使用selectedDate作为近似值
     return getDateFromPosition(QPoint(pos.x(), pos.y() - 20));
 }
 
-QDate CustomCalendarWidget::getDateFromPosition(const QPoint& pos) {
+QDate CustomCalendarWidget::getDateFromPosition(const QPoint& pos)
+{
     if (!m_tableView) {
         return QDate();
     }
@@ -88,7 +96,8 @@ QDate CustomCalendarWidget::getDateFromPosition(const QPoint& pos) {
     return calculateDateFromRowCol(index.row(), index.column());
 }
 
-QDate CustomCalendarWidget::calculateDateFromRowCol(int row, int col) {
+QDate CustomCalendarWidget::calculateDateFromRowCol(int row, int col)
+{
     // 获取当前显示的年月
     int year = yearShown();
     int month = monthShown();
@@ -113,14 +122,12 @@ QDate CustomCalendarWidget::calculateDateFromRowCol(int row, int col) {
     if (dayNumber <= 0) {
         // 上个月的日期
         QDate prevMonth = firstDay.addMonths(-1);
-        return QDate(prevMonth.year(), prevMonth.month(),
-            prevMonth.daysInMonth() + dayNumber);
+        return QDate(prevMonth.year(), prevMonth.month(), prevMonth.daysInMonth() + dayNumber);
     }
     else if (dayNumber > firstDay.daysInMonth()) {
         // 下个月的日期
         QDate nextMonth = firstDay.addMonths(1);
-        return QDate(nextMonth.year(), nextMonth.month(),
-            dayNumber - firstDay.daysInMonth());
+        return QDate(nextMonth.year(), nextMonth.month(), dayNumber - firstDay.daysInMonth());
     }
     else {
         // 当前月的日期

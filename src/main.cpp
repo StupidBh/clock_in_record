@@ -1,4 +1,4 @@
-#include "AttendanceMainWindow.h"
+ï»¿#include "AttendanceMainWindow.h"
 #include <QApplication>
 #include <QFont>
 #include <QIcon>
@@ -8,15 +8,13 @@ int main(int argc, char* argv[])
 {
     QApplication app(argc, argv);
 
+    // è®¾ç½®åº”ç”¨ç¨‹åºå›¾æ ‡ï¼ˆå¦‚æœæœ‰çš„è¯ï¼‰
+    app.setWindowIcon(QIcon(":/Icons/logo.ico"));
+    // è®¾ç½®åº”ç”¨ç¨‹åºä¿¡æ¯
+    app.setApplicationName("AttendanceApp");
+    app.setOrganizationName("MyCompany");
 
-    // ÉèÖÃÓ¦ÓÃ³ÌĞòÍ¼±ê£¨Èç¹ûÓĞµÄ»°£©
-     app.setWindowIcon(QIcon(":/Icons/logo.ico"));
-     // ÉèÖÃÓ¦ÓÃ³ÌĞòĞÅÏ¢
-     app.setApplicationName("AttendanceApp");
-     app.setOrganizationName("MyCompany");
-
-
-    // ÉèÖÃÄ¬ÈÏ×ÖÌå
+    // è®¾ç½®é»˜è®¤å­—ä½“
     QFont font = app.font();
     font.setFamily("Microsoft YaHei");
     font.setPointSize(9);

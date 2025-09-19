@@ -1,27 +1,27 @@
-#include "WorkTimeCalculator.h"
+ï»¿#include "WorkTimeCalculator.h"
 
-WorkTimeResult WorkTimeCalculator::calculateWorkTimeResult(const AttendanceRecord& record) {
+WorkTimeResult WorkTimeCalculator::calculateWorkTimeResult(const AttendanceRecord& record)
+{
     WorkTimeResult result;
 
-    // ¼ÆËã³Ùµ½Ê±¼ä
+    // è®¡ç®—è¿Ÿåˆ°æ—¶é—´
     if (record.arrivalTime > record.workStartTime) {
         result.lateMinutes = record.workStartTime.secsTo(record.arrivalTime) / 60;
     }
 
-    // ¼ÆËãÔçÍËÊ±¼ä
+    // è®¡ç®—æ—©é€€æ—¶é—´
     if (record.departureTime < record.workEndTime) {
         result.earlyLeaveMinutes = record.departureTime.secsTo(record.workEndTime) / 60;
     }
 
-    // ¼ÆËãÔÚ¹«Ë¾×ÜÊ±¼ä
+    // è®¡ç®—åœ¨å…¬å¸æ€»æ—¶é—´
     int totalMinutesAtWork = record.arrivalTime.secsTo(record.departureTime) / 60;
 
-    // ¼ÆËãÊµ¼ÊÐÝÏ¢Ê±¼ä
+    // è®¡ç®—å®žé™…ä¼‘æ¯æ—¶é—´
     result.totalBreakMinutes = 0;
 
-    // Îç²ÍÊ±¼ä
-    if (isTimeRangeOverlap(record.arrivalTime, record.departureTime,
-        record.lunchBreakStart, record.lunchBreakEnd)) {
+    // åˆé¤æ—¶é—´
+    if (isTimeRangeOverlap(record.arrivalTime, record.departureTime, record.lunchBreakStart, record.lunchBreakEnd)) {
         QTime lunchStart = maxTime(record.arrivalTime, record.lunchBreakStart);
         QTime lunchEnd = minTime(record.departureTime, record.lunchBreakEnd);
         if (lunchStart < lunchEnd) {
@@ -29,9 +29,8 @@ WorkTimeResult WorkTimeCalculator::calculateWorkTimeResult(const AttendanceRecor
         }
     }
 
-    // Íí²ÍÊ±¼ä
-    if (isTimeRangeOverlap(record.arrivalTime, record.departureTime,
-        record.dinnerBreakStart, record.dinnerBreakEnd)) {
+    // æ™šé¤æ—¶é—´
+    if (isTimeRangeOverlap(record.arrivalTime, record.departureTime, record.dinnerBreakStart, record.dinnerBreakEnd)) {
         QTime dinnerStart = maxTime(record.arrivalTime, record.dinnerBreakStart);
         QTime dinnerEnd = minTime(record.departureTime, record.dinnerBreakEnd);
         if (dinnerStart < dinnerEnd) {
@@ -39,23 +38,21 @@ WorkTimeResult WorkTimeCalculator::calculateWorkTimeResult(const AttendanceRecor
         }
     }
 
-    // Êµ¼Ê¹¤×÷Ê±¼ä = ÔÚ¹«Ë¾Ê±¼ä - ÐÝÏ¢Ê±¼ä
+    // å®žé™…å·¥ä½œæ—¶é—´ = åœ¨å…¬å¸æ—¶é—´ - ä¼‘æ¯æ—¶é—´
     result.actualWorkMinutes = totalMinutesAtWork - result.totalBreakMinutes;
 
-    // ±ê×¼¹¤×÷Ê±¼ä
+    // æ ‡å‡†å·¥ä½œæ—¶é—´
     int standardTotalMinutes = record.workStartTime.secsTo(record.workEndTime) / 60;
     int standardBreakMinutes = 0;
 
-    // ±ê×¼Îç²ÍÊ±¼ä
-    if (record.lunchBreakStart >= record.workStartTime &&
-        record.lunchBreakStart < record.workEndTime &&
+    // æ ‡å‡†åˆé¤æ—¶é—´
+    if (record.lunchBreakStart >= record.workStartTime && record.lunchBreakStart < record.workEndTime &&
         record.lunchBreakStart < record.lunchBreakEnd) {
         standardBreakMinutes += record.lunchBreakStart.secsTo(record.lunchBreakEnd) / 60;
     }
 
-    // ±ê×¼Íí²ÍÊ±¼ä£¨Èç¹ûÔÚ¹¤×÷Ê±¼äÄÚ£©
-    if (record.dinnerBreakStart >= record.workStartTime &&
-        record.dinnerBreakStart < record.workEndTime) {
+    // æ ‡å‡†æ™šé¤æ—¶é—´ï¼ˆå¦‚æžœåœ¨å·¥ä½œæ—¶é—´å†…ï¼‰
+    if (record.dinnerBreakStart >= record.workStartTime && record.dinnerBreakStart < record.workEndTime) {
         QTime dinnerEnd = minTime(record.dinnerBreakEnd, record.workEndTime);
         if (record.dinnerBreakStart < dinnerEnd) {
             standardBreakMinutes += record.dinnerBreakStart.secsTo(dinnerEnd) / 60;
@@ -64,21 +61,27 @@ WorkTimeResult WorkTimeCalculator::calculateWorkTimeResult(const AttendanceRecor
 
     result.standardWorkMinutes = standardTotalMinutes - standardBreakMinutes;
 
-    // ¼Ó°àÊ±¼ä
+    // åŠ ç­æ—¶é—´
     result.overtimeMinutes = result.actualWorkMinutes - result.standardWorkMinutes;
 
     return result;
 }
 
-bool WorkTimeCalculator::isTimeRangeOverlap(const QTime& start1, const QTime& end1,
-    const QTime& start2, const QTime& end2) {
+bool WorkTimeCalculator::isTimeRangeOverlap(
+    const QTime& start1,
+    const QTime& end1,
+    const QTime& start2,
+    const QTime& end2)
+{
     return start1 < end2 && start2 < end1;
 }
 
-QTime WorkTimeCalculator::maxTime(const QTime& time1, const QTime& time2) {
+QTime WorkTimeCalculator::maxTime(const QTime& time1, const QTime& time2)
+{
     return time1 > time2 ? time1 : time2;
 }
 
-QTime WorkTimeCalculator::minTime(const QTime& time1, const QTime& time2) {
+QTime WorkTimeCalculator::minTime(const QTime& time1, const QTime& time2)
+{
     return time1 < time2 ? time1 : time2;
 }

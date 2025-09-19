@@ -1,21 +1,23 @@
-#ifndef ATTENDANCETYPES_H
+ï»¿#ifndef ATTENDANCETYPES_H
 #define ATTENDANCETYPES_H
 
 #include <QTime>
 
-// ´ò¿¨¼ÇÂ¼½á¹¹Ìå
-struct AttendanceRecord {
-    bool needAverageCal;    // ÊÇ·ñ¼ÓÈëÆ½¾ù¼Ó°à¼ÆËã
-    QTime arrivalTime;      // µ½´ï¹«Ë¾Ê±¼ä
-    QTime departureTime;    // Àë¿ª¹«Ë¾Ê±¼ä
-    QTime workStartTime;    // ±ê×¼ÉÏ°àÊ±¼ä
-    QTime workEndTime;      // ±ê×¼ÏÂ°àÊ±¼ä
-    QTime lunchBreakStart;  // Îç²Í¿ªÊ¼Ê±¼ä
-    QTime lunchBreakEnd;    // Îç²Í½áÊøÊ±¼ä
-    QTime dinnerBreakStart; // Íí²Í¿ªÊ¼Ê±¼ä
-    QTime dinnerBreakEnd;   // Íí²Í½áÊøÊ±¼ä
+// æ‰“å¡è®°å½•ç»“æ„ä½“
+struct AttendanceRecord
+{
+    bool needAverageCal;    // æ˜¯å¦åŠ å…¥å¹³å‡åŠ ç­è®¡ç®—
+    QTime arrivalTime;      // åˆ°è¾¾å…¬å¸æ—¶é—´
+    QTime departureTime;    // ç¦»å¼€å…¬å¸æ—¶é—´
+    QTime workStartTime;    // æ ‡å‡†ä¸Šç­æ—¶é—´
+    QTime workEndTime;      // æ ‡å‡†ä¸‹ç­æ—¶é—´
+    QTime lunchBreakStart;  // åˆé¤å¼€å§‹æ—¶é—´
+    QTime lunchBreakEnd;    // åˆé¤ç»“æŸæ—¶é—´
+    QTime dinnerBreakStart; // æ™šé¤å¼€å§‹æ—¶é—´
+    QTime dinnerBreakEnd;   // æ™šé¤ç»“æŸæ—¶é—´
 
-    AttendanceRecord() {
+    AttendanceRecord()
+    {
         needAverageCal = true;
         arrivalTime = QTime(9, 0);
         departureTime = QTime(18, 0);
@@ -28,16 +30,17 @@ struct AttendanceRecord {
     }
 };
 
-// ¹¤×÷Ê±¼ä¼ÆËã½á¹û
-struct WorkTimeResult {
-    int actualWorkMinutes = 0;      // Êµ¼Ê¹¤×÷Ê±¼ä£¨·ÖÖÓ£©
-    int standardWorkMinutes = 0;    // ±ê×¼¹¤×÷Ê±¼ä£¨·ÖÖÓ£©
-    int lateMinutes = 0;           // ³Ùµ½Ê±¼ä£¨·ÖÖÓ£©
+// å·¥ä½œæ—¶é—´è®¡ç®—ç»“æœ
+struct WorkTimeResult
+{
+    int actualWorkMinutes = 0;   // å®é™…å·¥ä½œæ—¶é—´ï¼ˆåˆ†é’Ÿï¼‰
+    int standardWorkMinutes = 0; // æ ‡å‡†å·¥ä½œæ—¶é—´ï¼ˆåˆ†é’Ÿï¼‰
+    int lateMinutes = 0;         // è¿Ÿåˆ°æ—¶é—´ï¼ˆåˆ†é’Ÿï¼‰
     int lateSize = 0;
-    int earlyLeaveMinutes = 0;     // ÔçÍËÊ±¼ä£¨·ÖÖÓ£©
+    int earlyLeaveMinutes = 0;   // æ—©é€€æ—¶é—´ï¼ˆåˆ†é’Ÿï¼‰
     int earlyLeaveSize = 0;
-    int overtimeMinutes = 0;       // ¼Ó°àÊ±¼ä£¨·ÖÖÓ£©
-    int totalBreakMinutes = 0;     // ×ÜĞİÏ¢Ê±¼ä£¨·ÖÖÓ£©
+    int overtimeMinutes = 0;     // åŠ ç­æ—¶é—´ï¼ˆåˆ†é’Ÿï¼‰
+    int totalBreakMinutes = 0;   // æ€»ä¼‘æ¯æ—¶é—´ï¼ˆåˆ†é’Ÿï¼‰
 };
 
 #endif // ATTENDANCETYPES_H

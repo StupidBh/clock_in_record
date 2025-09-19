@@ -1,4 +1,4 @@
-#ifndef ATTENDANCEMAINWINDOW_H
+ï»¿#ifndef ATTENDANCEMAINWINDOW_H
 #define ATTENDANCEMAINWINDOW_H
 
 #include <QMainWindow>
@@ -8,7 +8,7 @@
 
 class CustomCalendarWidget;
 
-// Ö÷´°¿Ú
+// ä¸»çª—å£
 class AttendanceMainWindow : public QMainWindow {
     Q_OBJECT
 
