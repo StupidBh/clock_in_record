@@ -257,11 +257,14 @@ void AttendanceMainWindow::updateMonthlyStatistics()
     QString stats = QString("统计月份: %1年%2月\n").arg(year).arg(month);
     stats += QString("工作天数: %1天\n").arg(workDays);
     if (workDays > 0) {
-        stats += QString("平均加班时间: %1小时\n").arg(totalOvertimeMinutes / (60.0 * workDays), 0, 'f', 3);
+        double average_overtime_hours = totalOvertimeMinutes / (60.0 * workDays);
+        stats += QString("均加班时间: %1小时\n").arg(average_overtime_hours, 0, 'f', 3);
+        if (average_overtime_hours < 2.5) {
+            int sum = (2.5 - average_overtime_hours) * 60.0 * workDays;
+            stats += QString("缺加班时间: %1小时%2分钟\n").arg(sum / 60).arg(sum % 60);
+        }
     }
-    stats += QString("总加班时间: %1小时%2分钟\n").arg(totalOvertimeMinutes / 60).arg(totalOvertimeMinutes % 60);
-    stats += QString("总迟到时间: %1小时%2分钟").arg(totalLateMinutes / 60).arg(totalLateMinutes % 60);
-    //stats += QString("总早退时间: %1小时%2分钟\n").arg(totalEarlyLeaveMinutes / 60).arg(totalEarlyLeaveMinutes % 60);
+    stats += QString("总加班时间: %1小时%2分钟").arg(totalOvertimeMinutes / 60).arg(totalOvertimeMinutes % 60);
 
     m_statsLabel->setText(stats);
 }
