@@ -11,7 +11,7 @@ CustomCalendarWidget::CustomCalendarWidget(QWidget* parent) :
 {
     setContextMenuPolicy(Qt::CustomContextMenu);
     connect(this, &QWidget::customContextMenuRequested, this, [this](const QPoint& pos) {
-        showContextMenu(QPoint(pos.x(), pos.y() - 70)); // 实际点击时垂直方向存在偏移
+        showContextMenu(QPoint(pos.x(), pos.y()));
     });
     setupEventFilters();
 }
@@ -46,8 +46,7 @@ void CustomCalendarWidget::showContextMenu(const QPoint& pos)
     deleteAction->setIcon(style()->standardIcon(QStyle::SP_TrashIcon));
 
     // 显示菜单并处理选择
-    QAction* selectedAction =
-        contextMenu.exec(mapToGlobal(QPoint(pos.x(), pos.y() + 70))); // 显示的时候把判断时加的偏移复位
+    QAction* selectedAction = contextMenu.exec(mapToGlobal(QPoint(pos.x(), pos.y()))); // 显示的时候把判断时加的偏移复位
     if (selectedAction == deleteAction) {
         emit deleteRequested(clickedDate);
     }

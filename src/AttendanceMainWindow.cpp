@@ -258,10 +258,15 @@ void AttendanceMainWindow::updateMonthlyStatistics()
     stats += QString("工作天数: %1天\n").arg(workDays);
     if (workDays > 0) {
         double average_overtime_hours = totalOvertimeMinutes / (60.0 * workDays);
-        stats += QString("均加班时间: %1小时\n").arg(average_overtime_hours, 0, 'f', 3);
-        if (average_overtime_hours < 2.5) {
-            int sum = (2.5 - average_overtime_hours) * 60.0 * workDays;
-            stats += QString("缺加班时间: %1小时%2分钟\n").arg(sum / 60).arg(sum % 60);
+        std::string msg = std::format("均加班时间: {:.2f}\n", average_overtime_hours);
+        stats += QString(msg.c_str());
+        if (average_overtime_hours < 2.50) {
+            int lackMinutes = 150 * workDays - totalOvertimeMinutes;
+            int lackHours = lackMinutes / 60;
+            int remainMinutes = lackMinutes % 60;
+
+            msg = std::format("缺加班时间: {}小时{}分钟\n", lackHours, remainMinutes);
+            stats += QString(msg.c_str());
         }
     }
     stats += QString("总加班时间: %1小时%2分钟").arg(totalOvertimeMinutes / 60).arg(totalOvertimeMinutes % 60);
