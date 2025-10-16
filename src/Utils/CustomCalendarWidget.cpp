@@ -50,7 +50,7 @@ void CustomCalendarWidget::showContextMenu(const QPoint& pos) {
 QDate CustomCalendarWidget::dateAt(const QPoint& pos) {
     // 这是一个简化的实现，在实际使用中可能需要更精确的计算
     // 使用selectedDate作为近似值
-    return getDateFromPosition(QPoint(pos.x(), pos.y() - 20));
+    return getDateFromPosition(QPoint(pos.x(), pos.y() + 50));
 }
 
 QDate CustomCalendarWidget::getDateFromPosition(const QPoint& pos) {
