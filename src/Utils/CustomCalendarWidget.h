@@ -15,6 +15,8 @@ public:
     explicit CustomCalendarWidget(QWidget* parent = nullptr);
     void setupEventFilters();
 
+    void paintCell(QPainter* painter, const QRect& rect, const QDate& date) const;
+
 signals:
     void deleteRequested(const QDate& date);
 

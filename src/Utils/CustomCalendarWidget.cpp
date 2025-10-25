@@ -5,6 +5,8 @@
 #include <qDebug>
 #include <QAbstractItemModel>
 
+#include "CustomDateDelegate.h"
+
 CustomCalendarWidget::CustomCalendarWidget(QWidget* parent) : QCalendarWidget(parent), m_tableView(nullptr) {
     setContextMenuPolicy(Qt::CustomContextMenu);
     connect(this, &QWidget::customContextMenuRequested, this, [this](const QPoint& pos){
@@ -18,8 +20,72 @@ void CustomCalendarWidget::setupEventFilters() {
     if (m_tableView) {
         // 只监听右键，双击用重写的方法处理
         m_tableView->installEventFilter(this);
+        //m_tableView->setItemDelegate(new DebugDelegate(m_tableView));
     }
 }
+
+void CustomCalendarWidget::paintCell(QPainter* painter, const QRect& rect, const QDate& date) const
+{
+    if (date == selectedDate())
+    {
+        painter->save();
+        painter->setRenderHint(QPainter::Antialiasing);
+        painter->setPen(Qt::NoPen);
+        painter->setBrush(QColor(0, 145, 255));
+
+        painter->drawRoundedRect(rect.x(), rect.y() + 3, rect.width(), rect.height() - 6, 3, 3);
+        painter->setPen(QColor(255, 255, 255));
+
+        painter->drawText(rect, Qt::AlignCenter, QString::number(date.day()));
+        painter->restore();
+    }
+    else if (date == QDate::currentDate())
+    {
+        painter->save();
+        painter->setRenderHint(QPainter::Antialiasing);
+        painter->setPen(Qt::NoPen);
+        painter->setBrush(QColor(0, 161, 255));
+        painter->drawRoundedRect(rect.x(), rect.y() + 3, rect.width(), rect.height() - 6, 3, 3);
+        painter->setBrush(QColor(255, 255, 255));
+        painter->drawRoundedRect(rect.x() + 1, rect.y() + 4, rect.width() - 2, rect.height() - 8, 2, 2);
+        painter->setPen(QColor(0, 161, 255));
+
+        painter->drawText(rect, Qt::AlignCenter, QString::number(date.day()));
+
+        QFont font = painter->font();
+        QFontMetrics fm(font);
+        font.setPointSize(7);
+        painter->setFont(font);
+        painter->setPen(QPen(Qt::blue));
+
+        QString eventText ="XXXXX";
+        QRect eventRectDown = rect.adjusted(2, rect.height() / 2, -2, -2);
+        QRect eventRectUp = rect.adjusted(2, -40, 2, 2);
+        QString elidedText = fm.elidedText(eventText, Qt::ElideRight, eventRectDown.width());
+        painter->drawText(eventRectDown, Qt::AlignCenter, elidedText);
+        painter->drawText(eventRectUp, Qt::AlignCenter, elidedText);
+
+        painter->restore();
+    }
+    else if (date < minimumDate() || date > maximumDate())
+    {
+        painter->save();
+        painter->setRenderHint(QPainter::Antialiasing);
+        painter->setPen(Qt::NoPen);
+        painter->setBrush(QColor(249, 249, 249));
+
+        painter->drawRect(rect.x(), rect.y() + 3, rect.width(), rect.height() - 6);
+        painter->setPen(QColor(220, 220, 220));
+
+        painter->drawText(rect, Qt::AlignCenter, QString::number(date.day()));
+        painter->restore();
+    }
+    else
+    {
+        __super::paintCell(painter, rect, date);
+    }
+}
+
 
 void CustomCalendarWidget::showContextMenu(const QPoint& pos) {
     // 获取点击位置对应的日期

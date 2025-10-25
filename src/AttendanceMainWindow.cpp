@@ -187,6 +187,7 @@ void AttendanceMainWindow::updateCalendarAppearance() {
                 }
             }
             format.setBackground(defaultCol);
+            
             m_calendar->setDateTextFormat(date, format);
         }
         else {
