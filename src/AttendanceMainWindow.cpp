@@ -239,6 +239,18 @@ void AttendanceMainWindow::updateMonthlyStatistics() {
             }
             totalLateMinutes += result.lateMinutes;
             totalEarlyLeaveMinutes += result.earlyLeaveMinutes;
+
+
+            //record.print();
+
+            // tableView model 数据映射
+            QVariantMap info;
+            info["arrivalTime"] = record.arrivalTime.toString("hh:mm");
+            info["departureTime"] = record.departureTime.toString("hh::mm");
+
+
+            m_calendar->setCustomData(date, info);
+
         }
         date = date.addDays(1);
     }

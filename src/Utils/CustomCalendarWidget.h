@@ -10,13 +10,14 @@
 // 自定义日历控件，支持右键菜单
 class CustomCalendarWidget : public QCalendarWidget {
     Q_OBJECT
-
+    QMap<QDate, QVariantMap> m_data;
 public:
     explicit CustomCalendarWidget(QWidget* parent = nullptr);
     void setupEventFilters();
 
     void paintCell(QPainter* painter, const QRect& rect, const QDate& date) const;
 
+    void setCustomData(const QDate& date, const QVariantMap& value);
 signals:
     void deleteRequested(const QDate& date);
 
@@ -26,8 +27,8 @@ private slots:
 private:
     QDate dateAt(const QPoint& pos);
     QDate getDateFromPosition(const QPoint& pos);
-    QDate calculateDateFromRowCol(int row, int col);
 
+    // tableView 的 model 不可修改
     QTableView* m_tableView;
 };
 
