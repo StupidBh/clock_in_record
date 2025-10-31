@@ -7,7 +7,6 @@ debug/
 release/
 
 # 可执行文件
-*.exe
 *.out
 *.app
 
