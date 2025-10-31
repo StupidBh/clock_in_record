@@ -10,6 +10,7 @@
 #include <QTextCharFormat>
 #include <QSettings>
 #include <QMessageBox>
+#include <UpdateChecker/GitHubUpdater.h>
 
 AttendanceMainWindow::AttendanceMainWindow(QWidget* parent) : QMainWindow(parent) {
     setWindowTitle(QString("打卡管理系统"));
@@ -18,6 +19,8 @@ AttendanceMainWindow::AttendanceMainWindow(QWidget* parent) : QMainWindow(parent
 
     setupUI();
     loadAttendanceData();
+
+    updateCheck();
 }
 
 void AttendanceMainWindow::mousePressEvent(QMouseEvent* event) {
@@ -129,6 +132,36 @@ void AttendanceMainWindow::setupUI() {
 
     updateCalendarAppearance();
     updateMonthlyStatistics();
+}
+
+void AttendanceMainWindow::updateCheck()
+{
+    // 假设你的当前版本是 "1.0.0"
+    GitHubUpdater* updater = new GitHubUpdater("wozouri", "clock_in_record", "0.0.0", this);
+
+    connect(updater, &GitHubUpdater::updateAvailable, [](const QString& version, const QString& changelog) {
+        qDebug() << "新版本可用:" << version;
+        // 可显示提示，或静默下载
+        });
+
+    connect(updater, &GitHubUpdater::updateDownloaded, [](const QString& filePath) {
+        QMessageBox::information(nullptr, "下载完成", "新版本已下载到:\n" + filePath + "\n\n是否立即安装？");
+        // 自动运行安装程序（会弹出 UAC 提示）
+        QProcess::startDetached(filePath);
+        // 可选：退出当前程序
+        // QTimer::singleShot(1000, []() { qApp->quit(); });
+        });
+
+    connect(updater, &GitHubUpdater::noUpdateAvailable, []() {
+        qDebug() << "已是最新版";
+        });
+
+    connect(updater, &GitHubUpdater::errorOccurred, [](const QString& msg) {
+        QMessageBox::warning(nullptr, "更新错误", msg);
+        });
+
+    // 开始检查
+    updater->checkForUpdates();
 }
 
 void AttendanceMainWindow::loadAttendanceData() {
