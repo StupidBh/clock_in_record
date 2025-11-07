@@ -1,9 +1,12 @@
-cmake_minimum_required(VERSION 3.16)
+﻿cmake_minimum_required(VERSION 3.16)
 project(AttendanceApp VERSION 1.0.0 LANGUAGES CXX)
 
 # 设置C++标准
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# 手动指定 Qt 安装路径
+set(CMAKE_PREFIX_PATH "C:/Qt/5.15.2/msvc2019_64")
 
 # 查找Qt库
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core Widgets)
