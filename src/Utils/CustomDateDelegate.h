@@ -1,91 +1,91 @@
-//#pragma once 
+ï»¿// #pragma once
 //
-//#include <QObject>
-//#include <QDate>
-//#include <qDebug>
-//#include <QPainter>
-//#include <QStyledItemDelegate>
+// #include <QObject>
+// #include <QDate>
+// #include <qDebug>
+// #include <QPainter>
+// #include <QStyledItemDelegate>
 //
-//class CustomDateDelegate : public QStyledItemDelegate {
-//public:
-//    CustomDateDelegate(QObject* parent = nullptr) : QStyledItemDelegate(parent) {
-//        // Ìí¼ÓÒ»Ğ©Ê¾Àı½Ú¼ÙÈÕ
-//        m_holidays.insert(QDate(QDate::currentDate().year(), 10, 1)); // ¹úÇì½Ú
-//        m_holidays.insert(QDate(QDate::currentDate().year(), 10, 24)); // ½ñÌì
-//    }
+// class CustomDateDelegate : public QStyledItemDelegate {
+// public:
+//     CustomDateDelegate(QObject* parent = nullptr) : QStyledItemDelegate(parent) {
+//         // æ·»åŠ ä¸€äº›ç¤ºä¾‹èŠ‚å‡æ—¥
+//         m_holidays.insert(QDate(QDate::currentDate().year(), 10, 1)); // å›½åº†èŠ‚
+//         m_holidays.insert(QDate(QDate::currentDate().year(), 10, 24)); // ä»Šå¤©
+//     }
 //
-//    void paint(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const override {
-//        // --- ĞŞÕıµÄ¹Ø¼ü²¿·Ö ---
-//        // Ê¹ÓÃ Qt::UserRole »ñÈ¡ÕæÊµµÄ QDate ¶ÔÏó
-//        QDate date = index.data(Qt::UserRole).toDate();
-//        QDate today = QDate::currentDate();
+//     void paint(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const override {
+//         // --- ä¿®æ­£çš„å…³é”®éƒ¨åˆ† ---
+//         // ä½¿ç”¨ Qt::UserRole è·å–çœŸå®çš„ QDate å¯¹è±¡
+//         QDate date = index.data(Qt::UserRole).toDate();
+//         QDate today = QDate::currentDate();
 //
-//        // Èç¹ûÈÕÆÚÎŞĞ§£¬Ôò²»½øĞĞÈÎºÎ»æÖÆ
-//        if (!date.isValid()) {
-//            return;
-//        }
+//         // å¦‚æœæ—¥æœŸæ— æ•ˆï¼Œåˆ™ä¸è¿›è¡Œä»»ä½•ç»˜åˆ¶
+//         if (!date.isValid()) {
+//             return;
+//         }
 //
-//        // ×¼±¸»æÖÆÑ¡Ïî
-//        QStyleOptionViewItem opt = option;
-//        initStyleOption(&opt, index);
+//         // å‡†å¤‡ç»˜åˆ¶é€‰é¡¹
+//         QStyleOptionViewItem opt = option;
+//         initStyleOption(&opt, index);
 //
-//        // »æÖÆ±³¾°£¨´¦ÀíÑ¡ÖĞ¡¢ĞüÍ£µÈ×´Ì¬£©
-//        painter->fillRect(opt.rect, opt.backgroundBrush);
+//         // ç»˜åˆ¶èƒŒæ™¯ï¼ˆå¤„ç†é€‰ä¸­ã€æ‚¬åœç­‰çŠ¶æ€ï¼‰
+//         painter->fillRect(opt.rect, opt.backgroundBrush);
 //
-//        painter->save();
+//         painter->save();
 //
-//        // --- ×Ô¶¨Òå»æÖÆÂß¼­ ---
+//         // --- è‡ªå®šä¹‰ç»˜åˆ¶é€»è¾‘ ---
 //
-//        // 1. ÉèÖÃ×ÖÌåºÍÑÕÉ«
-//        QFont font = opt.font;
-//        if (m_holidays.contains(date)) {
-//            font.setBold(true);
-//            painter->setPen(QPen(Qt::green));
-//        }
-//        else if (date.dayOfWeek() == Qt::Saturday || date.dayOfWeek() == Qt::Sunday) {
-//            painter->setPen(QPen(Qt::red));
-//        }
-//        else {
-//            painter->setPen(QPen(opt.palette.color(QPalette::Text)));
-//        }
-//        painter->setFont(font);
+//         // 1. è®¾ç½®å­—ä½“å’Œé¢œè‰²
+//         QFont font = opt.font;
+//         if (m_holidays.contains(date)) {
+//             font.setBold(true);
+//             painter->setPen(QPen(Qt::green));
+//         }
+//         else if (date.dayOfWeek() == Qt::Saturday || date.dayOfWeek() == Qt::Sunday) {
+//             painter->setPen(QPen(Qt::red));
+//         }
+//         else {
+//             painter->setPen(QPen(opt.palette.color(QPalette::Text)));
+//         }
+//         painter->setFont(font);
 //
-//        // 2. »æÖÆÈÕÆÚÊı×Ö
-//        painter->drawText(opt.rect, Qt::AlignCenter, QString::number(date.day()));
+//         // 2. ç»˜åˆ¶æ—¥æœŸæ•°å­—
+//         painter->drawText(opt.rect, Qt::AlignCenter, QString::number(date.day()));
 //
-//        // 3. Èç¹ûÊÇ½ñÌì£¬»­Ò»¸öÀ¶É«Ğ¡Ô²µã
-//        if (date == today) {
-//            painter->setBrush(QBrush(Qt::blue));
-//            painter->setPen(Qt::NoPen);
-//            // ÔÚÓÒÉÏ½Ç»­Ò»¸ö°ë¾¶Îª3µÄÔ²µã
-//            QPoint topRight = opt.rect.topRight();
-//            painter->drawEllipse(topRight.x() - 8, topRight.y() + 8, 6, 6);
-//        }
+//         // 3. å¦‚æœæ˜¯ä»Šå¤©ï¼Œç”»ä¸€ä¸ªè“è‰²å°åœ†ç‚¹
+//         if (date == today) {
+//             painter->setBrush(QBrush(Qt::blue));
+//             painter->setPen(Qt::NoPen);
+//             // åœ¨å³ä¸Šè§’ç”»ä¸€ä¸ªåŠå¾„ä¸º3çš„åœ†ç‚¹
+//             QPoint topRight = opt.rect.topRight();
+//             painter->drawEllipse(topRight.x() - 8, topRight.y() + 8, 6, 6);
+//         }
 //
-//        painter->restore();
-//    }
+//         painter->restore();
+//     }
 //
-//private:
-//    QSet<QDate> m_holidays; // ÓÃÓÚ´æ´¢½Ú¼ÙÈÕ
-//};
+// private:
+//     QSet<QDate> m_holidays; // ç”¨äºå­˜å‚¨èŠ‚å‡æ—¥
+// };
 //
 //
-//class DebugDelegate : public QStyledItemDelegate {
+// class DebugDelegate : public QStyledItemDelegate {
 //
-//public:
-//    DebugDelegate(QObject* parent = nullptr) : QStyledItemDelegate(parent) {
-//    }
-//    void paint(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const override {
-//        // ÎÒÃÇÖ»´òÓ¡µÚÒ»¸ö¿É¼ûµ¥Ôª¸ñµÄÊı¾İ
-//        if (index.row() == 0 && index.column() == 0) {
-//            qDebug() << "--- Debugging Index (0,0) ---";
-//            qDebug() << "Display Role:" << index.data(Qt::DisplayRole) << index.data(Qt::DisplayRole).typeName();
-//            qDebug() << "User Role:" << index.data(Qt::UserRole) << index.data(Qt::UserRole).typeName();
-//            qDebug() << "UserRole + 1:" << index.data(Qt::UserRole + 1) << index.data(Qt::UserRole + 1).typeName();
-//            qDebug() << "UserRole + 2:" << index.data(Qt::UserRole + 2) << index.data(Qt::UserRole + 2).typeName();
-//            // ... µÈµÈ
-//        }
-//        // µ÷ÓÃ»ùÀà»æÖÆ£¬ÒÔ±ãÎÒÃÇÄÜ¿´µ½ÈÕÀú
-//        QStyledItemDelegate::paint(painter, option, index);
-//    }
-//};
+// public:
+//     DebugDelegate(QObject* parent = nullptr) : QStyledItemDelegate(parent) {
+//     }
+//     void paint(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const override {
+//         // æˆ‘ä»¬åªæ‰“å°ç¬¬ä¸€ä¸ªå¯è§å•å…ƒæ ¼çš„æ•°æ®
+//         if (index.row() == 0 && index.column() == 0) {
+//             qDebug() << "--- Debugging Index (0,0) ---";
+//             qDebug() << "Display Role:" << index.data(Qt::DisplayRole) << index.data(Qt::DisplayRole).typeName();
+//             qDebug() << "User Role:" << index.data(Qt::UserRole) << index.data(Qt::UserRole).typeName();
+//             qDebug() << "UserRole + 1:" << index.data(Qt::UserRole + 1) << index.data(Qt::UserRole + 1).typeName();
+//             qDebug() << "UserRole + 2:" << index.data(Qt::UserRole + 2) << index.data(Qt::UserRole + 2).typeName();
+//             // ... ç­‰ç­‰
+//         }
+//         // è°ƒç”¨åŸºç±»ç»˜åˆ¶ï¼Œä»¥ä¾¿æˆ‘ä»¬èƒ½çœ‹åˆ°æ—¥å†
+//         QStyledItemDelegate::paint(painter, option, index);
+//     }
+// };

@@ -150,7 +150,7 @@ void AttendanceMainWindow::updateCheck()
     connect(updater, &GitHubUpdater::updateAvailable, [](const QString& version, const QString& changelog) {
         qDebug() << "新版本可用:" << version;
         // 可显示提示，或静默下载
-        });
+    });
 
     connect(updater, &GitHubUpdater::updateDownloaded, [](const QString& filePath) {
         QMessageBox::information(nullptr, "下载完成", "新版本已下载到:\n" + filePath + "\n\n是否立即安装？");
@@ -158,21 +158,20 @@ void AttendanceMainWindow::updateCheck()
         QProcess::startDetached(filePath);
         // 可选：退出当前程序
         // QTimer::singleShot(1000, []() { qApp->quit(); });
-        });
+    });
 
-    connect(updater, &GitHubUpdater::noUpdateAvailable, []() {
-        qDebug() << "已是最新版";
-        });
+    connect(updater, &GitHubUpdater::noUpdateAvailable, []() { qDebug() << "已是最新版"; });
 
     connect(updater, &GitHubUpdater::errorOccurred, [](const QString& msg) {
         QMessageBox::warning(nullptr, "更新错误", msg);
-        });
+    });
 
     // 开始检查
     updater->checkForUpdates();
 }
 
-void AttendanceMainWindow::loadAttendanceData() {
+void AttendanceMainWindow::loadAttendanceData()
+{
     // 数据通过QSettings自动加载
 }
 
@@ -224,7 +223,7 @@ void AttendanceMainWindow::updateCalendarAppearance()
                 }
             }
             format.setBackground(defaultCol);
-            
+
             m_calendar->setDateTextFormat(date, format);
         }
         else {
@@ -284,17 +283,14 @@ void AttendanceMainWindow::updateMonthlyStatistics()
             totalLateMinutes += result.lateMinutes;
             totalEarlyLeaveMinutes += result.earlyLeaveMinutes;
 
-
-            //record.print();
+            // record.print();
 
             // tableView model 数据映射
             QVariantMap info;
             info["arrivalTime"] = record.arrivalTime.toString("hh:mm");
             info["departureTime"] = record.departureTime.toString("hh::mm");
 
-
             m_calendar->setCustomData(date, info);
-
         }
         date = date.addDays(1);
     }

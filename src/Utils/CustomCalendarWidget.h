@@ -11,6 +11,7 @@
 class CustomCalendarWidget : public QCalendarWidget {
     Q_OBJECT
     QMap<QDate, QVariantMap> m_data;
+
 public:
     explicit CustomCalendarWidget(QWidget* parent = nullptr);
     void setupEventFilters();
@@ -28,7 +29,6 @@ private:
     QDate dateAt(const QPoint& pos);
     QDate getDateFromPosition(const QPoint& pos);
 
-    // tableView 的 model 不可修改
     QTableView* m_tableView;
 };
 

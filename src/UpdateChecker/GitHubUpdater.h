@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <QObject>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
@@ -13,11 +13,11 @@
 #include <QApplication>
 #include <QTimer>
 
-class GitHubUpdater : public QObject
-{
+class GitHubUpdater : public QObject {
     Q_OBJECT
 public:
-    explicit GitHubUpdater(const QString& repoOwner,
+    explicit GitHubUpdater(
+        const QString& repoOwner,
         const QString& repoName,
         const QString& currentVersion,
         QObject* parent = nullptr);

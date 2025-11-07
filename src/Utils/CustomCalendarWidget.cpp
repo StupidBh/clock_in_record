@@ -6,9 +6,10 @@
 #include <QAbstractItemModel>
 #include <QPainter>
 
-//#include "CustomDateDelegate.h"
-
-CustomCalendarWidget::CustomCalendarWidget(QWidget* parent) : QCalendarWidget(parent), m_tableView(nullptr) {
+CustomCalendarWidget::CustomCalendarWidget(QWidget* parent) :
+    QCalendarWidget(parent),
+    m_tableView(nullptr)
+{
     setContextMenuPolicy(Qt::CustomContextMenu);
     connect(this, &QWidget::customContextMenuRequested, this, [this](const QPoint& pos) {
         showContextMenu(QPoint(pos.x(), pos.y()));
@@ -22,7 +23,7 @@ void CustomCalendarWidget::setupEventFilters()
     if (m_tableView) {
         // 只监听右键，双击用重写的方法处理
         m_tableView->installEventFilter(this);
-        //m_tableView->setItemDelegate(new DebugDelegate(m_tableView));
+        // m_tableView->setItemDelegate(new DebugDelegate(m_tableView));
     }
 }
 
@@ -30,10 +31,7 @@ void CustomCalendarWidget::paintCell(QPainter* painter, const QRect& rect, const
 {
     __super::paintCell(painter, rect, date);
 
-
-
-    if (date == selectedDate())
-    {
+    if (date == selectedDate()) {
         painter->save();
         painter->setRenderHint(QPainter::Antialiasing);
         painter->setPen(Qt::NoPen);
@@ -45,8 +43,7 @@ void CustomCalendarWidget::paintCell(QPainter* painter, const QRect& rect, const
         painter->drawText(rect, Qt::AlignCenter, QString::number(date.day()));
         painter->restore();
     }
-    else if (date == QDate::currentDate())
-    {
+    else if (date == QDate::currentDate()) {
         painter->save();
         painter->setRenderHint(QPainter::Antialiasing);
         painter->setPen(Qt::NoPen);
@@ -61,8 +58,6 @@ void CustomCalendarWidget::paintCell(QPainter* painter, const QRect& rect, const
         painter->restore();
     }
 
-
-
     painter->save();
     QFont font = painter->font();
     QFontMetrics fm(font);
@@ -72,11 +67,10 @@ void CustomCalendarWidget::paintCell(QPainter* painter, const QRect& rect, const
 
     QAbstractItemModel* model = m_tableView->model();
     QRect eventRectDown = rect.adjusted(2, rect.height() / 2, -2, -2);
-    QRect eventRectUp = rect.adjusted(2, -32, -2, -2);;
+    QRect eventRectUp = rect.adjusted(2, -32, -2, -2);
     painter->drawText(eventRectUp, Qt::AlignCenter, m_data[date]["arrivalTime"].toString());
     painter->drawText(eventRectDown, Qt::AlignCenter, m_data[date]["departureTime"].toString());
     painter->restore();
-
 }
 
 void CustomCalendarWidget::setCustomData(const QDate& date, const QVariantMap& value)
@@ -85,8 +79,8 @@ void CustomCalendarWidget::setCustomData(const QDate& date, const QVariantMap& v
     updateCell(date); // 触发paintCell
 }
 
-
-void CustomCalendarWidget::showContextMenu(const QPoint& pos) {
+void CustomCalendarWidget::showContextMenu(const QPoint& pos)
+{
     // 获取点击位置对应的日期
     QDate clickedDate = dateAt(pos);
     if (!clickedDate.isValid()) {
@@ -139,8 +133,8 @@ QDate CustomCalendarWidget::getDateFromPosition(const QPoint& pos)
     int year = yearShown();
     int month = monthShown();
     int day = model->data(index, Qt::DisplayRole).toInt();
-    
-    qDebug() << "Can set data?" <<( model->flags(index) & Qt::ItemIsEditable);
+
+    qDebug() << "Can set data?" << (model->flags(index) & Qt::ItemIsEditable);
     if (!model->setData(index, 666, Qt::UserRole)) {
         qDebug() << "XXXXXXXXXXXX";
     }

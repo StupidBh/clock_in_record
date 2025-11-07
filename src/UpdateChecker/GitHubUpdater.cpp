@@ -1,17 +1,18 @@
-#include "githubupdater.h"
+﻿#include "githubupdater.h"
 #include <QMessageBox>
 #include <QDebug>
 #include <QUrl>
 #include <QFileInfo>
 
-GitHubUpdater::GitHubUpdater(const QString& repoOwner,
+GitHubUpdater::GitHubUpdater(
+    const QString& repoOwner,
     const QString& repoName,
     const QString& currentVersion,
-    QObject* parent)
-    : QObject(parent)
-    , m_repoOwner(repoOwner)
-    , m_repoName(repoName)
-    , m_currentVersion(currentVersion)
+    QObject* parent) :
+    QObject(parent),
+    m_repoOwner(repoOwner),
+    m_repoName(repoName),
+    m_currentVersion(currentVersion)
 {
     m_downloadDir = QStandardPaths::writableLocation(QStandardPaths::DownloadLocation);
     if (m_downloadDir.isEmpty()) {
@@ -26,19 +27,16 @@ void GitHubUpdater::setDownloadDir(const QString& dir)
 
 void GitHubUpdater::checkForUpdates()
 {
-    QString apiUrl = QString("https://api.github.com/repos/%1/%2/releases/latest")
-        .arg(m_repoOwner, m_repoName);
+    QString apiUrl = QString("https://api.github.com/repos/%1/%2/releases/latest").arg(m_repoOwner, m_repoName);
     QNetworkRequest request(apiUrl);
     request.setRawHeader("User-Agent", "QtApp-Updater");
 
     QNetworkReply* reply = m_netManager.get(request);
-    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
-        onCheckReplyFinished(reply);
-        });
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() { onCheckReplyFinished(reply); });
 
-    //connect(reply, &QNetworkReply::errorOccurred, this, [this, reply]() {
-    //    onCheckReplyFinished(reply);
-    //    });
+    // connect(reply, &QNetworkReply::errorOccurred, this, [this, reply]() {
+    //     onCheckReplyFinished(reply);
+    //     });
 }
 
 void GitHubUpdater::onCheckReplyFinished(QNetworkReply* reply)
@@ -51,7 +49,7 @@ void GitHubUpdater::onCheckReplyFinished(QNetworkReply* reply)
 
     QByteArray data = reply->readAll();
     // 打印原始响应内容
-    //qDebug() << "Raw Response:" << data;
+    // qDebug() << "Raw Response:" << data;
     QJsonParseError err;
     QJsonDocument doc = QJsonDocument::fromJson(data, &err);
     if (err.error != QJsonParseError::NoError) {
@@ -104,14 +102,14 @@ QString GitHubUpdater::findDownloadUrl(const QJsonObject& releaseObj)
     for (const QJsonValue& val : assets) {
         QJsonObject asset = val.toObject();
         QString name = asset["name"].toString();
-        qDebug() << "=====NAME: "<<name;
+        qDebug() << "=====NAME: " << name;
 
         if (name.endsWith(".exe", Qt::CaseInsensitive)) {
             // 可进一步匹配 "setup", "installer", 项目名等
-            //if (name.contains("setup", Qt::CaseInsensitive) ||
+            // if (name.contains("setup", Qt::CaseInsensitive) ||
             //    name.contains("installer", Qt::CaseInsensitive) ||
             //    name.contains(m_repoName, Qt::CaseInsensitive)) {
-                return asset["browser_download_url"].toString();
+            return asset["browser_download_url"].toString();
             //}
         }
     }
@@ -127,9 +125,7 @@ void GitHubUpdater::startDownload(const QUrl& url)
     QNetworkReply* reply = m_netManager.get(request);
 
     // 连接 finished 信号到处理函数
-    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
-        onDownloadFinished(reply);
-        });
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() { onDownloadFinished(reply); });
 
     // 超时控制
     QTimer* timer = new QTimer();
@@ -139,7 +135,7 @@ void GitHubUpdater::startDownload(const QUrl& url)
             reply->abort();
             emit errorOccurred("下载超时");
         }
-        });
+    });
     connect(reply, &QNetworkReply::finished, timer, &QTimer::stop);
     connect(reply, &QNetworkReply::finished, timer, &QObject::deleteLater);
     timer->start(30000); // 30秒超时
