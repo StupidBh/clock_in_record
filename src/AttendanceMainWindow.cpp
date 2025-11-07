@@ -22,7 +22,7 @@ AttendanceMainWindow::AttendanceMainWindow(QWidget* parent) :
     setupUI();
     loadAttendanceData();
 
-    updateCheck();
+    //updateCheck();
 }
 
 void AttendanceMainWindow::mousePressEvent(QMouseEvent* event)
