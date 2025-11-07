@@ -35,16 +35,16 @@ int main(int argc, char* argv[])
 {
     QApplication app(argc, argv);
 
-    AllocConsole();
-    FILE* fp;
-    freopen_s(&fp, "CONIN$", "r", stdin);
-    freopen_s(&fp, "CONOUT$", "w", stdout);
+    //AllocConsole();
+    //FILE* fp;
+    //freopen_s(&fp, "CONIN$", "r", stdin);
+    //freopen_s(&fp, "CONOUT$", "w", stdout);
 
     // 安装日志处理器
-    qInstallMessageHandler(messageOutput);
+    //qInstallMessageHandler(messageOutput);
 
-    qDebug() << "SSL supported:" << QSslSocket::supportsSsl();
-    qDebug() << "OpenSSL version:" << QSslSocket::sslLibraryVersionString();
+    //qDebug() << "SSL supported:" << QSslSocket::supportsSsl();
+    //qDebug() << "OpenSSL version:" << QSslSocket::sslLibraryVersionString();
 
     app.setWindowIcon(QIcon(":/Icons/logo.ico"));
     app.setApplicationName("AttendanceApp");
