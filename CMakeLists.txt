@@ -10,7 +10,7 @@ set(CMAKE_PREFIX_PATH "C:/Qt/5.15.2/msvc2019_64")
 
 # 查找Qt库
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core Widgets)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core Widgets)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core Widgets Network)
 
 # Qt MOC设置
 set(CMAKE_AUTOMOC ON)

@@ -4,11 +4,11 @@
 #include <QApplication>
 #include <qDebug>
 #include <QAbstractItemModel>
+#include <QPainter>
 
-CustomCalendarWidget::CustomCalendarWidget(QWidget* parent) :
-    QCalendarWidget(parent),
-    m_tableView(nullptr)
-{
+//#include "CustomDateDelegate.h"
+
+CustomCalendarWidget::CustomCalendarWidget(QWidget* parent) : QCalendarWidget(parent), m_tableView(nullptr) {
     setContextMenuPolicy(Qt::CustomContextMenu);
     connect(this, &QWidget::customContextMenuRequested, this, [this](const QPoint& pos) {
         showContextMenu(QPoint(pos.x(), pos.y()));
@@ -22,11 +22,71 @@ void CustomCalendarWidget::setupEventFilters()
     if (m_tableView) {
         // 只监听右键，双击用重写的方法处理
         m_tableView->installEventFilter(this);
+        //m_tableView->setItemDelegate(new DebugDelegate(m_tableView));
     }
 }
 
-void CustomCalendarWidget::showContextMenu(const QPoint& pos)
+void CustomCalendarWidget::paintCell(QPainter* painter, const QRect& rect, const QDate& date) const
 {
+    __super::paintCell(painter, rect, date);
+
+
+
+    if (date == selectedDate())
+    {
+        painter->save();
+        painter->setRenderHint(QPainter::Antialiasing);
+        painter->setPen(Qt::NoPen);
+        painter->setBrush(QColor(0, 145, 255));
+
+        painter->drawRoundedRect(rect.x(), rect.y() + 3, rect.width(), rect.height() - 6, 3, 3);
+        painter->setPen(QColor(255, 255, 255));
+
+        painter->drawText(rect, Qt::AlignCenter, QString::number(date.day()));
+        painter->restore();
+    }
+    else if (date == QDate::currentDate())
+    {
+        painter->save();
+        painter->setRenderHint(QPainter::Antialiasing);
+        painter->setPen(Qt::NoPen);
+        painter->setBrush(QColor(0, 161, 255));
+        painter->drawRoundedRect(rect.x(), rect.y() + 3, rect.width(), rect.height() - 6, 3, 3);
+        painter->setBrush(QColor(255, 255, 255));
+        painter->drawRoundedRect(rect.x() + 1, rect.y() + 4, rect.width() - 2, rect.height() - 8, 2, 2);
+        painter->setPen(QColor(0, 161, 255));
+
+        painter->drawText(rect, Qt::AlignCenter, QString::number(date.day()));
+
+        painter->restore();
+    }
+
+
+
+    painter->save();
+    QFont font = painter->font();
+    QFontMetrics fm(font);
+    font.setPointSize(7);
+    painter->setFont(font);
+    painter->setPen(QPen(Qt::blue));
+
+    QAbstractItemModel* model = m_tableView->model();
+    QRect eventRectDown = rect.adjusted(2, rect.height() / 2, -2, -2);
+    QRect eventRectUp = rect.adjusted(2, -32, -2, -2);;
+    painter->drawText(eventRectUp, Qt::AlignCenter, m_data[date]["arrivalTime"].toString());
+    painter->drawText(eventRectDown, Qt::AlignCenter, m_data[date]["departureTime"].toString());
+    painter->restore();
+
+}
+
+void CustomCalendarWidget::setCustomData(const QDate& date, const QVariantMap& value)
+{
+    m_data[date] = value;
+    updateCell(date); // 触发paintCell
+}
+
+
+void CustomCalendarWidget::showContextMenu(const QPoint& pos) {
     // 获取点击位置对应的日期
     QDate clickedDate = dateAt(pos);
     if (!clickedDate.isValid()) {
@@ -56,7 +116,7 @@ QDate CustomCalendarWidget::dateAt(const QPoint& pos)
 {
     // 这是一个简化的实现，在实际使用中可能需要更精确的计算
     // 使用selectedDate作为近似值
-    return getDateFromPosition(QPoint(pos.x(), pos.y() - 20));
+    return getDateFromPosition(QPoint(pos.x(), pos.y() + 50));
 }
 
 QDate CustomCalendarWidget::getDateFromPosition(const QPoint& pos)
@@ -76,60 +136,17 @@ QDate CustomCalendarWidget::getDateFromPosition(const QPoint& pos)
         return QDate();
     }
 
-    // 尝试不同的角色获取日期数据
-    QVariant dateData;
-
-    // 尝试 Qt::UserRole
-    dateData = model->data(index, Qt::UserRole);
-    if (dateData.canConvert<QDate>()) {
-        return dateData.toDate();
-    }
-
-    // 尝试 Qt::UserRole + 1
-    dateData = model->data(index, Qt::UserRole + 1);
-    if (dateData.canConvert<QDate>()) {
-        return dateData.toDate();
-    }
-
-    // 如果都获取不到，使用改进的计算方法
-    return calculateDateFromRowCol(index.row(), index.column());
-}
-
-QDate CustomCalendarWidget::calculateDateFromRowCol(int row, int col)
-{
-    // 获取当前显示的年月
     int year = yearShown();
     int month = monthShown();
-    QDate firstDay(year, month, 1);
-
-    // 获取日历的第一天设置
-    Qt::DayOfWeek startDay = firstDayOfWeek();
-
-    // 计算第一天在表格中的位置
-    int firstDayColumn;
-    if (startDay == Qt::Sunday) {
-        firstDayColumn = firstDay.dayOfWeek() % 7; // Sunday = 0
+    int day = model->data(index, Qt::DisplayRole).toInt();
+    
+    qDebug() << "Can set data?" <<( model->flags(index) & Qt::ItemIsEditable);
+    if (!model->setData(index, 666, Qt::UserRole)) {
+        qDebug() << "XXXXXXXXXXXX";
     }
     else {
-        firstDayColumn = firstDay.dayOfWeek() - 1; // Monday = 0
+        qDebug() << "YYYYYYYYYYYYYY";
     }
 
-    // 计算当前位置对应的天数
-    int totalCells = (row - 1) * 7 + col - 1;
-    int dayNumber = totalCells - firstDayColumn + 1;
-
-    if (dayNumber <= 0) {
-        // 上个月的日期
-        QDate prevMonth = firstDay.addMonths(-1);
-        return QDate(prevMonth.year(), prevMonth.month(), prevMonth.daysInMonth() + dayNumber);
-    }
-    else if (dayNumber > firstDay.daysInMonth()) {
-        // 下个月的日期
-        QDate nextMonth = firstDay.addMonths(1);
-        return QDate(nextMonth.year(), nextMonth.month(), dayNumber - firstDay.daysInMonth());
-    }
-    else {
-        // 当前月的日期
-        return QDate(year, month, dayNumber);
-    }
+    return QDate(year, month, day);
 }
