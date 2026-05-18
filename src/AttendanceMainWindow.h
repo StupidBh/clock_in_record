@@ -1,4 +1,4 @@
-﻿#ifndef ATTENDANCEMAINWINDOW_H
+#ifndef ATTENDANCEMAINWINDOW_H
 #define ATTENDANCEMAINWINDOW_H
 
 #include <QMainWindow>
@@ -25,7 +25,6 @@ private slots:
 
 private:
     void setupUI();
-    void updateCheck();
 
     void deleteAttendanceRecord(const QDate& date);
     void updateCalendarAppearance();
