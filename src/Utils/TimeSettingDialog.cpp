@@ -41,36 +41,29 @@ void TimeSettingDialog::calculateWorkTime()
     AttendanceRecord record = getRecord();
     WorkTimeResult result = WorkTimeCalculator::calculateWorkTimeResult(record);
 
+    auto fmtMin = [](int minutes) {
+        return QString("%1小时%2分钟").arg(minutes / 60).arg(minutes % 60);
+    };
+
     QString resultText;
 
-    // 显示迟到早退
     if (result.lateMinutes > 0) {
-        resultText += QString("[迟到] %1小时%2分钟\n").arg(result.lateMinutes / 60).arg(result.lateMinutes % 60);
+        resultText += QString("[迟到] %1\n").arg(fmtMin(result.lateMinutes));
     }
 
     if (result.earlyLeaveMinutes > 0) {
-        resultText +=
-            QString("[早退] %1小时%2分钟\n").arg(result.earlyLeaveMinutes / 60).arg(result.earlyLeaveMinutes % 60);
+        resultText += QString("[早退] %1\n").arg(fmtMin(result.earlyLeaveMinutes));
     }
 
-    // 显示工作时间
-    resultText +=
-        QString("[实际工作] %1小时%2分钟\n").arg(result.actualWorkMinutes / 60).arg(result.actualWorkMinutes % 60);
+    resultText += QString("[实际工作] %1\n").arg(fmtMin(result.actualWorkMinutes));
+    resultText += QString("[标准工作] %1\n").arg(fmtMin(result.standardWorkMinutes));
+    resultText += QString("[总休息] %1\n").arg(fmtMin(result.totalBreakMinutes));
 
-    resultText +=
-        QString("[标准工作] %1小时%2分钟\n").arg(result.standardWorkMinutes / 60).arg(result.standardWorkMinutes % 60);
-
-    resultText +=
-        QString("[总休息] %1小时%2分钟\n").arg(result.totalBreakMinutes / 60).arg(result.totalBreakMinutes % 60);
-
-    // 显示加班或欠时
     if (result.overtimeMinutes > 0) {
-        resultText +=
-            QString("[加班时间] %1小时%2分钟").arg(result.overtimeMinutes / 60).arg(result.overtimeMinutes % 60);
+        resultText += QString("[加班时间] %1").arg(fmtMin(result.overtimeMinutes));
     }
     else if (result.overtimeMinutes < 0) {
-        resultText +=
-            QString("[欠缺时间] %1小时%2分钟").arg((-result.overtimeMinutes) / 60).arg((-result.overtimeMinutes) % 60);
+        resultText += QString("[欠缺时间] %1").arg(fmtMin(-result.overtimeMinutes));
     }
     else {
         resultText += QString("[完成标准时间]");
