@@ -33,10 +33,6 @@ void GitHubUpdater::checkForUpdates()
 
     QNetworkReply* reply = m_netManager.get(request);
     connect(reply, &QNetworkReply::finished, this, [this, reply]() { onCheckReplyFinished(reply); });
-
-    // connect(reply, &QNetworkReply::errorOccurred, this, [this, reply]() {
-    //     onCheckReplyFinished(reply);
-    //     });
 }
 
 void GitHubUpdater::onCheckReplyFinished(QNetworkReply* reply)
@@ -105,12 +101,7 @@ QString GitHubUpdater::findDownloadUrl(const QJsonObject& releaseObj)
         qDebug() << "=====NAME: " << name;
 
         if (name.endsWith(".exe", Qt::CaseInsensitive)) {
-            // 可进一步匹配 "setup", "installer", 项目名等
-            // if (name.contains("setup", Qt::CaseInsensitive) ||
-            //    name.contains("installer", Qt::CaseInsensitive) ||
-            //    name.contains(m_repoName, Qt::CaseInsensitive)) {
             return asset["browser_download_url"].toString();
-            //}
         }
     }
     return {}; // 未找到
@@ -128,7 +119,7 @@ void GitHubUpdater::startDownload(const QUrl& url)
     connect(reply, &QNetworkReply::finished, this, [this, reply]() { onDownloadFinished(reply); });
 
     // 超时控制
-    QTimer* timer = new QTimer();
+    QTimer* timer = new QTimer(this);
     timer->setSingleShot(true);
     connect(timer, &QTimer::timeout, [=]() {
         if (!reply->isFinished()) {
