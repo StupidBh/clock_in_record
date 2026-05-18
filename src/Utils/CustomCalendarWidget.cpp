@@ -48,17 +48,19 @@ void CustomCalendarWidget::paintCell(QPainter* painter, const QRect& rect, const
         painter->restore();
     }
 
-    painter->save();
-    QFont font = painter->font();
-    font.setPointSize(7);
-    painter->setFont(font);
-    painter->setPen(QPen(Qt::blue));
+    if (m_data.contains(date)) {
+        painter->save();
+        QFont font = painter->font();
+        font.setPointSize(7);
+        painter->setFont(font);
+        painter->setPen(QPen(Qt::blue));
 
-    QRect eventRectDown = rect.adjusted(2, rect.height() / 2, -2, -2);
-    QRect eventRectUp = rect.adjusted(2, -32, -2, -2);
-    painter->drawText(eventRectUp, Qt::AlignCenter, m_data[date]["arrivalTime"].toString());
-    painter->drawText(eventRectDown, Qt::AlignCenter, m_data[date]["departureTime"].toString());
-    painter->restore();
+        QRect eventRectDown = rect.adjusted(2, rect.height() / 2, -2, -2);
+        QRect eventRectUp = rect.adjusted(2, -32, -2, -2);
+        painter->drawText(eventRectUp, Qt::AlignCenter, m_data[date]["arrivalTime"].toString());
+        painter->drawText(eventRectDown, Qt::AlignCenter, m_data[date]["departureTime"].toString());
+        painter->restore();
+    }
 }
 
 void CustomCalendarWidget::setCustomData(const QDate& date, const QVariantMap& value)
