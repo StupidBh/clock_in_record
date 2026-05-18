@@ -177,14 +177,11 @@ void TimeSettingDialog::setupUI()
     mainLayout->addLayout(buttonLayout);
 
     // 监听时间变化信号，自动更新计算
-    connect(m_arrivalTimeEdit, &QTimeEdit::timeChanged, this, &TimeSettingDialog::calculateWorkTime);
-    connect(m_departureTimeEdit, &QTimeEdit::timeChanged, this, &TimeSettingDialog::calculateWorkTime);
-    connect(m_workStartTimeEdit, &QTimeEdit::timeChanged, this, &TimeSettingDialog::calculateWorkTime);
-    connect(m_workEndTimeEdit, &QTimeEdit::timeChanged, this, &TimeSettingDialog::calculateWorkTime);
-    connect(m_lunchBreakStartEdit, &QTimeEdit::timeChanged, this, &TimeSettingDialog::calculateWorkTime);
-    connect(m_lunchBreakEndEdit, &QTimeEdit::timeChanged, this, &TimeSettingDialog::calculateWorkTime);
-    connect(m_dinnerBreakStartEdit, &QTimeEdit::timeChanged, this, &TimeSettingDialog::calculateWorkTime);
-    connect(m_dinnerBreakEndEdit, &QTimeEdit::timeChanged, this, &TimeSettingDialog::calculateWorkTime);
+    for (auto* edit : { m_arrivalTimeEdit, m_departureTimeEdit, m_workStartTimeEdit, m_workEndTimeEdit,
+                        m_lunchBreakStartEdit, m_lunchBreakEndEdit, m_dinnerBreakStartEdit,
+                        m_dinnerBreakEndEdit }) {
+        connect(edit, &QTimeEdit::timeChanged, this, &TimeSettingDialog::calculateWorkTime);
+    }
 }
 
 void TimeSettingDialog::loadRecord()
