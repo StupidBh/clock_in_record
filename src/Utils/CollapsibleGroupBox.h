@@ -14,7 +14,6 @@ public:
     explicit CollapsibleGroupBox(const QString& title, QWidget* parent = nullptr);
 
     void setContentLayout(QLayout* layout);
-    QWidget* contentWidget() const;
 
 private slots:
     void toggle(bool checked);
