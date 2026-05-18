@@ -245,8 +245,6 @@ void AttendanceMainWindow::updateMonthlyStatistics()
         QString key = date.toString("yyyy-MM-dd");
 
         if (settings.contains(key + "/arrival")) {
-            workDays++;
-
             // 加载记录并计算，record 默认构造已包含所有默认值
             AttendanceRecord record;
             record.needAverageCal = settings.value(key + "/needAverageCal", record.needAverageCal).toBool();
@@ -266,8 +264,8 @@ void AttendanceMainWindow::updateMonthlyStatistics()
             loadIfExists("/dinnerStart", record.dinnerBreakStart);
             loadIfExists("/dinnerEnd",   record.dinnerBreakEnd);
 
-            if (!record.needAverageCal) {
-                workDays--;
+            if (record.needAverageCal) {
+                workDays++;
             }
 
             // 计算工作时间数据
