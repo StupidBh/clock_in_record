@@ -19,7 +19,7 @@ CustomCalendarWidget::CustomCalendarWidget(QWidget* parent) :
 
 void CustomCalendarWidget::paintCell(QPainter* painter, const QRect& rect, const QDate& date) const
 {
-    __super::paintCell(painter, rect, date);
+    QCalendarWidget::paintCell(painter, rect, date);
 
     if (date == selectedDate()) {
         painter->save();
