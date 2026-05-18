@@ -1,4 +1,4 @@
-﻿#include "AttendanceMainWindow.h"
+#include "AttendanceMainWindow.h"
 #include "Utils/CustomCalendarWidget.h"
 #include "Utils/TimeSettingDialog.h"
 #include "Cal/WorkTimeCalculator.h"
@@ -22,7 +22,7 @@ AttendanceMainWindow::AttendanceMainWindow(QWidget* parent) :
     setupUI();
     loadAttendanceData();
 
-    //updateCheck();
+    // updateCheck();
 }
 
 void AttendanceMainWindow::mousePressEvent(QMouseEvent* event)
@@ -254,21 +254,24 @@ void AttendanceMainWindow::updateMonthlyStatistics()
         if (settings.contains(key + "/arrival")) {
             workDays++;
 
-            // 加载记录并计算
+            // 加载记录并计算，record 默认构造已包含所有默认值
             AttendanceRecord record;
-            record.needAverageCal = settings.value(key + "/needAverageCal").toBool();
+            record.needAverageCal = settings.value(key + "/needAverageCal", record.needAverageCal).toBool();
             record.arrivalTime = QTime::fromString(settings.value(key + "/arrival").toString(), "hh:mm");
             record.departureTime = QTime::fromString(settings.value(key + "/departure").toString(), "hh:mm");
 
-            record.workStartTime = QTime::fromString(settings.value(key + "/workStart", "09:00").toString(), "hh:mm");
-            record.workEndTime = QTime::fromString(settings.value(key + "/workEnd", "18:00").toString(), "hh:mm");
-
-            record.lunchBreakStart =
-                QTime::fromString(settings.value(key + "/lunchStart", "12:30").toString(), "hh:mm");
-            record.lunchBreakEnd = QTime::fromString(settings.value(key + "/lunchEnd", "13:30").toString(), "hh:mm");
-            record.dinnerBreakStart =
-                QTime::fromString(settings.value(key + "/dinnerStart", "18:00").toString(), "hh:mm");
-            record.dinnerBreakEnd = QTime::fromString(settings.value(key + "/dinnerEnd", "18:30").toString(), "hh:mm");
+            auto loadIfExists = [&](const QString& suffix, QTime& target) {
+                QString str = settings.value(key + suffix).toString();
+                if (!str.isEmpty()) {
+                    target = QTime::fromString(str, "hh:mm");
+                }
+            };
+            loadIfExists("/workStart",   record.workStartTime);
+            loadIfExists("/workEnd",     record.workEndTime);
+            loadIfExists("/lunchStart",  record.lunchBreakStart);
+            loadIfExists("/lunchEnd",    record.lunchBreakEnd);
+            loadIfExists("/dinnerStart", record.dinnerBreakStart);
+            loadIfExists("/dinnerEnd",   record.dinnerBreakEnd);
 
             if (!record.needAverageCal) {
                 workDays--;
@@ -282,8 +285,6 @@ void AttendanceMainWindow::updateMonthlyStatistics()
             }
             totalLateMinutes += result.lateMinutes;
             totalEarlyLeaveMinutes += result.earlyLeaveMinutes;
-
-            // record.print();
 
             // tableView model 数据映射
             QVariantMap info;
