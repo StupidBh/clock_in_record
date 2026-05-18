@@ -33,8 +33,9 @@ void AttendanceMainWindow::mousePressEvent(QMouseEvent* event)
         // 如果点击在日历外，重置选择状态
         if (!calendarRect.contains(calendarPos)) {
             // 将选择重置为看不见的日期，并将页面调回当前页面，这样看起来像失去焦点
-            m_calendar->setSelectedDate(QDate::currentDate().addDays(365));
-            m_calendar->setCurrentPage(QDate::currentDate().year(), QDate::currentDate().month());
+            QDate today = QDate::currentDate();
+            m_calendar->setSelectedDate(today.addYears(1));
+            m_calendar->setCurrentPage(today.year(), today.month());
         }
     }
 
