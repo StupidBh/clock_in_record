@@ -11,10 +11,12 @@ CustomCalendarWidget::CustomCalendarWidget(QWidget* parent) :
     m_tableView(nullptr)
 {
     setContextMenuPolicy(Qt::CustomContextMenu);
-    connect(this, &QWidget::customContextMenuRequested, this, [this](const QPoint& pos) {
-        showContextMenu(QPoint(pos.x(), pos.y() - 70));
-    });
     m_tableView = this->findChild<QTableView*>();
+    connect(this, &QWidget::customContextMenuRequested, this, [this](const QPoint& pos) {
+        if (m_tableView) {
+            showContextMenu(m_tableView->viewport()->mapFrom(this, pos));
+        }
+    });
 }
 
 void CustomCalendarWidget::paintCell(QPainter* painter, const QRect& rect, const QDate& date) const
@@ -71,8 +73,7 @@ void CustomCalendarWidget::setCustomData(const QDate& date, const QVariantMap& v
 
 void CustomCalendarWidget::showContextMenu(const QPoint& pos)
 {
-    // 获取点击位置对应的日期
-    QDate clickedDate = dateAt(pos);
+    QDate clickedDate = getDateFromPosition(pos);
     if (!clickedDate.isValid()) {
         return;
     }
@@ -89,18 +90,11 @@ void CustomCalendarWidget::showContextMenu(const QPoint& pos)
     QAction* deleteAction = contextMenu.addAction(QString("删除 %1 的记录").arg(clickedDate.toString("yyyy-MM-dd")));
     deleteAction->setIcon(style()->standardIcon(QStyle::SP_TrashIcon));
 
-    // 显示菜单并处理选择
-    QAction* selectedAction = contextMenu.exec(mapToGlobal(QPoint(pos.x(), pos.y() + 70))); // 显示的时候把判断时加的偏移复位
+    QPoint globalPos = m_tableView ? m_tableView->viewport()->mapToGlobal(pos) : mapToGlobal(pos);
+    QAction* selectedAction = contextMenu.exec(globalPos);
     if (selectedAction == deleteAction) {
         emit deleteRequested(clickedDate);
     }
-}
-
-QDate CustomCalendarWidget::dateAt(const QPoint& pos)
-{
-    // 这是一个简化的实现，在实际使用中可能需要更精确的计算
-    // 使用selectedDate作为近似值
-    return getDateFromPosition(QPoint(pos.x(), pos.y() + 50));
 }
 
 QDate CustomCalendarWidget::getDateFromPosition(const QPoint& pos)

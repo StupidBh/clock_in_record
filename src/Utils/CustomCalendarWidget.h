@@ -24,7 +24,6 @@ private slots:
     void showContextMenu(const QPoint& pos);
 
 private:
-    QDate dateAt(const QPoint& pos);
     QDate getDateFromPosition(const QPoint& pos);
 
     QTableView* m_tableView;
