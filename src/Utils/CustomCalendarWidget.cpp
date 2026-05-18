@@ -134,13 +134,5 @@ QDate CustomCalendarWidget::getDateFromPosition(const QPoint& pos)
     int month = monthShown();
     int day = model->data(index, Qt::DisplayRole).toInt();
 
-    qDebug() << "Can set data?" << (model->flags(index) & Qt::ItemIsEditable);
-    if (!model->setData(index, 666, Qt::UserRole)) {
-        qDebug() << "XXXXXXXXXXXX";
-    }
-    else {
-        qDebug() << "YYYYYYYYYYYYYY";
-    }
-
     return QDate(year, month, day);
 }
