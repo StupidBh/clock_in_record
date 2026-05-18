@@ -20,7 +20,6 @@ AttendanceMainWindow::AttendanceMainWindow(QWidget* parent) :
     resize(900, 660);
 
     setupUI();
-    loadAttendanceData();
 
     // updateCheck();
 }
@@ -168,11 +167,6 @@ void AttendanceMainWindow::updateCheck()
 
     // 开始检查
     updater->checkForUpdates();
-}
-
-void AttendanceMainWindow::loadAttendanceData()
-{
-    // 数据通过QSettings自动加载
 }
 
 void AttendanceMainWindow::deleteAttendanceRecord(const QDate& date)

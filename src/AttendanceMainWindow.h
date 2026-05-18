@@ -27,7 +27,6 @@ private:
     void setupUI();
     void updateCheck();
 
-    void loadAttendanceData();
     void deleteAttendanceRecord(const QDate& date);
     void updateCalendarAppearance();
     void updateMonthlyStatistics();
