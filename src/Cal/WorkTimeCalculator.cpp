@@ -48,7 +48,10 @@ WorkTimeResult WorkTimeCalculator::calculateWorkTimeResult(const AttendanceRecor
     // 标准午餐时间
     if (record.lunchBreakStart >= record.workStartTime && record.lunchBreakStart < record.workEndTime &&
         record.lunchBreakStart < record.lunchBreakEnd) {
-        standardBreakMinutes += record.lunchBreakStart.secsTo(record.lunchBreakEnd) / 60;
+        QTime lunchEnd = minTime(record.lunchBreakEnd, record.workEndTime);
+        if (record.lunchBreakStart < lunchEnd) {
+            standardBreakMinutes += record.lunchBreakStart.secsTo(lunchEnd) / 60;
+        }
     }
 
     // 标准晚餐时间（如果在工作时间内）
