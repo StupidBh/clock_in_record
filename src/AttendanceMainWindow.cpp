@@ -230,12 +230,12 @@ void AttendanceMainWindow::updateMonthlyStatistics()
                     target = QTime::fromString(str, "hh:mm");
                 }
             };
-            loadIfExists("/workStart",   record.workStartTime);
-            loadIfExists("/workEnd",     record.workEndTime);
-            loadIfExists("/lunchStart",  record.lunchBreakStart);
-            loadIfExists("/lunchEnd",    record.lunchBreakEnd);
+            loadIfExists("/workStart", record.workStartTime);
+            loadIfExists("/workEnd", record.workEndTime);
+            loadIfExists("/lunchStart", record.lunchBreakStart);
+            loadIfExists("/lunchEnd", record.lunchBreakEnd);
             loadIfExists("/dinnerStart", record.dinnerBreakStart);
-            loadIfExists("/dinnerEnd",   record.dinnerBreakEnd);
+            loadIfExists("/dinnerEnd", record.dinnerBreakEnd);
 
             if (record.needAverageCal) {
                 workDays++;
@@ -266,12 +266,24 @@ void AttendanceMainWindow::updateMonthlyStatistics()
         double average_overtime_hours = totalOvertimeMinutes / (60.0 * workDays);
         std::string msg = std::format("均加班时间: {:.3f}\n", average_overtime_hours);
         stats += QString(msg.c_str());
-        if (average_overtime_hours < 2.50) {
-            int lackMinutes = 150 * workDays - totalOvertimeMinutes;
+
+        const double targetRatioPerDay = 2.5;                   // 2.5 小时
+        const int targetMinutesPerDay = targetRatioPerDay * 60; // 2.5 小时 × 60
+
+        if (average_overtime_hours < targetRatioPerDay) {
+            int lackMinutes = targetMinutesPerDay * workDays - totalOvertimeMinutes;
             int lackHours = lackMinutes / 60;
             int remainMinutes = lackMinutes % 60;
 
             msg = std::format("缺加班时间: {}小时{}分钟\n", lackHours, remainMinutes);
+            stats += QString(msg.c_str());
+        }
+        else if (average_overtime_hours > targetRatioPerDay) {
+            int extraMinutes = totalOvertimeMinutes - targetMinutesPerDay * workDays;
+            int extraHours = extraMinutes / 60;
+            int remainMinutes = extraMinutes % 60;
+
+            msg = std::format("余加班时间: {}小时{}分钟\n", extraHours, remainMinutes);
             stats += QString(msg.c_str());
         }
     }
