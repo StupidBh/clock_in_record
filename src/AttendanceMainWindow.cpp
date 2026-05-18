@@ -194,10 +194,10 @@ void AttendanceMainWindow::deleteAttendanceRecord(const QDate& date)
     updateMonthlyStatistics();
 
     // 显示删除成功消息
-    QMessageBox::information(
-        this,
-        QString("删除成功"),
-        QString("已成功删除 %1 的考勤记录").arg(date.toString("yyyy-MM-dd")));
+    // QMessageBox::information(
+    //     this,
+    //     QString("删除成功"),
+    //     QString("已成功删除 %1 的考勤记录").arg(date.toString("yyyy-MM-dd")));
 }
 
 void AttendanceMainWindow::updateCalendarAppearance()
@@ -288,7 +288,7 @@ void AttendanceMainWindow::updateMonthlyStatistics()
             // tableView model 数据映射
             QVariantMap info;
             info["arrivalTime"] = record.arrivalTime.toString("hh:mm");
-            info["departureTime"] = record.departureTime.toString("hh::mm");
+            info["departureTime"] = record.departureTime.toString("hh:mm");
 
             m_calendar->setCustomData(date, info);
         }
