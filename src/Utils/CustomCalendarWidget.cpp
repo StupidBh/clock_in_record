@@ -14,17 +14,7 @@ CustomCalendarWidget::CustomCalendarWidget(QWidget* parent) :
     connect(this, &QWidget::customContextMenuRequested, this, [this](const QPoint& pos) {
         showContextMenu(QPoint(pos.x(), pos.y() - 70));
     });
-    setupEventFilters();
-}
-
-void CustomCalendarWidget::setupEventFilters()
-{
     m_tableView = this->findChild<QTableView*>();
-    if (m_tableView) {
-        // 只监听右键，双击用重写的方法处理
-        m_tableView->installEventFilter(this);
-        // m_tableView->setItemDelegate(new DebugDelegate(m_tableView));
-    }
 }
 
 void CustomCalendarWidget::paintCell(QPainter* painter, const QRect& rect, const QDate& date) const

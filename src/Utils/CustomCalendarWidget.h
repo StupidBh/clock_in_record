@@ -14,8 +14,6 @@ class CustomCalendarWidget : public QCalendarWidget {
 
 public:
     explicit CustomCalendarWidget(QWidget* parent = nullptr);
-    void setupEventFilters();
-
     void paintCell(QPainter* painter, const QRect& rect, const QDate& date) const;
 
     void setCustomData(const QDate& date, const QVariantMap& value);
