@@ -71,6 +71,12 @@ void CustomCalendarWidget::setCustomData(const QDate& date, const QVariantMap& v
     updateCell(date); // 触发paintCell
 }
 
+void CustomCalendarWidget::removeCustomData(const QDate& date)
+{
+    m_data.remove(date);
+    updateCell(date);
+}
+
 void CustomCalendarWidget::showContextMenu(const QPoint& pos)
 {
     QDate clickedDate = getDateFromPosition(pos);

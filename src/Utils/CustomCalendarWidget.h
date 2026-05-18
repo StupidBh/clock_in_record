@@ -17,6 +17,7 @@ public:
     void paintCell(QPainter* painter, const QRect& rect, const QDate& date) const;
 
     void setCustomData(const QDate& date, const QVariantMap& value);
+    void removeCustomData(const QDate& date);
 signals:
     void deleteRequested(const QDate& date);
 
