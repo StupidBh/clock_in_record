@@ -2,7 +2,7 @@
 #include <QSettings>
 #include <QStyle>
 #include <QApplication>
-#include <qDebug>
+#include <QDebug>
 #include <QAbstractItemModel>
 #include <QPainter>
 
@@ -55,7 +55,6 @@ void CustomCalendarWidget::paintCell(QPainter* painter, const QRect& rect, const
     painter->setFont(font);
     painter->setPen(QPen(Qt::blue));
 
-    QAbstractItemModel* model = m_tableView->model();
     QRect eventRectDown = rect.adjusted(2, rect.height() / 2, -2, -2);
     QRect eventRectUp = rect.adjusted(2, -32, -2, -2);
     painter->drawText(eventRectUp, Qt::AlignCenter, m_data[date]["arrivalTime"].toString());
