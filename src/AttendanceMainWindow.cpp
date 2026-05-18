@@ -193,8 +193,8 @@ void AttendanceMainWindow::updateCalendarAppearance()
             m_calendar->setDateTextFormat(date, format);
         }
         else {
-            // 清除格式
             m_calendar->setDateTextFormat(date, QTextCharFormat());
+            m_calendar->removeCustomData(date);
         }
         date = date.addDays(1);
     }
