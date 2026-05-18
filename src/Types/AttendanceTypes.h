@@ -29,33 +29,6 @@ struct AttendanceRecord
         dinnerBreakStart = QTime(18, 0);
         dinnerBreakEnd = QTime(18, 30);
     }
-
-    void print()
-    {
-        qDebug() << QString(
-                        "==================\n "
-                        "needAverageCal: %1\n "
-                        "arrivalTime: %2\n "
-                        "departureTime: %3\n "
-                        "workStartTime: %4\n "
-                        "workEndTime: %5\n "
-                        "lunchBreakStart: %6\n "
-                        "lunchBreakEnd: %7\n "
-                        "dinnerBreakStart: %8\n "
-                        "dinnerBreakEnd: %9\n "
-                        "===================\n ")
-                        .arg(needAverageCal)
-                        .arg(arrivalTime.toString())
-                        .arg(departureTime.toString())
-                        .arg(workStartTime.toString())
-                        .arg(workEndTime.toString())
-                        .arg(lunchBreakStart.toString())
-                        .arg(lunchBreakEnd.toString())
-                        .arg(dinnerBreakStart.toString())
-                        .arg(dinnerBreakEnd.toString())
-                        .toUtf8()
-                        .constData();
-    }
 };
 
 // 工作时间计算结果
