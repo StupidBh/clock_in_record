@@ -50,7 +50,6 @@ void CustomCalendarWidget::paintCell(QPainter* painter, const QRect& rect, const
 
     painter->save();
     QFont font = painter->font();
-    QFontMetrics fm(font);
     font.setPointSize(7);
     painter->setFont(font);
     painter->setPen(QPen(Qt::blue));
