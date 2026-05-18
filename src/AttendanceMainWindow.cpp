@@ -10,7 +10,6 @@
 #include <QTextCharFormat>
 #include <QSettings>
 #include <QMessageBox>
-#include <UpdateChecker/GitHubUpdater.h>
 
 AttendanceMainWindow::AttendanceMainWindow(QWidget* parent) :
     QMainWindow(parent)
