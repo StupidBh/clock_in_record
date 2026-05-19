@@ -16,7 +16,7 @@ AttendanceMainWindow::AttendanceMainWindow(QWidget* parent) :
 {
     setWindowTitle(QString("打卡管理系统"));
     setMinimumSize(800, 600);
-    resize(900, 660);
+    resize(1200, 920);
 
     setupUI();
 
