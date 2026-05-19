@@ -1,4 +1,4 @@
-﻿#include "AttendanceMainWindow.h"
+#include "AttendanceMainWindow.h"
 #include <QApplication>
 #include <QFont>
 #include <QIcon>

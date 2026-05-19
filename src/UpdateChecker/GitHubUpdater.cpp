@@ -1,4 +1,4 @@
-﻿#include "GitHubUpdater.h"
+#include "GitHubUpdater.h"
 #include <QMessageBox>
 #include <QDebug>
 #include <QUrl>

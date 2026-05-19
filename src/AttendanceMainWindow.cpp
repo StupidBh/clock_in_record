@@ -19,8 +19,6 @@ AttendanceMainWindow::AttendanceMainWindow(QWidget* parent) :
     resize(1200, 920);
 
     setupUI();
-
-    // updateCheck();
 }
 
 void AttendanceMainWindow::mousePressEvent(QMouseEvent* event)
@@ -158,12 +156,6 @@ void AttendanceMainWindow::deleteAttendanceRecord(const QDate& date)
     // 更新界面
     updateCalendarAppearance();
     updateMonthlyStatistics();
-
-    // 显示删除成功消息
-    // QMessageBox::information(
-    //     this,
-    //     QString("删除成功"),
-    //     QString("已成功删除 %1 的考勤记录").arg(date.toString("yyyy-MM-dd")));
 }
 
 void AttendanceMainWindow::updateCalendarAppearance()

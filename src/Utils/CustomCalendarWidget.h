@@ -1,4 +1,4 @@
-﻿#ifndef CUSTOMCALENDARWIDGET_H
+#ifndef CUSTOMCALENDARWIDGET_H
 #define CUSTOMCALENDARWIDGET_H
 
 #include <QCalendarWidget>
@@ -12,19 +12,19 @@ class CustomCalendarWidget : public QCalendarWidget {
     Q_OBJECT
     QMap<QDate, QVariantMap> m_data;
 
-public:
+  public:
     explicit CustomCalendarWidget(QWidget* parent = nullptr);
     void paintCell(QPainter* painter, const QRect& rect, const QDate& date) const;
 
     void setCustomData(const QDate& date, const QVariantMap& value);
     void removeCustomData(const QDate& date);
-signals:
+  signals:
     void deleteRequested(const QDate& date);
 
-private slots:
+  private slots:
     void showContextMenu(const QPoint& pos);
 
-private:
+  private:
     QDate getDateFromPosition(const QPoint& pos);
 
     QTableView* m_tableView;

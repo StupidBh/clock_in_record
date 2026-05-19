@@ -1,4 +1,4 @@
-﻿#include "TimeSettingDialog.h"
+#include "TimeSettingDialog.h"
 #include "CollapsibleGroupBox.h"
 #include "WorkTimeCalculator.h"
 #include <QVBoxLayout>
@@ -177,8 +177,13 @@ void TimeSettingDialog::setupUI()
     mainLayout->addLayout(buttonLayout);
 
     // 监听时间变化信号，自动更新计算
-    for (auto* edit : { m_arrivalTimeEdit, m_departureTimeEdit, m_workStartTimeEdit, m_workEndTimeEdit,
-                        m_lunchBreakStartEdit, m_lunchBreakEndEdit, m_dinnerBreakStartEdit,
+    for (auto* edit : { m_arrivalTimeEdit,
+                        m_departureTimeEdit,
+                        m_workStartTimeEdit,
+                        m_workEndTimeEdit,
+                        m_lunchBreakStartEdit,
+                        m_lunchBreakEndEdit,
+                        m_dinnerBreakStartEdit,
                         m_dinnerBreakEndEdit }) {
         connect(edit, &QTimeEdit::timeChanged, this, &TimeSettingDialog::calculateWorkTime);
     }
@@ -193,26 +198,38 @@ void TimeSettingDialog::loadRecord()
 
     AttendanceRecord defaults;
 
-    QTime arrivalDefault = settings.contains(key + "/arrival")
-        ? defaults.arrivalTime
-        : QTime::currentTime();
+    QTime arrivalDefault = settings.contains(key + "/arrival") ? defaults.arrivalTime : QTime::currentTime();
     m_arrivalTimeEdit->setTime(
         QTime::fromString(settings.value(key + "/arrival", arrivalDefault.toString("hh:mm")).toString(), "hh:mm"));
 
     m_departureTimeEdit->setTime(
-        QTime::fromString(settings.value(key + "/departure", defaults.departureTime.toString("hh:mm")).toString(), "hh:mm"));
+        QTime::fromString(
+            settings.value(key + "/departure", defaults.departureTime.toString("hh:mm")).toString(),
+            "hh:mm"));
     m_workStartTimeEdit->setTime(
-        QTime::fromString(settings.value(key + "/workStart", defaults.workStartTime.toString("hh:mm")).toString(), "hh:mm"));
+        QTime::fromString(
+            settings.value(key + "/workStart", defaults.workStartTime.toString("hh:mm")).toString(),
+            "hh:mm"));
     m_workEndTimeEdit->setTime(
-        QTime::fromString(settings.value(key + "/workEnd", defaults.workEndTime.toString("hh:mm")).toString(), "hh:mm"));
+        QTime::fromString(
+            settings.value(key + "/workEnd", defaults.workEndTime.toString("hh:mm")).toString(),
+            "hh:mm"));
     m_lunchBreakStartEdit->setTime(
-        QTime::fromString(settings.value(key + "/lunchStart", defaults.lunchBreakStart.toString("hh:mm")).toString(), "hh:mm"));
+        QTime::fromString(
+            settings.value(key + "/lunchStart", defaults.lunchBreakStart.toString("hh:mm")).toString(),
+            "hh:mm"));
     m_lunchBreakEndEdit->setTime(
-        QTime::fromString(settings.value(key + "/lunchEnd", defaults.lunchBreakEnd.toString("hh:mm")).toString(), "hh:mm"));
+        QTime::fromString(
+            settings.value(key + "/lunchEnd", defaults.lunchBreakEnd.toString("hh:mm")).toString(),
+            "hh:mm"));
     m_dinnerBreakStartEdit->setTime(
-        QTime::fromString(settings.value(key + "/dinnerStart", defaults.dinnerBreakStart.toString("hh:mm")).toString(), "hh:mm"));
+        QTime::fromString(
+            settings.value(key + "/dinnerStart", defaults.dinnerBreakStart.toString("hh:mm")).toString(),
+            "hh:mm"));
     m_dinnerBreakEndEdit->setTime(
-        QTime::fromString(settings.value(key + "/dinnerEnd", defaults.dinnerBreakEnd.toString("hh:mm")).toString(), "hh:mm"));
+        QTime::fromString(
+            settings.value(key + "/dinnerEnd", defaults.dinnerBreakEnd.toString("hh:mm")).toString(),
+            "hh:mm"));
 }
 
 void TimeSettingDialog::saveRecord()

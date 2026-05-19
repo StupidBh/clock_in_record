@@ -1,4 +1,4 @@
-﻿#include "WorkTimeCalculator.h"
+#include "WorkTimeCalculator.h"
 
 WorkTimeResult WorkTimeCalculator::calculateWorkTimeResult(const AttendanceRecord& record)
 {

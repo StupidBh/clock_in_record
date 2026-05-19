@@ -1,4 +1,4 @@
-﻿#ifndef ATTENDANCETYPES_H
+#ifndef ATTENDANCETYPES_H
 #define ATTENDANCETYPES_H
 
 #include <QTime>

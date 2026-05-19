@@ -1,4 +1,4 @@
-﻿#include "CollapsibleGroupBox.h"
+#include "CollapsibleGroupBox.h"
 #include <QVBoxLayout>
 
 CollapsibleGroupBox::CollapsibleGroupBox(const QString& title, QWidget* parent) :

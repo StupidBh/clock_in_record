@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include <QObject>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
@@ -15,7 +15,7 @@
 
 class GitHubUpdater : public QObject {
     Q_OBJECT
-public:
+  public:
     explicit GitHubUpdater(
         const QString& repoOwner,
         const QString& repoName,
@@ -25,17 +25,17 @@ public:
     void checkForUpdates();
     void setDownloadDir(const QString& dir); // 可选：自定义下载目录
 
-signals:
+  signals:
     void updateAvailable(const QString& version, const QString& changelog);
     void updateDownloaded(const QString& filePath);
     void noUpdateAvailable();
     void errorOccurred(const QString& message);
 
-private slots:
+  private slots:
     void onCheckReplyFinished(QNetworkReply* reply);
     void onDownloadFinished(QNetworkReply* reply);
 
-private:
+  private:
     QString findDownloadUrl(const QJsonObject& releaseObj);
     void startDownload(const QUrl& url);
 

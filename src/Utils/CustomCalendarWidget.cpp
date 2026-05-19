@@ -1,4 +1,4 @@
-﻿#include "CustomCalendarWidget.h"
+#include "CustomCalendarWidget.h"
 #include <QSettings>
 #include <QStyle>
 #include <QApplication>
