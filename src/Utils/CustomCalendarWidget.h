@@ -1,20 +1,17 @@
-#ifndef CUSTOMCALENDARWIDGET_H
-#define CUSTOMCALENDARWIDGET_H
-
-#include <QCalendarWidget>
-#include <QTableView>
-#include <QMenu>
+#pragma once
 #include <QAction>
+#include <QCalendarWidget>
 #include <QDate>
+#include <QMenu>
+#include <QTableView>
 
 // 自定义日历控件，支持右键菜单
 class CustomCalendarWidget : public QCalendarWidget {
     Q_OBJECT
-    QMap<QDate, QVariantMap> m_data;
 
   public:
     explicit CustomCalendarWidget(QWidget* parent = nullptr);
-    void paintCell(QPainter* painter, const QRect& rect, const QDate& date) const;
+    void paintCell(QPainter* painter, const QRect& rect, const QDate& date) const override;
 
     void setCustomData(const QDate& date, const QVariantMap& value);
     void removeCustomData(const QDate& date);
@@ -27,7 +24,6 @@ class CustomCalendarWidget : public QCalendarWidget {
   private:
     QDate getDateFromPosition(const QPoint& pos);
 
+    QMap<QDate, QVariantMap> m_data;
     QTableView* m_tableView;
 };
-
-#endif // CUSTOMCALENDARWIDGET_H

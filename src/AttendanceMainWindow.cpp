@@ -16,9 +16,17 @@ AttendanceMainWindow::AttendanceMainWindow(QWidget* parent) :
 {
     setWindowTitle(QString("打卡管理系统"));
     setMinimumSize(800, 600);
-    resize(1200, 920);
+    resize(900, 680);
 
     setupUI();
+}
+
+void AttendanceMainWindow::raiseAndActivate()
+{
+    show();
+    setWindowState(windowState() & ~Qt::WindowMinimized);
+    raise();
+    activateWindow();
 }
 
 void AttendanceMainWindow::mousePressEvent(QMouseEvent* event)
@@ -267,7 +275,8 @@ void AttendanceMainWindow::updateMonthlyStatistics()
             int lackHours = lackMinutes / 60;
             int remainMinutes = lackMinutes % 60;
 
-            msg = std::format("缺加班时间: {}小时{}分钟\n", lackHours, remainMinutes);
+            msg = lackHours != 0 ? std::format("缺加班时间: {}小时{}分钟\n", lackHours, remainMinutes)
+                                 : std::format("缺加班时间: {}分钟\n", remainMinutes);
             stats += QString(msg.c_str());
         }
         else if (average_overtime_hours > targetRatioPerDay) {
@@ -275,7 +284,8 @@ void AttendanceMainWindow::updateMonthlyStatistics()
             int extraHours = extraMinutes / 60;
             int remainMinutes = extraMinutes % 60;
 
-            msg = std::format("余加班时间: {}小时{}分钟\n", extraHours, remainMinutes);
+            msg = extraHours != 0 ? std::format("余加班时间: {}小时{}分钟\n", extraHours, remainMinutes)
+                                  : std::format("余加班时间: {}分钟\n", remainMinutes);
             stats += QString(msg.c_str());
         }
     }

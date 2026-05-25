@@ -1,12 +1,11 @@
-#ifndef TIMESETTINGDIALOG_H
-#define TIMESETTINGDIALOG_H
-
+#pragma once
 #include "AttendanceTypes.h"
-#include <QDialog>
-#include <QTimeEdit>
-#include <QLabel>
+
 #include <QCheckBox>
 #include <QDate>
+#include <QDialog>
+#include <QLabel>
+#include <QTimeEdit>
 
 class CollapsibleGroupBox;
 
@@ -39,5 +38,3 @@ class TimeSettingDialog : public QDialog {
     QTimeEdit* m_dinnerBreakEndEdit;
     QLabel* m_resultLabel;
 };
-
-#endif // TIMESETTINGDIALOG_H

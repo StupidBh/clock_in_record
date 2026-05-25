@@ -1,9 +1,7 @@
-#ifndef ATTENDANCEMAINWINDOW_H
-#define ATTENDANCEMAINWINDOW_H
-
-#include <QMainWindow>
-#include <QLabel>
+#pragma once
 #include <QDate>
+#include <QLabel>
+#include <QMainWindow>
 #include <QMouseEvent>
 
 class CustomCalendarWidget;
@@ -14,6 +12,7 @@ class AttendanceMainWindow : public QMainWindow {
 
   public:
     explicit AttendanceMainWindow(QWidget* parent = nullptr);
+    void raiseAndActivate();
 
   protected:
     void mousePressEvent(QMouseEvent* event) override;
@@ -33,5 +32,3 @@ class AttendanceMainWindow : public QMainWindow {
     CustomCalendarWidget* m_calendar;
     QLabel* m_statsLabel;
 };
-
-#endif // ATTENDANCEMAINWINDOW_H

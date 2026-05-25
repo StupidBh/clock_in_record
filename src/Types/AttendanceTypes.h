@@ -1,6 +1,4 @@
-#ifndef ATTENDANCETYPES_H
-#define ATTENDANCETYPES_H
-
+#pragma once
 #include <QTime>
 
 // 打卡记录结构体
@@ -40,5 +38,3 @@ struct WorkTimeResult
     int overtimeMinutes = 0;     // 加班时间（分钟）
     int totalBreakMinutes = 0;   // 总休息时间（分钟）
 };
-
-#endif // ATTENDANCETYPES_H

@@ -1,10 +1,8 @@
-#ifndef COLLAPSIBLEGROUPBOX_H
-#define COLLAPSIBLEGROUPBOX_H
-
-#include <QWidget>
+#pragma once
+#include <QLayout>
 #include <QPushButton>
 #include <QVBoxLayout>
-#include <QLayout>
+#include <QWidget>
 
 // 自定义可折叠的分组
 class CollapsibleGroupBox : public QWidget {
@@ -26,5 +24,3 @@ class CollapsibleGroupBox : public QWidget {
     bool m_collapsed;
     QString m_title;
 };
-
-#endif // COLLAPSIBLEGROUPBOX_H

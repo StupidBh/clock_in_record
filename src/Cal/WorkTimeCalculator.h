@@ -1,8 +1,5 @@
-#ifndef WORKTIMECALCULATOR_H
-#define WORKTIMECALCULATOR_H
-
+#pragma once
 #include "AttendanceTypes.h"
-#include <QTime>
 
 // 工作时间计算工具类
 class WorkTimeCalculator {
@@ -15,5 +12,3 @@ class WorkTimeCalculator {
     static QTime maxTime(const QTime& time1, const QTime& time2);
     static QTime minTime(const QTime& time1, const QTime& time2);
 };
-
-#endif // WORKTIMECALCULATOR_H
