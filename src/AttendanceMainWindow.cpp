@@ -65,12 +65,11 @@ void AttendanceMainWindow::onMonthChanged()
 void AttendanceMainWindow::onDeleteRequested(const QDate& date)
 {
     // 确认删除
-    int ret = QMessageBox::question(
-        this,
-        QString("确认删除"),
-        QString("确定要删除 %1 的考勤记录吗？").arg(date.toString("yyyy-MM-dd")),
-        QMessageBox::Yes | QMessageBox::No,
-        QMessageBox::No);
+    int ret = QMessageBox::question(this,
+                                    QString("确认删除"),
+                                    QString("确定要删除 %1 的考勤记录吗？").arg(date.toString("yyyy-MM-dd")),
+                                    QMessageBox::Yes | QMessageBox::No,
+                                    QMessageBox::No);
 
     if (ret == QMessageBox::Yes) {
         deleteAttendanceRecord(date);
