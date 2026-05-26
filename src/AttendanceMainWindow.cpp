@@ -1,7 +1,9 @@
 #include "AttendanceMainWindow.h"
 #include "Utils/CustomCalendarWidget.h"
 #include "Utils/TimeSettingDialog.h"
+#include "Utils/CollapsibleGroupBox.h"
 #include "Cal/WorkTimeCalculator.h"
+#include <QGridLayout>
 #include <QHBoxLayout>
 #include <QGroupBox>
 #include <QSplitter>
@@ -117,6 +119,54 @@ void AttendanceMainWindow::setupUI()
     m_statsLabel->setStyleSheet("padding: 10px; background-color: #f9f9f9; border-radius: 5px;");
     statsLayout->addWidget(m_statsLabel);
     rightLayout->addWidget(statsGroup);
+
+    // 全局工作时间设置 (默认折叠)
+    m_globalSettingsGroup = new CollapsibleGroupBox(QString("全局工作时间设置"));
+    QVBoxLayout* globalDetailsLayout = new QVBoxLayout();
+
+    // 标准工作时间
+    QGroupBox* standardGroup = new QGroupBox(QString("标准工作时间"));
+    QGridLayout* standardLayout = new QGridLayout(standardGroup);
+
+    standardLayout->addWidget(new QLabel(QString("标准上班时间:")), 0, 0);
+    m_globalWorkStartEdit = new QTimeEdit();
+    m_globalWorkStartEdit->setDisplayFormat("hh:mm");
+    standardLayout->addWidget(m_globalWorkStartEdit, 0, 1);
+
+    standardLayout->addWidget(new QLabel(QString("标准下班时间:")), 1, 0);
+    m_globalWorkEndEdit = new QTimeEdit();
+    m_globalWorkEndEdit->setDisplayFormat("hh:mm");
+    standardLayout->addWidget(m_globalWorkEndEdit, 1, 1);
+
+    globalDetailsLayout->addWidget(standardGroup);
+
+    // 休息时间设置
+    QGroupBox* breakGroup = new QGroupBox(QString("休息时间设置"));
+    QGridLayout* breakLayout = new QGridLayout(breakGroup);
+
+    breakLayout->addWidget(new QLabel(QString("午餐开始时间:")), 0, 0);
+    m_globalLunchStartEdit = new QTimeEdit();
+    m_globalLunchStartEdit->setDisplayFormat("hh:mm");
+    breakLayout->addWidget(m_globalLunchStartEdit, 0, 1);
+
+    breakLayout->addWidget(new QLabel(QString("午餐结束时间:")), 1, 0);
+    m_globalLunchEndEdit = new QTimeEdit();
+    m_globalLunchEndEdit->setDisplayFormat("hh:mm");
+    breakLayout->addWidget(m_globalLunchEndEdit, 1, 1);
+
+    breakLayout->addWidget(new QLabel(QString("晚餐开始时间:")), 2, 0);
+    m_globalDinnerStartEdit = new QTimeEdit();
+    m_globalDinnerStartEdit->setDisplayFormat("hh:mm");
+    breakLayout->addWidget(m_globalDinnerStartEdit, 2, 1);
+
+    breakLayout->addWidget(new QLabel(QString("晚餐结束时间:")), 3, 0);
+    m_globalDinnerEndEdit = new QTimeEdit();
+    m_globalDinnerEndEdit->setDisplayFormat("hh:mm");
+    breakLayout->addWidget(m_globalDinnerEndEdit, 3, 1);
+
+    globalDetailsLayout->addWidget(breakGroup);
+    m_globalSettingsGroup->setContentLayout(globalDetailsLayout);
+    rightLayout->addWidget(m_globalSettingsGroup);
     rightLayout->addStretch();
 
     // 使用分割器
@@ -141,6 +191,15 @@ void AttendanceMainWindow::setupUI()
     connect(m_calendar, &QCalendarWidget::currentPageChanged, this, &AttendanceMainWindow::onMonthChanged);
     connect(m_calendar, &CustomCalendarWidget::deleteRequested, this, &AttendanceMainWindow::onDeleteRequested);
 
+    loadGlobalSettings();
+
+    connect(m_globalWorkStartEdit, &QTimeEdit::timeChanged, this, &AttendanceMainWindow::onGlobalSettingsChanged);
+    connect(m_globalWorkEndEdit, &QTimeEdit::timeChanged, this, &AttendanceMainWindow::onGlobalSettingsChanged);
+    connect(m_globalLunchStartEdit, &QTimeEdit::timeChanged, this, &AttendanceMainWindow::onGlobalSettingsChanged);
+    connect(m_globalLunchEndEdit, &QTimeEdit::timeChanged, this, &AttendanceMainWindow::onGlobalSettingsChanged);
+    connect(m_globalDinnerStartEdit, &QTimeEdit::timeChanged, this, &AttendanceMainWindow::onGlobalSettingsChanged);
+    connect(m_globalDinnerEndEdit, &QTimeEdit::timeChanged, this, &AttendanceMainWindow::onGlobalSettingsChanged);
+
     updateCalendarAppearance();
     updateMonthlyStatistics();
 }
@@ -161,6 +220,42 @@ void AttendanceMainWindow::deleteAttendanceRecord(const QDate& date)
 
     // 更新界面
     updateCalendarAppearance();
+    updateMonthlyStatistics();
+}
+
+void AttendanceMainWindow::loadGlobalSettings()
+{
+    QSettings settings;
+    AttendanceRecord defaults;
+
+    m_globalWorkStartEdit->setTime(
+        QTime::fromString(settings.value("settings/workStart", defaults.workStartTime.toString("hh:mm")).toString(), "hh:mm"));
+    m_globalWorkEndEdit->setTime(
+        QTime::fromString(settings.value("settings/workEnd", defaults.workEndTime.toString("hh:mm")).toString(), "hh:mm"));
+    m_globalLunchStartEdit->setTime(
+        QTime::fromString(settings.value("settings/lunchStart", defaults.lunchBreakStart.toString("hh:mm")).toString(), "hh:mm"));
+    m_globalLunchEndEdit->setTime(
+        QTime::fromString(settings.value("settings/lunchEnd", defaults.lunchBreakEnd.toString("hh:mm")).toString(), "hh:mm"));
+    m_globalDinnerStartEdit->setTime(
+        QTime::fromString(settings.value("settings/dinnerStart", defaults.dinnerBreakStart.toString("hh:mm")).toString(), "hh:mm"));
+    m_globalDinnerEndEdit->setTime(
+        QTime::fromString(settings.value("settings/dinnerEnd", defaults.dinnerBreakEnd.toString("hh:mm")).toString(), "hh:mm"));
+}
+
+void AttendanceMainWindow::saveGlobalSettings()
+{
+    QSettings settings;
+    settings.setValue("settings/workStart", m_globalWorkStartEdit->time().toString("hh:mm"));
+    settings.setValue("settings/workEnd", m_globalWorkEndEdit->time().toString("hh:mm"));
+    settings.setValue("settings/lunchStart", m_globalLunchStartEdit->time().toString("hh:mm"));
+    settings.setValue("settings/lunchEnd", m_globalLunchEndEdit->time().toString("hh:mm"));
+    settings.setValue("settings/dinnerStart", m_globalDinnerStartEdit->time().toString("hh:mm"));
+    settings.setValue("settings/dinnerEnd", m_globalDinnerEndEdit->time().toString("hh:mm"));
+}
+
+void AttendanceMainWindow::onGlobalSettingsChanged()
+{
+    saveGlobalSettings();
     updateMonthlyStatistics();
 }
 
@@ -206,6 +301,21 @@ void AttendanceMainWindow::updateMonthlyStatistics()
     QDate endDate = startDate.addMonths(1).addDays(-1);
 
     QSettings settings;
+
+    AttendanceRecord globalDefaults;
+    QTime globalWorkStart = QTime::fromString(
+        settings.value("settings/workStart", globalDefaults.workStartTime.toString("hh:mm")).toString(), "hh:mm");
+    QTime globalWorkEnd = QTime::fromString(
+        settings.value("settings/workEnd", globalDefaults.workEndTime.toString("hh:mm")).toString(), "hh:mm");
+    QTime globalLunchStart = QTime::fromString(
+        settings.value("settings/lunchStart", globalDefaults.lunchBreakStart.toString("hh:mm")).toString(), "hh:mm");
+    QTime globalLunchEnd = QTime::fromString(
+        settings.value("settings/lunchEnd", globalDefaults.lunchBreakEnd.toString("hh:mm")).toString(), "hh:mm");
+    QTime globalDinnerStart = QTime::fromString(
+        settings.value("settings/dinnerStart", globalDefaults.dinnerBreakStart.toString("hh:mm")).toString(), "hh:mm");
+    QTime globalDinnerEnd = QTime::fromString(
+        settings.value("settings/dinnerEnd", globalDefaults.dinnerBreakEnd.toString("hh:mm")).toString(), "hh:mm");
+
     int workDays = 0;
     int totalOvertimeMinutes = 0;
     int totalLateMinutes = 0;
@@ -222,18 +332,12 @@ void AttendanceMainWindow::updateMonthlyStatistics()
             record.arrivalTime = QTime::fromString(settings.value(key + "/arrival").toString(), "hh:mm");
             record.departureTime = QTime::fromString(settings.value(key + "/departure").toString(), "hh:mm");
 
-            auto loadIfExists = [&](const QString& suffix, QTime& target) {
-                QString str = settings.value(key + suffix).toString();
-                if (!str.isEmpty()) {
-                    target = QTime::fromString(str, "hh:mm");
-                }
-            };
-            loadIfExists("/workStart", record.workStartTime);
-            loadIfExists("/workEnd", record.workEndTime);
-            loadIfExists("/lunchStart", record.lunchBreakStart);
-            loadIfExists("/lunchEnd", record.lunchBreakEnd);
-            loadIfExists("/dinnerStart", record.dinnerBreakStart);
-            loadIfExists("/dinnerEnd", record.dinnerBreakEnd);
+            record.workStartTime = globalWorkStart;
+            record.workEndTime = globalWorkEnd;
+            record.lunchBreakStart = globalLunchStart;
+            record.lunchBreakEnd = globalLunchEnd;
+            record.dinnerBreakStart = globalDinnerStart;
+            record.dinnerBreakEnd = globalDinnerEnd;
 
             if (record.needAverageCal) {
                 workDays++;
