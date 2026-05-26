@@ -2,7 +2,7 @@
 # for clang-format 20.0.0
 Language: Cpp
 BasedOnStyle: LLVM
-AlignAfterOpenBracket: AlwaysBreak
+AlignAfterOpenBracket: true
 AlignArrayOfStructures: None
 # LineEndingStyle: LF
 DeriveLineEnding: false
@@ -148,7 +148,7 @@ PointerAlignment: Left
 
 ReferenceAlignment: Left
 
-ReflowComments: true
+ReflowComments: Always
 
 RemoveSemicolon: false
 RemoveBracesLLVM: false
