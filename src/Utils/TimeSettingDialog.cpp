@@ -28,18 +28,24 @@ AttendanceRecord TimeSettingDialog::getRecord() const
 
     QSettings settings;
     AttendanceRecord defaults;
-    record.workStartTime = QTime::fromString(
-        settings.value("settings/workStart", defaults.workStartTime.toString("hh:mm")).toString(), "hh:mm");
-    record.workEndTime = QTime::fromString(
-        settings.value("settings/workEnd", defaults.workEndTime.toString("hh:mm")).toString(), "hh:mm");
-    record.lunchBreakStart = QTime::fromString(
-        settings.value("settings/lunchStart", defaults.lunchBreakStart.toString("hh:mm")).toString(), "hh:mm");
-    record.lunchBreakEnd = QTime::fromString(
-        settings.value("settings/lunchEnd", defaults.lunchBreakEnd.toString("hh:mm")).toString(), "hh:mm");
+    record.workStartTime =
+        QTime::fromString(settings.value("settings/workStart", defaults.workStartTime.toString("hh:mm")).toString(),
+                          "hh:mm");
+    record.workEndTime =
+        QTime::fromString(settings.value("settings/workEnd", defaults.workEndTime.toString("hh:mm")).toString(),
+                          "hh:mm");
+    record.lunchBreakStart =
+        QTime::fromString(settings.value("settings/lunchStart", defaults.lunchBreakStart.toString("hh:mm")).toString(),
+                          "hh:mm");
+    record.lunchBreakEnd =
+        QTime::fromString(settings.value("settings/lunchEnd", defaults.lunchBreakEnd.toString("hh:mm")).toString(),
+                          "hh:mm");
     record.dinnerBreakStart = QTime::fromString(
-        settings.value("settings/dinnerStart", defaults.dinnerBreakStart.toString("hh:mm")).toString(), "hh:mm");
-    record.dinnerBreakEnd = QTime::fromString(
-        settings.value("settings/dinnerEnd", defaults.dinnerBreakEnd.toString("hh:mm")).toString(), "hh:mm");
+        settings.value("settings/dinnerStart", defaults.dinnerBreakStart.toString("hh:mm")).toString(),
+        "hh:mm");
+    record.dinnerBreakEnd =
+        QTime::fromString(settings.value("settings/dinnerEnd", defaults.dinnerBreakEnd.toString("hh:mm")).toString(),
+                          "hh:mm");
     return record;
 }
 
@@ -62,10 +68,12 @@ void TimeSettingDialog::calculateWorkTime()
         resultText += QString("[早退] %1\n").arg(fmtMin(result.earlyLeaveMinutes));
     }
 
-    resultText += QString("[实际工作] %1\n").arg(fmtMin(result.actualWorkMinutes));
-    resultText += QString("[标准工作] %1\n").arg(fmtMin(result.standardWorkMinutes));
-    resultText += QString("[总休息] %1\n").arg(fmtMin(result.totalBreakMinutes));
+    resultText += QString("[标准工时] %1\n\n").arg(fmtMin(result.standardWorkMinutes));
+    resultText += QString("[实际工时] %1\n").arg(fmtMin(result.actualWorkMinutes));
 
+    if (result.totalBreakMinutes > 0) {
+        resultText += QString("[休息时间] %1\n").arg(fmtMin(result.totalBreakMinutes));
+    }
     if (result.overtimeMinutes > 0) {
         resultText += QString("[加班时间] %1").arg(fmtMin(result.overtimeMinutes));
     }
@@ -73,7 +81,8 @@ void TimeSettingDialog::calculateWorkTime()
         resultText += QString("[欠缺时间] %1").arg(fmtMin(-result.overtimeMinutes));
     }
     else {
-        resultText += QString("[完成标准时间]");
+        resultText.clear();
+        resultText += QString("[今日无缺]");
     }
 
     m_resultLabel->setText(resultText);
@@ -115,6 +124,7 @@ void TimeSettingDialog::setupUI()
     QVBoxLayout* resultLayout = new QVBoxLayout(resultGroup);
     m_resultLabel = new QLabel(QString(""));
     m_resultLabel->setWordWrap(true);
+    m_resultLabel->setFixedHeight(130);
     m_resultLabel->setStyleSheet("padding: 10px; background-color: #f0f0f0; border-radius: 5px;");
     resultLayout->addWidget(m_resultLabel);
     mainLayout->addWidget(resultGroup);
