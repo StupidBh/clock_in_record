@@ -2,7 +2,6 @@
 #include "CollapsibleGroupBox.h"
 #include "WorkTimeCalculator.h"
 #include <QVBoxLayout>
-#include <QHBoxLayout>
 #include <QGridLayout>
 #include <QGroupBox>
 #include <QPushButton>

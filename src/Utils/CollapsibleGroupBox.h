@@ -1,7 +1,6 @@
 #pragma once
 #include <QLayout>
 #include <QPushButton>
-#include <QVBoxLayout>
 #include <QWidget>
 
 // 自定义可折叠的分组

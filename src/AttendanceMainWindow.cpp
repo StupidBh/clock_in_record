@@ -2,7 +2,6 @@
 #include "Utils/CustomCalendarWidget.h"
 #include "Utils/TimeSettingDialog.h"
 #include "Cal/WorkTimeCalculator.h"
-#include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QGroupBox>
 #include <QSplitter>
