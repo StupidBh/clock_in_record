@@ -7,7 +7,6 @@
 #include <QLabel>
 #include <QTimeEdit>
 
-class CollapsibleGroupBox;
 
 // 时间设置对话框
 class TimeSettingDialog : public QDialog {
@@ -30,11 +29,5 @@ class TimeSettingDialog : public QDialog {
     QCheckBox* m_needAverageCalCheckBox;
     QTimeEdit* m_arrivalTimeEdit;
     QTimeEdit* m_departureTimeEdit;
-    QTimeEdit* m_workStartTimeEdit;
-    QTimeEdit* m_workEndTimeEdit;
-    QTimeEdit* m_lunchBreakStartEdit;
-    QTimeEdit* m_lunchBreakEndEdit;
-    QTimeEdit* m_dinnerBreakStartEdit;
-    QTimeEdit* m_dinnerBreakEndEdit;
     QLabel* m_resultLabel;
 };
