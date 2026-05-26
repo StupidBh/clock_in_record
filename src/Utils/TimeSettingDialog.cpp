@@ -193,7 +193,9 @@ void TimeSettingDialog::loadRecord()
     QSettings settings;
     QString key = m_date.toString("yyyy-MM-dd");
 
-    m_needAverageCalCheckBox->setChecked(settings.value(key + "/needAverageCal", true).toBool());
+    int dayOfWeek = m_date.dayOfWeek();
+    bool defaultNeedAverage = (dayOfWeek != 6 && dayOfWeek != 7);
+    m_needAverageCalCheckBox->setChecked(settings.value(key + "/needAverageCal", defaultNeedAverage).toBool());
 
     AttendanceRecord defaults;
 
