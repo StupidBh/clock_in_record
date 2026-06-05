@@ -107,18 +107,18 @@ void CustomCalendarWidget::showContextMenu(const QPoint& pos)
 QDate CustomCalendarWidget::getDateFromPosition(const QPoint& pos) const
 {
     if (!m_tableView) {
-        return {};
+        return { };
     }
 
     QModelIndex index = m_tableView->indexAt(pos);
     if (!index.isValid()) {
-        return {};
+        return { };
     }
 
     // 获取模型
     QAbstractItemModel* model = m_tableView->model();
     if (!model) {
-        return {};
+        return { };
     }
 
     // 使用 QCalendarWidget 的单元格网格计算正确的日期，

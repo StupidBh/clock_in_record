@@ -8,19 +8,19 @@
 class CustomCalendarWidget : public QCalendarWidget {
     Q_OBJECT
 
-  public:
+public:
     explicit CustomCalendarWidget(QWidget* parent = nullptr);
     void paintCell(QPainter* painter, const QRect& rect, QDate date) const override;
 
     void setCustomData(const QDate& date, const QVariantMap& value);
     void removeCustomData(const QDate& date);
-  signals:
+signals:
     void deleteRequested(const QDate& date);
 
-  private slots:
+private slots:
     void showContextMenu(const QPoint& pos);
 
-  private:
+private:
     QDate getDateFromPosition(const QPoint& pos) const;
 
     QMap<QDate, QVariantMap> m_data;

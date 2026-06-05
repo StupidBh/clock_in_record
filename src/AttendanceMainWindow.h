@@ -13,20 +13,20 @@ class CustomCalendarWidget;
 class AttendanceMainWindow : public QMainWindow {
     Q_OBJECT
 
-  public:
+public:
     explicit AttendanceMainWindow(QWidget* parent = nullptr);
     void raiseAndActivate();
 
-  protected:
+protected:
     void mousePressEvent(QMouseEvent* event) override;
 
-  private slots:
+private slots:
     void onDateClicked(const QDate& date);
     void onMonthChanged();
     void onDeleteRequested(const QDate& date);
     void onGlobalSettingsChanged();
 
-  private:
+private:
     void setupUI();
 
     void deleteAttendanceRecord(const QDate& date);

@@ -7,15 +7,15 @@
 class CollapsibleGroupBox : public QWidget {
     Q_OBJECT
 
-  public:
+public:
     explicit CollapsibleGroupBox(const QString& title, QWidget* parent = nullptr);
 
     void setContentLayout(QLayout* layout);
 
-  private slots:
+private slots:
     void toggle(bool checked);
 
-  private:
+private:
     void updateButtonText();
 
     QPushButton* m_toggleButton;

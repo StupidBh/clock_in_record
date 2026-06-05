@@ -5,8 +5,8 @@ WorkTimeResult WorkTimeCalculator::calculateWorkTimeResult(const AttendanceRecor
     WorkTimeResult result;
 
     // 防护：到达时间晚于或等于离开时间时，返回全零结果
-    if (!record.arrivalTime.isValid() || !record.departureTime.isValid()
-        || record.arrivalTime >= record.departureTime) {
+    if (!record.arrivalTime.isValid() || !record.departureTime.isValid() ||
+        record.arrivalTime >= record.departureTime) {
         return result;
     }
 
@@ -77,11 +77,10 @@ WorkTimeResult WorkTimeCalculator::calculateWorkTimeResult(const AttendanceRecor
     return result;
 }
 
-bool WorkTimeCalculator::isTimeRangeOverlap(
-    const QTime& start1,
-    const QTime& end1,
-    const QTime& start2,
-    const QTime& end2)
+bool WorkTimeCalculator::isTimeRangeOverlap(const QTime& start1,
+                                            const QTime& end1,
+                                            const QTime& start2,
+                                            const QTime& end2)
 {
     return start1 < end2 && start2 < end1;
 }

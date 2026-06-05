@@ -7,20 +7,19 @@
 #include <QLabel>
 #include <QTimeEdit>
 
-
 // 时间设置对话框
 class TimeSettingDialog : public QDialog {
     Q_OBJECT
 
-  public:
+public:
     explicit TimeSettingDialog(const QDate& date, QWidget* parent = nullptr);
     AttendanceRecord getRecord() const;
 
-  private slots:
+private slots:
     void calculateWorkTime();
     void saveAndClose();
 
-  private:
+private:
     void setupUI();
     void loadRecord();
     void saveRecord();
