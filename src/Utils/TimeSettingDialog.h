@@ -30,4 +30,5 @@ class TimeSettingDialog : public QDialog {
     QTimeEdit* m_arrivalTimeEdit;
     QTimeEdit* m_departureTimeEdit;
     QLabel* m_resultLabel;
+    AttendanceRecord m_globalDefaults;
 };

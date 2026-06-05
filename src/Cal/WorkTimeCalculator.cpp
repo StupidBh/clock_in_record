@@ -4,6 +4,12 @@ WorkTimeResult WorkTimeCalculator::calculateWorkTimeResult(const AttendanceRecor
 {
     WorkTimeResult result;
 
+    // 防护：到达时间晚于或等于离开时间时，返回全零结果
+    if (!record.arrivalTime.isValid() || !record.departureTime.isValid()
+        || record.arrivalTime >= record.departureTime) {
+        return result;
+    }
+
     // 计算迟到时间
     if (record.arrivalTime > record.workStartTime) {
         result.lateMinutes = record.workStartTime.secsTo(record.arrivalTime) / 60;
@@ -45,20 +51,21 @@ WorkTimeResult WorkTimeCalculator::calculateWorkTimeResult(const AttendanceRecor
     int standardTotalMinutes = record.workStartTime.secsTo(record.workEndTime) / 60;
     int standardBreakMinutes = 0;
 
-    // 标准午餐时间
-    if (record.lunchBreakStart >= record.workStartTime && record.lunchBreakStart < record.workEndTime &&
-        record.lunchBreakStart < record.lunchBreakEnd) {
-        QTime lunchEnd = minTime(record.lunchBreakEnd, record.workEndTime);
-        if (record.lunchBreakStart < lunchEnd) {
-            standardBreakMinutes += record.lunchBreakStart.secsTo(lunchEnd) / 60;
+    // 标准午餐时间（与实际休息时间使用相同的 overlap + clip 模式）
+    if (isTimeRangeOverlap(record.workStartTime, record.workEndTime, record.lunchBreakStart, record.lunchBreakEnd)) {
+        QTime lunchStart = maxTime(record.workStartTime, record.lunchBreakStart);
+        QTime lunchEnd = minTime(record.workEndTime, record.lunchBreakEnd);
+        if (lunchStart < lunchEnd) {
+            standardBreakMinutes += lunchStart.secsTo(lunchEnd) / 60;
         }
     }
 
-    // 标准晚餐时间（如果在工作时间内）
-    if (record.dinnerBreakStart >= record.workStartTime && record.dinnerBreakStart < record.workEndTime) {
-        QTime dinnerEnd = minTime(record.dinnerBreakEnd, record.workEndTime);
-        if (record.dinnerBreakStart < dinnerEnd) {
-            standardBreakMinutes += record.dinnerBreakStart.secsTo(dinnerEnd) / 60;
+    // 标准晚餐时间（同模式，处理跨工作起点的部分重叠）
+    if (isTimeRangeOverlap(record.workStartTime, record.workEndTime, record.dinnerBreakStart, record.dinnerBreakEnd)) {
+        QTime dinnerStart = maxTime(record.workStartTime, record.dinnerBreakStart);
+        QTime dinnerEnd = minTime(record.workEndTime, record.dinnerBreakEnd);
+        if (dinnerStart < dinnerEnd) {
+            standardBreakMinutes += dinnerStart.secsTo(dinnerEnd) / 60;
         }
     }
 

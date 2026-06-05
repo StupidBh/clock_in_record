@@ -2,7 +2,6 @@
 #include <QSettings>
 #include <QStyle>
 #include <QApplication>
-#include <QDebug>
 #include <QAbstractItemModel>
 #include <QPainter>
 
@@ -19,7 +18,7 @@ CustomCalendarWidget::CustomCalendarWidget(QWidget* parent) :
     });
 }
 
-void CustomCalendarWidget::paintCell(QPainter* painter, const QRect& rect, const QDate& date) const
+void CustomCalendarWidget::paintCell(QPainter* painter, const QRect& rect, QDate date) const
 {
     QCalendarWidget::paintCell(painter, rect, date);
 
@@ -50,17 +49,19 @@ void CustomCalendarWidget::paintCell(QPainter* painter, const QRect& rect, const
         painter->restore();
     }
 
-    if (m_data.contains(date)) {
+    auto it = m_data.constFind(date);
+    if (it != m_data.constEnd()) {
         painter->save();
         QFont font = painter->font();
         font.setPointSize(7);
         painter->setFont(font);
         painter->setPen(QPen(Qt::blue));
 
+        const QVariantMap& info = it.value();
         QRect eventRectDown = rect.adjusted(2, rect.height() / 2, -2, -2);
         QRect eventRectUp = rect.adjusted(2, -32, -2, -2);
-        painter->drawText(eventRectUp, Qt::AlignCenter, m_data[date]["arrivalTime"].toString());
-        painter->drawText(eventRectDown, Qt::AlignCenter, m_data[date]["departureTime"].toString());
+        painter->drawText(eventRectUp, Qt::AlignCenter, info["arrivalTime"].toString());
+        painter->drawText(eventRectDown, Qt::AlignCenter, info["departureTime"].toString());
         painter->restore();
     }
 }
@@ -103,26 +104,32 @@ void CustomCalendarWidget::showContextMenu(const QPoint& pos)
     }
 }
 
-QDate CustomCalendarWidget::getDateFromPosition(const QPoint& pos)
+QDate CustomCalendarWidget::getDateFromPosition(const QPoint& pos) const
 {
     if (!m_tableView) {
-        return QDate();
+        return {};
     }
 
     QModelIndex index = m_tableView->indexAt(pos);
     if (!index.isValid()) {
-        return QDate();
+        return {};
     }
 
     // 获取模型
     QAbstractItemModel* model = m_tableView->model();
     if (!model) {
-        return QDate();
+        return {};
     }
 
+    // 使用 QCalendarWidget 的单元格网格计算正确的日期，
+    // 避免相邻月份溢出日被错误地标记为当前月份
     int year = yearShown();
     int month = monthShown();
-    int day = model->data(index, Qt::DisplayRole).toInt();
+    QDate firstOfMonth(year, month, 1);
 
-    return QDate(year, month, day);
+    // firstDayOfWeek 设为周一，dayOfWeek() 返回 1(周一)~7(周日)
+    int firstDayCol = (firstOfMonth.dayOfWeek() - 1 + 7) % 7;
+    int cellDayOffset = index.row() * 7 + index.column() - firstDayCol;
+
+    return firstOfMonth.addDays(cellDayOffset);
 }

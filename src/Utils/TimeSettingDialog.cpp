@@ -1,6 +1,7 @@
 #include "TimeSettingDialog.h"
 #include "WorkTimeCalculator.h"
 #include <QVBoxLayout>
+#include <QHBoxLayout>
 #include <QGridLayout>
 #include <QGroupBox>
 #include <QPushButton>
@@ -9,7 +10,8 @@
 
 TimeSettingDialog::TimeSettingDialog(const QDate& date, QWidget* parent) :
     QDialog(parent),
-    m_date(date)
+    m_date(date),
+    m_globalDefaults(loadGlobalTimeDefaults())
 {
     setWindowTitle(QString("设置打卡时间 - %1").arg(date.toString("yyyy-MM-dd")));
     setModal(true);
@@ -26,26 +28,12 @@ AttendanceRecord TimeSettingDialog::getRecord() const
     record.arrivalTime = m_arrivalTimeEdit->time();
     record.departureTime = m_departureTimeEdit->time();
 
-    QSettings settings;
-    AttendanceRecord defaults;
-    record.workStartTime =
-        QTime::fromString(settings.value("settings/workStart", defaults.workStartTime.toString("hh:mm")).toString(),
-                          "hh:mm");
-    record.workEndTime =
-        QTime::fromString(settings.value("settings/workEnd", defaults.workEndTime.toString("hh:mm")).toString(),
-                          "hh:mm");
-    record.lunchBreakStart =
-        QTime::fromString(settings.value("settings/lunchStart", defaults.lunchBreakStart.toString("hh:mm")).toString(),
-                          "hh:mm");
-    record.lunchBreakEnd =
-        QTime::fromString(settings.value("settings/lunchEnd", defaults.lunchBreakEnd.toString("hh:mm")).toString(),
-                          "hh:mm");
-    record.dinnerBreakStart = QTime::fromString(
-        settings.value("settings/dinnerStart", defaults.dinnerBreakStart.toString("hh:mm")).toString(),
-        "hh:mm");
-    record.dinnerBreakEnd =
-        QTime::fromString(settings.value("settings/dinnerEnd", defaults.dinnerBreakEnd.toString("hh:mm")).toString(),
-                          "hh:mm");
+    record.workStartTime = m_globalDefaults.workStartTime;
+    record.workEndTime = m_globalDefaults.workEndTime;
+    record.lunchBreakStart = m_globalDefaults.lunchBreakStart;
+    record.lunchBreakEnd = m_globalDefaults.lunchBreakEnd;
+    record.dinnerBreakStart = m_globalDefaults.dinnerBreakStart;
+    record.dinnerBreakEnd = m_globalDefaults.dinnerBreakEnd;
     return record;
 }
 
@@ -81,7 +69,6 @@ void TimeSettingDialog::calculateWorkTime()
         resultText += QString("[欠缺时间] %1").arg(fmtMin(-result.overtimeMinutes));
     }
     else {
-        resultText.clear();
         resultText += QString("[今日无缺]");
     }
 

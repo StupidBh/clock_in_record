@@ -4,6 +4,7 @@
 #include "Utils/CollapsibleGroupBox.h"
 #include "Cal/WorkTimeCalculator.h"
 #include <QGridLayout>
+#include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QGroupBox>
 #include <QSplitter>
@@ -34,7 +35,7 @@ void AttendanceMainWindow::mousePressEvent(QMouseEvent* event)
 {
     // 检查点击位置是否在日历区域外
     if (m_calendar) {
-        QPoint calendarPos = m_calendar->mapFromGlobal(event->globalPos());
+        QPoint calendarPos = m_calendar->mapFromGlobal(event->globalPosition().toPoint());
         QRect calendarRect = m_calendar->rect();
 
         // 如果点击在日历外，重置选择状态
@@ -225,21 +226,13 @@ void AttendanceMainWindow::deleteAttendanceRecord(const QDate& date)
 
 void AttendanceMainWindow::loadGlobalSettings()
 {
-    QSettings settings;
-    AttendanceRecord defaults;
-
-    m_globalWorkStartEdit->setTime(
-        QTime::fromString(settings.value("settings/workStart", defaults.workStartTime.toString("hh:mm")).toString(), "hh:mm"));
-    m_globalWorkEndEdit->setTime(
-        QTime::fromString(settings.value("settings/workEnd", defaults.workEndTime.toString("hh:mm")).toString(), "hh:mm"));
-    m_globalLunchStartEdit->setTime(
-        QTime::fromString(settings.value("settings/lunchStart", defaults.lunchBreakStart.toString("hh:mm")).toString(), "hh:mm"));
-    m_globalLunchEndEdit->setTime(
-        QTime::fromString(settings.value("settings/lunchEnd", defaults.lunchBreakEnd.toString("hh:mm")).toString(), "hh:mm"));
-    m_globalDinnerStartEdit->setTime(
-        QTime::fromString(settings.value("settings/dinnerStart", defaults.dinnerBreakStart.toString("hh:mm")).toString(), "hh:mm"));
-    m_globalDinnerEndEdit->setTime(
-        QTime::fromString(settings.value("settings/dinnerEnd", defaults.dinnerBreakEnd.toString("hh:mm")).toString(), "hh:mm"));
+    AttendanceRecord globalDefaults = loadGlobalTimeDefaults();
+    m_globalWorkStartEdit->setTime(globalDefaults.workStartTime);
+    m_globalWorkEndEdit->setTime(globalDefaults.workEndTime);
+    m_globalLunchStartEdit->setTime(globalDefaults.lunchBreakStart);
+    m_globalLunchEndEdit->setTime(globalDefaults.lunchBreakEnd);
+    m_globalDinnerStartEdit->setTime(globalDefaults.dinnerBreakStart);
+    m_globalDinnerEndEdit->setTime(globalDefaults.dinnerBreakEnd);
 }
 
 void AttendanceMainWindow::saveGlobalSettings()
@@ -302,19 +295,13 @@ void AttendanceMainWindow::updateMonthlyStatistics()
 
     QSettings settings;
 
-    AttendanceRecord globalDefaults;
-    QTime globalWorkStart = QTime::fromString(
-        settings.value("settings/workStart", globalDefaults.workStartTime.toString("hh:mm")).toString(), "hh:mm");
-    QTime globalWorkEnd = QTime::fromString(
-        settings.value("settings/workEnd", globalDefaults.workEndTime.toString("hh:mm")).toString(), "hh:mm");
-    QTime globalLunchStart = QTime::fromString(
-        settings.value("settings/lunchStart", globalDefaults.lunchBreakStart.toString("hh:mm")).toString(), "hh:mm");
-    QTime globalLunchEnd = QTime::fromString(
-        settings.value("settings/lunchEnd", globalDefaults.lunchBreakEnd.toString("hh:mm")).toString(), "hh:mm");
-    QTime globalDinnerStart = QTime::fromString(
-        settings.value("settings/dinnerStart", globalDefaults.dinnerBreakStart.toString("hh:mm")).toString(), "hh:mm");
-    QTime globalDinnerEnd = QTime::fromString(
-        settings.value("settings/dinnerEnd", globalDefaults.dinnerBreakEnd.toString("hh:mm")).toString(), "hh:mm");
+    // 直接使用已缓存在 QTimeEdit 部件中的全局时间设置，避免重复读取注册表
+    QTime globalWorkStart = m_globalWorkStartEdit->time();
+    QTime globalWorkEnd = m_globalWorkEndEdit->time();
+    QTime globalLunchStart = m_globalLunchStartEdit->time();
+    QTime globalLunchEnd = m_globalLunchEndEdit->time();
+    QTime globalDinnerStart = m_globalDinnerStartEdit->time();
+    QTime globalDinnerEnd = m_globalDinnerEndEdit->time();
 
     int workDays = 0;
     int totalOvertimeMinutes = 0;
@@ -328,7 +315,11 @@ void AttendanceMainWindow::updateMonthlyStatistics()
         if (settings.contains(key + "/arrival")) {
             // 加载记录并计算，record 默认构造已包含所有默认值
             AttendanceRecord record;
-            record.needAverageCal = settings.value(key + "/needAverageCal", record.needAverageCal).toBool();
+            // needAverageCal 默认值与 TimeSettingDialog::loadRecord 保持一致：
+            // 周末默认不计入、工作日默认计入
+            int dayOfWeek = date.dayOfWeek();
+            bool defaultNeedAverage = (dayOfWeek != 6 && dayOfWeek != 7);
+            record.needAverageCal = settings.value(key + "/needAverageCal", defaultNeedAverage).toBool();
             record.arrivalTime = QTime::fromString(settings.value(key + "/arrival").toString(), "hh:mm");
             record.departureTime = QTime::fromString(settings.value(key + "/departure").toString(), "hh:mm");
 
