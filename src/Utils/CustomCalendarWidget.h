@@ -11,6 +11,7 @@ class CustomCalendarWidget : public QCalendarWidget {
 public:
     explicit CustomCalendarWidget(QWidget* parent = nullptr);
     void paintCell(QPainter* painter, const QRect& rect, QDate date) const override;
+    bool eventFilter(QObject* watched, QEvent* event) override;
 
     void setCustomData(const QDate& date, const QVariantMap& value);
     void removeCustomData(const QDate& date);
@@ -24,5 +25,6 @@ private:
     QDate getDateFromPosition(const QPoint& pos) const;
 
     QMap<QDate, QVariantMap> m_data;
+    mutable QMap<QDate, QRect> m_dateRects;
     QTableView* m_tableView;
 };

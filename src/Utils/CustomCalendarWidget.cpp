@@ -2,24 +2,34 @@
 #include <QSettings>
 #include <QStyle>
 #include <QApplication>
-#include <QAbstractItemModel>
+#include <QContextMenuEvent>
 #include <QPainter>
 
 CustomCalendarWidget::CustomCalendarWidget(QWidget* parent) :
     QCalendarWidget(parent),
     m_tableView(nullptr)
 {
-    setContextMenuPolicy(Qt::CustomContextMenu);
     m_tableView = this->findChild<QTableView*>();
-    connect(this, &QWidget::customContextMenuRequested, this, [this](const QPoint& pos) {
-        if (m_tableView) {
-            showContextMenu(m_tableView->viewport()->mapFrom(this, pos));
-        }
-    });
+    if (m_tableView && m_tableView->viewport()) {
+        m_tableView->viewport()->installEventFilter(this);
+    }
+}
+
+bool CustomCalendarWidget::eventFilter(QObject* watched, QEvent* event)
+{
+    if (m_tableView && watched == m_tableView->viewport() && event->type() == QEvent::ContextMenu) {
+        auto* contextMenuEvent = static_cast<QContextMenuEvent*>(event);
+        showContextMenu(contextMenuEvent->pos());
+        return true;
+    }
+
+    return QCalendarWidget::eventFilter(watched, event);
 }
 
 void CustomCalendarWidget::paintCell(QPainter* painter, const QRect& rect, QDate date) const
 {
+    m_dateRects[date] = rect;
+
     QCalendarWidget::paintCell(painter, rect, date);
 
     if (date == selectedDate()) {
@@ -106,30 +116,13 @@ void CustomCalendarWidget::showContextMenu(const QPoint& pos)
 
 QDate CustomCalendarWidget::getDateFromPosition(const QPoint& pos) const
 {
-    if (!m_tableView) {
-        return { };
+    // paintCell 已经拿到了 QCalendarWidget 最终用于绘制每个日期的真实 rect。
+    // 直接用这些 rect 做命中测试，避免依赖内部 QTableView 的行列、表头和坐标转换细节。
+    for (auto it = m_dateRects.constBegin(); it != m_dateRects.constEnd(); ++it) {
+        if (it.value().contains(pos)) {
+            return it.key();
+        }
     }
 
-    QModelIndex index = m_tableView->indexAt(pos);
-    if (!index.isValid()) {
-        return { };
-    }
-
-    // 获取模型
-    QAbstractItemModel* model = m_tableView->model();
-    if (!model) {
-        return { };
-    }
-
-    // 使用 QCalendarWidget 的单元格网格计算正确的日期，
-    // 避免相邻月份溢出日被错误地标记为当前月份
-    int year = yearShown();
-    int month = monthShown();
-    QDate firstOfMonth(year, month, 1);
-
-    // firstDayOfWeek 设为周一，dayOfWeek() 返回 1(周一)~7(周日)
-    int firstDayCol = (firstOfMonth.dayOfWeek() - 1 + 7) % 7;
-    int cellDayOffset = index.row() * 7 + index.column() - firstDayCol;
-
-    return firstOfMonth.addDays(cellDayOffset);
+    return { };
 }

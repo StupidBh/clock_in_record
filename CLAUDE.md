@@ -2,47 +2,51 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Build
+## Commands
 
-```
+```bash
+# Configure (Ninja single-config generator)
 cmake -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -B build -S .
+
+# Build
 cmake --build build
+
+# Run the built app
+./bin/RelWithDebInfo/AttendanceApp.exe
+
+# Format C++ sources/headers using the checked-in .clang-format
+clang-format -i src/*.cpp src/*.h src/Cal/*.cpp src/Cal/*.h src/Utils/*.cpp src/Utils/*.h src/Types/*.h
 ```
 
-Qt 5.15.2 path is hardcoded in root `CMakeLists.txt` as `C:/Qt/5.15.2/msvc2019_64`. MSVC 2019 64-bit, C++20, with `/utf-8` flag.
+There are currently no tests and no linter target. If new `.cpp`/`.h` files are added, re-run the CMake configure command because `src/CMakeLists.txt` uses `file(GLOB_RECURSE ...)`.
 
-There are no tests. There is no linter/formatter configured beyond `.clang-format` (WebKit-based, customized).
-
-`src/CMakeLists.txt` uses `file(GLOB_RECURSE ...)` to collect sources — new `.cpp`/`.h` files are auto-discovered, but you must re-run cmake after adding files.
+The root `CMakeLists.txt` currently sets `CMAKE_PREFIX_PATH` to `D:/Qt6/6.11.1/mingw_64`, but the project is written to find either Qt 6 or Qt 5 (`Core`, `Widgets`, `Network`). Build outputs go to `bin/<CONFIG>/` at the repository root. On Windows, `src/CMakeLists.txt` adds the app icon resource and runs `windeployqt` after build when available.
 
 ## Architecture
 
-A Windows desktop attendance tracker built with Qt Widgets. The user clicks a calendar date, fills in arrival/departure times, and sees monthly overtime statistics.
+This is a Windows desktop attendance tracker built with Qt Widgets. Users select calendar dates, enter arrival/departure times, choose whether the day counts toward average overtime, and view monthly overtime statistics.
 
-**Single-instance enforcement** (`src/main.cpp`): Uses `QLocalServer`/`QLocalSocket` (server name `AttendanceApp-SingleInstance`). A second launch sends `"activate"` to the existing instance and exits. The existing instance calls `raiseAndActivate()` to bring its window to the foreground.
+**Application entry / single instance** (`src/main.cpp`): Creates the `QApplication`, sets app metadata (`MyCompany` / `AttendanceApp`) used by `QSettings`, applies the global font/icon, and enforces a single running instance with `QLocalServer`/`QLocalSocket` using server name `AttendanceApp-SingleInstance`. A second launch sends `activate`; the existing `AttendanceMainWindow` calls `raiseAndActivate()`.
 
-**Data layer** (`QSettings` → Windows registry: `HKEY_CURRENT_USER\Software\MyCompany\AttendanceApp`). Two tiers of keys:
+**Data storage** (`QSettings`): Data is stored in the platform settings backend under organization/app name `MyCompany/AttendanceApp` (Windows registry on Windows). There are two logical tiers:
 
-- **Per-date** (3 keys): `YYYY-MM-DD/arrival`, `YYYY-MM-DD/departure`, `YYYY-MM-DD/needAverageCal`. These are the only keys written by `TimeSettingDialog::saveRecord()`. The `deleteAttendanceRecord()` method deletes 9 keys as a backward-compatibility cleanup (standard work/break times were historically stored per-date).
-- **Global defaults** (6 keys under `settings/` prefix): `settings/workStart`, `settings/workEnd`, `settings/lunchStart`, `settings/lunchEnd`, `settings/dinnerStart`, `settings/dinnerEnd`. These are managed by the right-panel `CollapsibleGroupBox` in the main window and used as defaults for all dates.
+- Per-date record keys under `YYYY-MM-DD/`: `arrival`, `departure`, `needAverageCal`. These are written by `TimeSettingDialog::saveRecord()`.
+- Global time defaults under `settings/`: `workStart`, `workEnd`, `lunchStart`, `lunchEnd`, `dinnerStart`, `dinnerEnd`. These are edited in the main window's right panel and read by `loadGlobalTimeDefaults()` in `WorkTimeCalculator.h`.
 
-Loading is lazy — data is read from QSettings on demand, never cached in memory (except `CustomCalendarWidget::m_data`, which is a view-layer display cache populated by `updateMonthlyStatistics()`).
+Data is loaded lazily from `QSettings`; there is no central in-memory model. The main exception is `CustomCalendarWidget::m_data`, a view cache for painted arrival/departure text populated while monthly statistics are recalculated. `AttendanceMainWindow::deleteAttendanceRecord()` also removes legacy per-date work/break keys for backward compatibility.
 
-**Calculation engine** (`src/Cal/WorkTimeCalculator`): Pure stateless utility. A single static method takes an `AttendanceRecord` (all times for a day) and returns a `WorkTimeResult` (late minutes, early-leave minutes, actual work minutes, standard work minutes, overtime minutes, total break minutes). Overtime can be negative (deficit). Break time only counts the portion of lunch/dinner breaks that overlap with the actual work period.
+**Domain types and calculation** (`src/Types/AttendanceTypes.h`, `src/Cal/WorkTimeCalculator.*`): `AttendanceRecord` and `WorkTimeResult` are plain structs. `AttendanceRecord` defaults to 09:00–18:00 work time, 12:30–13:30 lunch, and 18:00–18:30 dinner. `WorkTimeCalculator::calculateWorkTimeResult()` is a stateless utility: it validates arrival/departure order, computes late/early-leave minutes, clips lunch/dinner breaks to the actual and standard work ranges, and returns overtime as `actualWorkMinutes - standardWorkMinutes` (can be negative).
 
-**Main window** (`src/AttendanceMainWindow`): Left panel = custom calendar + instructions; right panel = monthly stats label + collapsible global settings, inside a `QSplitter` (2:1 ratio, right max 350px). Clicking a date opens `TimeSettingDialog`. After save, month change, or global settings change, it recalculates all days in the visible month for the stats panel. Stats tracked but not displayed: total late minutes, total early-leave minutes. Clicking outside the calendar resets the selection (by selecting a date one year in the future and paging back to the current month).
+**Main window** (`src/AttendanceMainWindow.*`): Owns the main UI and orchestration. The left side is `CustomCalendarWidget` plus usage text; the right side is monthly stats plus a collapsed-by-default `CollapsibleGroupBox` for global work/break settings inside a `QSplitter`. Date clicks open `TimeSettingDialog`. Month changes, record saves/deletes, and global settings changes refresh calendar painting and monthly statistics. Monthly total overtime sums only positive daily overtime; `needAverageCal` controls the denominator for average overtime. The target average overtime is hardcoded at 2.5 hours/day.
 
-**Custom calendar** (`src/Utils/CustomCalendarWidget`): Subclasses `QCalendarWidget`. Paints cells with green background for dates that have records (lighter shade when `needAverageCal` is false). Selected date gets a blue rounded rect; today gets a blue outline with white fill. Arrival/departure times are drawn in small blue text on the cell. Right-click on a date with data shows a delete context menu. Uses `QTableView` (found via `findChild`) for position-to-date mapping.
+**Calendar view** (`src/Utils/CustomCalendarWidget.*`): Subclasses `QCalendarWidget`. It paints selected/today states and overlays arrival/departure times from `m_data`. Right-click uses the internal `QTableView` to map the click position to a date, then shows a delete menu only for dates with an `arrival` setting.
 
-**Time setting dialog** (`src/Utils/TimeSettingDialog`): Modal dialog for a single date. Shows only arrival time, departure time, and a "计入平均加班日" (include in average overtime) checkbox. Standard work hours and break times are read from global QSettings — they are not editable per-date in this dialog. Live calculation runs on every `QTimeEdit::timeChanged` signal (no "Calculate" button). The result label has a fixed height (130px) to prevent dialog resizing.
+**Time-setting dialog** (`src/Utils/TimeSettingDialog.*`): Modal dialog for one date. It edits only arrival, departure, and `计入平均加班日`; standard work/break times come from global settings captured when the dialog is constructed. Arrival/departure changes trigger live recalculation through `QTimeEdit::timeChanged`. New records default `needAverageCal` to false on weekends and true on weekdays.
 
-**Collapsible group box** (`src/Utils/CollapsibleGroupBox`): Generic reusable widget (toggle button + animated content area), used in the main window's right panel to fold the global settings section (collapsed by default).
+**Collapsible settings widget** (`src/Utils/CollapsibleGroupBox.*`): Small reusable widget consisting of a checkable button and content widget; used for the global settings panel.
 
-## Key patterns
+## Project-specific notes
 
-- `AttendanceTypes.h` defines the two plain structs (`AttendanceRecord`, `WorkTimeResult`) used everywhere. No methods, just data. Default constructor fills in typical 9-to-6 times with a 12:30–13:30 lunch break.
-- `TimeSettingDialog` does live calculation on every `QTimeEdit::timeChanged` signal — there is no "Calculate" button.
-- The `needAverageCal` flag excludes non-standard days (holidays, make-up workdays) from the monthly average overtime calculation. For new records, it defaults to `false` on weekends (Saturday=6, Sunday=7) and `true` on weekdays.
-- The statistics panel uses a hardcoded target of **2.5 hours/day** average overtime. If the monthly average is below this, it shows "缺加班时间" (deficit); if above, "余加班时间" (surplus).
-- Only positive overtime minutes are summed for the monthly total (deficits on individual days are ignored in the sum).
-- Global settings changes trigger immediate save to QSettings and recalculation of monthly statistics.
+- Keep UI strings consistent with the existing Chinese-language interface.
+- `.clang-format` is WebKit-based with 4-space indentation, 120-column limit, LF endings, unsorted includes, and left-aligned pointers/references.
+- `resources/resources.qrc` contains the Qt resource collection; the app icon is `resources/Icons/logo.ico` and is referenced as `:/Icons/logo.ico`.
