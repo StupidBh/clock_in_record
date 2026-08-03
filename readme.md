@@ -1,12 +1,72 @@
-﻿### 打卡记录工具
-- Claude 调优而来
-- main.cpp cmakelist.txt 供自行编译使用
+# AttendanceApp
 
+AttendanceApp 是一个基于 Qt 6 的桌面考勤记录工具，用于按日期记录上下班时间，并根据工作时段、休息时段和加班目标生成月度统计。应用采用本地存储，无需数据库或网络服务。
 
-#### 删除数据
-📁 QSettings 数据存储位置
-Windows 系统
-注册表位置：
+## 主要功能
+
+- 在月历中录入每天的到达和离开时间，并直接显示在日期格中。
+- 自动计算实际工时、迟到、早退、休息时间和加班时长。
+- 支持配置标准上下班时间、午餐和晚餐休息时段。
+- 可将某日排除在平均加班天数之外，同时保留其总加班时长。
+- 根据日均加班目标统计月度平均值及缺少/超出时长；目标为 `0` 时仅显示总加班时长。
+- 可选餐补统计，并可自定义餐补起算时间，默认 `21:00`。
+- 支持右键删除已有记录、月份切换和单实例运行。
+
+## 使用方法
+
+1. 展开右侧“全局工作时间设置”，配置标准工时、休息时段、加班目标及餐补规则。
+2. 左键点击日历日期，在弹窗中填写当天的到达和离开时间。
+3. 按需取消“计入平均加班日”；该日加班仍会计入总加班时长。
+4. 切换月份查看对应月度统计。右键点击有记录的日期可删除该记录。
+
+全局设置只影响之后新建记录的默认值。每日记录会保存当时使用的作息配置，避免后续修改全局设置改变历史计算结果。
+
+## 环境要求
+
+- Windows 10/11
+- CMake 4.0 或更高版本
+- Qt 6.11.1，包含 `Core`、`Widgets` 和 `Network` 模块
+- 支持 C++20 的 Visual Studio 2022 或 MinGW 编译器
+
+根目录 [CMakeLists.txt](CMakeLists.txt) 默认从以下位置查找 Qt：
+
+- MSVC：`D:/Qt6/6.11.1/msvc2022_64`
+- MinGW：`D:/Qt6/6.11.1/mingw_64`
+
+如果本机 Qt 安装位置不同，请先调整 `CMAKE_PREFIX_PATH`。
+
+## 构建与运行
+
+使用 Visual Studio 2022：
+
+```powershell
+cmake -S . -B build -G "Visual Studio 17 2022" -A x64
+cmake --build build --config Release
+.\bin\Release\AttendanceApp.exe
 ```
+
+Windows 构建完成后，如果 CMake 能找到 `windeployqt`，会自动将运行所需的 Qt DLL 和插件部署到可执行文件目录。
+
+## 项目结构
+
+```text
+Core/
+├─ Application/   # 程序入口和主窗口
+├─ Attendance/    # 考勤数据结构与工时计算
+├─ Calendar/      # 日历组件
+├─ Settings/      # 每日考勤设置对话框
+└─ Widgets/       # 通用界面组件
+resources/        # 图标和 Qt 资源清单
+```
+
+每个功能目录在一级存放 `*.h`，对应的 `*.cpp` 位于其 `src/` 子目录。贡献代码前请阅读 [AGENTS.md](AGENTS.md)。
+
+## 数据存储与重置
+
+记录和设置通过 `QSettings` 保存在当前 Windows 用户的注册表中：
+
+```text
 HKEY_CURRENT_USER\Software\MyCompany\AttendanceApp
 ```
+
+数据不会随构建目录一起删除。如需完全重置，请先退出应用，再通过注册表编辑器备份并删除上述 `AttendanceApp` 项。
