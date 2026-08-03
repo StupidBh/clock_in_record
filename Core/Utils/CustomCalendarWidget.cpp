@@ -13,6 +13,8 @@ CustomCalendarWidget::CustomCalendarWidget(QWidget* parent) :
     if (m_tableView && m_tableView->viewport()) {
         m_tableView->viewport()->installEventFilter(this);
     }
+
+    connect(this, &QCalendarWidget::currentPageChanged, this, [this]() { m_dateRects.clear(); });
 }
 
 bool CustomCalendarWidget::eventFilter(QObject* watched, QEvent* event)
@@ -65,13 +67,15 @@ void CustomCalendarWidget::paintCell(QPainter* painter, const QRect& rect, QDate
         QFont font = painter->font();
         font.setPointSize(7);
         painter->setFont(font);
-        painter->setPen(QPen(Qt::blue));
+        painter->setPen(date == selectedDate() ? QPen(Qt::white) : QPen(QColor(0, 70, 170)));
 
         const QVariantMap& info = it.value();
-        QRect eventRectDown = rect.adjusted(2, rect.height() / 2, -2, -2);
-        QRect eventRectUp = rect.adjusted(2, -32, -2, -2);
-        painter->drawText(eventRectUp, Qt::AlignCenter, info["arrivalTime"].toString());
-        painter->drawText(eventRectDown, Qt::AlignCenter, info["departureTime"].toString());
+        QRect contentRect = rect.adjusted(2, 2, -2, -2);
+        int halfHeight = contentRect.height() / 2;
+        QRect arrivalRect(contentRect.left(), contentRect.top(), contentRect.width(), halfHeight);
+        QRect departureRect(contentRect.left(), contentRect.top() + halfHeight, contentRect.width(), halfHeight);
+        painter->drawText(arrivalRect, Qt::AlignCenter, info["arrivalTime"].toString());
+        painter->drawText(departureRect, Qt::AlignCenter, info["departureTime"].toString());
         painter->restore();
     }
 }

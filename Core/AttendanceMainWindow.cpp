@@ -12,6 +12,7 @@
 #include <QTextCharFormat>
 #include <QSettings>
 #include <QMessageBox>
+#include <QSignalBlocker>
 
 AttendanceMainWindow::AttendanceMainWindow(QWidget* parent) :
     QMainWindow(parent)
@@ -40,10 +41,11 @@ void AttendanceMainWindow::mousePressEvent(QMouseEvent* event)
 
         // 如果点击在日历外，重置选择状态
         if (!calendarRect.contains(calendarPos)) {
-            // 将选择重置为看不见的日期，并将页面调回当前页面，这样看起来像失去焦点
-            QDate today = QDate::currentDate();
-            m_calendar->setSelectedDate(today.addYears(1));
-            m_calendar->setCurrentPage(today.year(), today.month());
+            int shownYear = m_calendar->yearShown();
+            int shownMonth = m_calendar->monthShown();
+            QSignalBlocker blocker(m_calendar);
+            m_calendar->setSelectedDate(QDate(shownYear, shownMonth, 1).addYears(1));
+            m_calendar->setCurrentPage(shownYear, shownMonth);
         }
     }
 
@@ -269,10 +271,9 @@ void AttendanceMainWindow::updateCalendarAppearance()
             // 有打卡记录，显示绿色背景
             QTextCharFormat format;
             QColor defaultCol(144, 238, 144); // 浅绿色
-            if (settings.contains(key + "/needAverageCal")) {
-                if (!settings.value(key + "/needAverageCal").toBool()) {
-                    defaultCol = QColor("#acfdea");
-                }
+            bool defaultNeedAverage = date.dayOfWeek() != 6 && date.dayOfWeek() != 7;
+            if (!settings.value(key + "/needAverageCal", defaultNeedAverage).toBool()) {
+                defaultCol = QColor("#acfdea");
             }
             format.setBackground(defaultCol);
 
