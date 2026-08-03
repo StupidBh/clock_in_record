@@ -514,17 +514,22 @@ void AttendanceMainWindow::updateMonthlyStatistics()
         return QString("%1%2小时%3分钟").arg(sign).arg(absoluteMinutes / 60).arg(absoluteMinutes % 60);
     };
 
-    if (workDays > 0) {
-        double average_overtime_hours = totalOvertimeMinutes / (60.0 * workDays);
-        stats += QString("均加班时间: %1小时\n").arg(average_overtime_hours, 0, 'f', 3);
+    if (targetMinutesPerDay == 0) {
+        stats += QString("总加班时长: %1\n").arg(formatMinutes(totalOvertimeMinutes));
     }
-    if (totalOvertimeMinutes < targetOvertimeMinutes) {
-        int lackMinutes = targetOvertimeMinutes - totalOvertimeMinutes;
-        stats += QString("缺加班时间: %1\n").arg(formatMinutes(lackMinutes));
-    }
-    else if (totalOvertimeMinutes > targetOvertimeMinutes) {
-        int extraMinutes = totalOvertimeMinutes - targetOvertimeMinutes;
-        stats += QString("余加班时间: %1\n").arg(formatMinutes(extraMinutes));
+    else {
+        if (workDays > 0) {
+            double average_overtime_hours = totalOvertimeMinutes / (60.0 * workDays);
+            stats += QString("均加班时间: %1小时\n").arg(average_overtime_hours, 0, 'f', 3);
+        }
+        if (totalOvertimeMinutes < targetOvertimeMinutes) {
+            int lackMinutes = targetOvertimeMinutes - totalOvertimeMinutes;
+            stats += QString("缺加班时间: %1\n").arg(formatMinutes(lackMinutes));
+        }
+        else if (totalOvertimeMinutes > targetOvertimeMinutes) {
+            int extraMinutes = totalOvertimeMinutes - targetOvertimeMinutes;
+            stats += QString("余加班时间: %1\n").arg(formatMinutes(extraMinutes));
+        }
     }
     if (mealSubsidyEnabled) {
         stats += QString("餐补次数: %1").arg(mealSubsidyCount);
