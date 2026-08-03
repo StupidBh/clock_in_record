@@ -8,7 +8,8 @@ inline AttendanceRecord loadGlobalTimeDefaults()
     QSettings settings;
     AttendanceRecord defaults;
     auto readTime = [&](const QString& key, const QTime& fallback) {
-        return QTime::fromString(settings.value(key, fallback.toString("hh:mm")).toString(), "hh:mm");
+        QTime value = QTime::fromString(settings.value(key, fallback.toString("hh:mm")).toString(), "hh:mm");
+        return value.isValid() ? value : fallback;
     };
     AttendanceRecord record;
     record.workStartTime = readTime("settings/workStart", defaults.workStartTime);
@@ -17,12 +18,15 @@ inline AttendanceRecord loadGlobalTimeDefaults()
     record.lunchBreakEnd = readTime("settings/lunchEnd", defaults.lunchBreakEnd);
     record.dinnerBreakStart = readTime("settings/dinnerStart", defaults.dinnerBreakStart);
     record.dinnerBreakEnd = readTime("settings/dinnerEnd", defaults.dinnerBreakEnd);
+    record.mealSubsidyTime = readTime("settings/mealSubsidy", defaults.mealSubsidyTime);
     return record;
 }
 
 // 工作时间计算工具类
 class WorkTimeCalculator {
 public:
+    static bool hasValidAttendanceRange(const AttendanceRecord& record);
+    static bool hasValidSchedule(const AttendanceRecord& record);
     static WorkTimeResult calculateWorkTimeResult(const AttendanceRecord& record);
 
 private:

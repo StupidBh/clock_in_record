@@ -13,6 +13,7 @@ struct AttendanceRecord
     QTime lunchBreakEnd;    // 午餐结束时间
     QTime dinnerBreakStart; // 晚餐开始时间
     QTime dinnerBreakEnd;   // 晚餐结束时间
+    QTime mealSubsidyTime;  // 餐补起算时间
 
     AttendanceRecord()
     {
@@ -25,6 +26,7 @@ struct AttendanceRecord
         lunchBreakEnd = QTime(13, 30);
         dinnerBreakStart = QTime(18, 0);
         dinnerBreakEnd = QTime(18, 30);
+        mealSubsidyTime = QTime(21, 0);
     }
 };
 

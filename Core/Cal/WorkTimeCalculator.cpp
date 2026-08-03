@@ -1,12 +1,33 @@
 #include "WorkTimeCalculator.h"
 
+bool WorkTimeCalculator::hasValidAttendanceRange(const AttendanceRecord& record)
+{
+    return record.arrivalTime.isValid() && record.departureTime.isValid() && record.arrivalTime < record.departureTime;
+}
+
+bool WorkTimeCalculator::hasValidSchedule(const AttendanceRecord& record)
+{
+    auto isValidRange = [](const QTime& start, const QTime& end) {
+        return start.isValid() && end.isValid() && start < end;
+    };
+
+    if (!isValidRange(record.workStartTime, record.workEndTime) ||
+        !isValidRange(record.lunchBreakStart, record.lunchBreakEnd) ||
+        !isValidRange(record.dinnerBreakStart, record.dinnerBreakEnd)) {
+        return false;
+    }
+
+    return !isTimeRangeOverlap(record.lunchBreakStart,
+                               record.lunchBreakEnd,
+                               record.dinnerBreakStart,
+                               record.dinnerBreakEnd);
+}
+
 WorkTimeResult WorkTimeCalculator::calculateWorkTimeResult(const AttendanceRecord& record)
 {
     WorkTimeResult result;
 
-    // 防护：到达时间晚于或等于离开时间时，返回全零结果
-    if (!record.arrivalTime.isValid() || !record.departureTime.isValid() ||
-        record.arrivalTime >= record.departureTime) {
+    if (!hasValidAttendanceRange(record) || !hasValidSchedule(record)) {
         return result;
     }
 

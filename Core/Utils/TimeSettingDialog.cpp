@@ -4,9 +4,9 @@
 #include <QHBoxLayout>
 #include <QGridLayout>
 #include <QGroupBox>
+#include <QMessageBox>
 #include <QPushButton>
 #include <QSettings>
-#include <qDebug>
 
 TimeSettingDialog::TimeSettingDialog(const QDate& date, QWidget* parent) :
     QDialog(parent),
@@ -34,12 +34,23 @@ AttendanceRecord TimeSettingDialog::getRecord() const
     record.lunchBreakEnd = m_globalDefaults.lunchBreakEnd;
     record.dinnerBreakStart = m_globalDefaults.dinnerBreakStart;
     record.dinnerBreakEnd = m_globalDefaults.dinnerBreakEnd;
+    record.mealSubsidyTime = m_globalDefaults.mealSubsidyTime;
     return record;
 }
 
 void TimeSettingDialog::calculateWorkTime()
 {
     AttendanceRecord record = getRecord();
+
+    if (!WorkTimeCalculator::hasValidAttendanceRange(record)) {
+        m_resultLabel->setText(QString("离开时间必须晚于到达时间。"));
+        return;
+    }
+    if (!WorkTimeCalculator::hasValidSchedule(record)) {
+        m_resultLabel->setText(QString("该日期使用的作息配置无效。"));
+        return;
+    }
+
     WorkTimeResult result = WorkTimeCalculator::calculateWorkTimeResult(record);
 
     auto fmtMin = [](int minutes) {
@@ -77,6 +88,16 @@ void TimeSettingDialog::calculateWorkTime()
 
 void TimeSettingDialog::saveAndClose()
 {
+    AttendanceRecord record = getRecord();
+    if (!WorkTimeCalculator::hasValidAttendanceRange(record)) {
+        QMessageBox::warning(this, QString("时间无效"), QString("离开时间必须晚于到达时间。"));
+        return;
+    }
+    if (!WorkTimeCalculator::hasValidSchedule(record)) {
+        QMessageBox::warning(this, QString("作息无效"), QString("该日期使用的作息配置无效，请检查全局设置。"));
+        return;
+    }
+
     saveRecord();
     accept();
 }
@@ -143,10 +164,28 @@ void TimeSettingDialog::loadRecord()
     m_needAverageCalCheckBox->setChecked(settings.value(key + "/needAverageCal", defaultNeedAverage).toBool());
 
     AttendanceRecord defaults;
+    AttendanceRecord currentSchedule = m_globalDefaults;
 
-    QTime arrivalDefault = settings.contains(key + "/arrival") ? defaults.arrivalTime : QTime::currentTime();
+    auto readScheduleTime = [&](const QString& name, const QTime& fallback) {
+        QTime value =
+            QTime::fromString(settings.value(key + "/" + name, fallback.toString("hh:mm")).toString(), "hh:mm");
+        return value.isValid() ? value : fallback;
+    };
+
+    m_globalDefaults.workStartTime = readScheduleTime("workStart", m_globalDefaults.workStartTime);
+    m_globalDefaults.workEndTime = readScheduleTime("workEnd", m_globalDefaults.workEndTime);
+    m_globalDefaults.lunchBreakStart = readScheduleTime("lunchStart", m_globalDefaults.lunchBreakStart);
+    m_globalDefaults.lunchBreakEnd = readScheduleTime("lunchEnd", m_globalDefaults.lunchBreakEnd);
+    m_globalDefaults.dinnerBreakStart = readScheduleTime("dinnerStart", m_globalDefaults.dinnerBreakStart);
+    m_globalDefaults.dinnerBreakEnd = readScheduleTime("dinnerEnd", m_globalDefaults.dinnerBreakEnd);
+    m_globalDefaults.mealSubsidyTime = readScheduleTime("mealSubsidy", m_globalDefaults.mealSubsidyTime);
+    if (!WorkTimeCalculator::hasValidSchedule(m_globalDefaults)) {
+        m_globalDefaults = currentSchedule;
+    }
+
     m_arrivalTimeEdit->setTime(
-        QTime::fromString(settings.value(key + "/arrival", arrivalDefault.toString("hh:mm")).toString(), "hh:mm"));
+        QTime::fromString(settings.value(key + "/arrival", defaults.arrivalTime.toString("hh:mm")).toString(),
+                          "hh:mm"));
 
     m_departureTimeEdit->setTime(
         QTime::fromString(settings.value(key + "/departure", defaults.departureTime.toString("hh:mm")).toString(),
@@ -161,4 +200,11 @@ void TimeSettingDialog::saveRecord()
     settings.setValue(key + "/needAverageCal", m_needAverageCalCheckBox->isChecked());
     settings.setValue(key + "/arrival", m_arrivalTimeEdit->time().toString("hh:mm"));
     settings.setValue(key + "/departure", m_departureTimeEdit->time().toString("hh:mm"));
+    settings.setValue(key + "/workStart", m_globalDefaults.workStartTime.toString("hh:mm"));
+    settings.setValue(key + "/workEnd", m_globalDefaults.workEndTime.toString("hh:mm"));
+    settings.setValue(key + "/lunchStart", m_globalDefaults.lunchBreakStart.toString("hh:mm"));
+    settings.setValue(key + "/lunchEnd", m_globalDefaults.lunchBreakEnd.toString("hh:mm"));
+    settings.setValue(key + "/dinnerStart", m_globalDefaults.dinnerBreakStart.toString("hh:mm"));
+    settings.setValue(key + "/dinnerEnd", m_globalDefaults.dinnerBreakEnd.toString("hh:mm"));
+    settings.setValue(key + "/mealSubsidy", m_globalDefaults.mealSubsidyTime.toString("hh:mm"));
 }
