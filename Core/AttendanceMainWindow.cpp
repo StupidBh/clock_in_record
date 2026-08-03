@@ -170,11 +170,13 @@ void AttendanceMainWindow::setupUI()
     globalDetailsLayout->addWidget(breakGroup);
 
     QGroupBox* mealSubsidyGroup = new QGroupBox(QString("餐补设置"));
-    QHBoxLayout* mealSubsidyLayout = new QHBoxLayout(mealSubsidyGroup);
-    mealSubsidyLayout->addWidget(new QLabel(QString("餐补起算时间:")));
+    QGridLayout* mealSubsidyLayout = new QGridLayout(mealSubsidyGroup);
+    m_mealSubsidyEnabledCheckBox = new QCheckBox(QString("启用餐补统计"));
+    mealSubsidyLayout->addWidget(m_mealSubsidyEnabledCheckBox, 0, 0, 1, 2);
+    mealSubsidyLayout->addWidget(new QLabel(QString("餐补起算时间:")), 1, 0);
     m_globalMealSubsidyTimeEdit = new QTimeEdit();
     m_globalMealSubsidyTimeEdit->setDisplayFormat("hh:mm");
-    mealSubsidyLayout->addWidget(m_globalMealSubsidyTimeEdit);
+    mealSubsidyLayout->addWidget(m_globalMealSubsidyTimeEdit, 1, 1);
     globalDetailsLayout->addWidget(mealSubsidyGroup);
 
     QGroupBox* overtimeTargetGroup = new QGroupBox(QString("加班目标"));
@@ -230,6 +232,8 @@ void AttendanceMainWindow::setupUI()
     connect(m_globalDinnerStartEdit, &QTimeEdit::timeChanged, this, &AttendanceMainWindow::onGlobalSettingsChanged);
     connect(m_globalDinnerEndEdit, &QTimeEdit::timeChanged, this, &AttendanceMainWindow::onGlobalSettingsChanged);
     connect(m_globalMealSubsidyTimeEdit, &QTimeEdit::timeChanged, this, &AttendanceMainWindow::onGlobalSettingsChanged);
+    connect(m_mealSubsidyEnabledCheckBox, &QCheckBox::toggled, m_globalMealSubsidyTimeEdit, &QTimeEdit::setEnabled);
+    connect(m_mealSubsidyEnabledCheckBox, &QCheckBox::toggled, this, &AttendanceMainWindow::onGlobalSettingsChanged);
     connect(m_targetOvertimeHoursSpinBox,
             qOverload<double>(&QDoubleSpinBox::valueChanged),
             this,
@@ -274,7 +278,10 @@ void AttendanceMainWindow::loadGlobalSettings()
     m_globalLunchEndEdit->setTime(globalDefaults.lunchBreakEnd);
     m_globalDinnerStartEdit->setTime(globalDefaults.dinnerBreakStart);
     m_globalDinnerEndEdit->setTime(globalDefaults.dinnerBreakEnd);
+    bool mealSubsidyEnabled = settings.value("settings/mealSubsidyEnabled", true).toBool();
+    m_mealSubsidyEnabledCheckBox->setChecked(mealSubsidyEnabled);
     m_globalMealSubsidyTimeEdit->setTime(globalDefaults.mealSubsidyTime);
+    m_globalMealSubsidyTimeEdit->setEnabled(mealSubsidyEnabled);
 
     bool targetOvertimeOk = false;
     int targetOvertimeMinutes = settings.value("settings/targetOvertimeMinutes", 150).toInt(&targetOvertimeOk);
@@ -302,6 +309,7 @@ void AttendanceMainWindow::saveGlobalSettings()
     settings.setValue("settings/lunchEnd", m_globalLunchEndEdit->time().toString("hh:mm"));
     settings.setValue("settings/dinnerStart", m_globalDinnerStartEdit->time().toString("hh:mm"));
     settings.setValue("settings/dinnerEnd", m_globalDinnerEndEdit->time().toString("hh:mm"));
+    settings.setValue("settings/mealSubsidyEnabled", m_mealSubsidyEnabledCheckBox->isChecked());
     settings.setValue("settings/mealSubsidy", m_globalMealSubsidyTimeEdit->time().toString("hh:mm"));
     settings.setValue("settings/targetOvertimeMinutes", qRound(m_targetOvertimeHoursSpinBox->value() * 60.0));
 }
@@ -436,6 +444,7 @@ void AttendanceMainWindow::updateMonthlyStatistics()
     QTime globalLunchEnd = m_globalLunchEndEdit->time();
     QTime globalDinnerStart = m_globalDinnerStartEdit->time();
     QTime globalDinnerEnd = m_globalDinnerEndEdit->time();
+    bool mealSubsidyEnabled = m_mealSubsidyEnabledCheckBox->isChecked();
     QTime globalMealSubsidyTime = m_globalMealSubsidyTimeEdit->time();
 
     int workDays = 0;
@@ -470,7 +479,7 @@ void AttendanceMainWindow::updateMonthlyStatistics()
             record.mealSubsidyTime = readScheduleTime("mealSubsidy", globalMealSubsidyTime);
 
             bool hasValidAttendance = WorkTimeCalculator::hasValidAttendanceRange(record);
-            if (hasValidAttendance && record.departureTime >= record.mealSubsidyTime) {
+            if (mealSubsidyEnabled && hasValidAttendance && record.departureTime >= record.mealSubsidyTime) {
                 mealSubsidyCount++;
             }
 
@@ -517,7 +526,9 @@ void AttendanceMainWindow::updateMonthlyStatistics()
         int extraMinutes = totalOvertimeMinutes - targetOvertimeMinutes;
         stats += QString("余加班时间: %1\n").arg(formatMinutes(extraMinutes));
     }
-    stats += QString("餐补次数: %1").arg(mealSubsidyCount);
+    if (mealSubsidyEnabled) {
+        stats += QString("餐补次数: %1").arg(mealSubsidyCount);
+    }
 
     m_statsLabel->setText(stats);
 }

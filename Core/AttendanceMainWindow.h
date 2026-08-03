@@ -1,5 +1,6 @@
 #pragma once
 #include "Types/AttendanceTypes.h"
+#include <QCheckBox>
 #include <QDate>
 #include <QDoubleSpinBox>
 #include <QLabel>
@@ -49,6 +50,7 @@ private:
     QTimeEdit* m_globalLunchEndEdit;
     QTimeEdit* m_globalDinnerStartEdit;
     QTimeEdit* m_globalDinnerEndEdit;
+    QCheckBox* m_mealSubsidyEnabledCheckBox;
     QTimeEdit* m_globalMealSubsidyTimeEdit;
     QDoubleSpinBox* m_targetOvertimeHoursSpinBox;
 };
