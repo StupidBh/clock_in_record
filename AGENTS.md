@@ -2,7 +2,7 @@
 
 ## Project Structure & Module Organization
 
-This is a Qt 6 desktop attendance tracker built with C++20 and CMake. `Core/main.cpp` starts the single-instance application, while `Core/AttendanceMainWindow.*` owns the main UI. Reusable widgets and dialogs live in `Core/Utils/`, attendance calculations live in `Core/Cal/`, and shared data structures belong in `Core/Types/`. Images and Qt resource declarations are under `resources/`; add new assets to `resources/resources.qrc`. Generated output belongs in `build/` and `bin/<Debug|Release>/` and must remain untracked.
+This is a Qt 6 desktop attendance tracker built with C++20 and CMake. Source files are grouped by feature under `Core/`: `Application/` owns startup and the main window, `Attendance/` contains data types and calculations, `Calendar/` provides the calendar UI, `Settings/` contains configuration dialogs, and `Widgets/` holds reusable controls. In each feature directory, public `*.h` files sit at the top level and implementations live in `src/`. Images and Qt resource declarations are under `resources/`; add new assets to `resources/resources.qrc`. Generated output belongs in `build/` and `bin/<Debug|Release>/` and must remain untracked.
 
 ## Build, Test, and Development Commands
 
@@ -20,7 +20,7 @@ The first command configures the project, the second builds it, and the third la
 
 ## Coding Style & Naming Conventions
 
-Use the repository `.clang-format`: WebKit-derived style, four spaces, no tabs, a 120-column limit, and left-aligned pointers. Format touched files with `clang-format -i Core/main.cpp`. Follow existing Qt/C++ conventions: PascalCase classes (`WorkTimeCalculator`), camelCase functions and locals (`calculateWorkTimeResult`), `m_` prefixes for members, and matching `.h`/`.cpp` filenames. Keep `Q_OBJECT` classes in headers so CMake AUTOMOC can process them.
+Use the repository `.clang-format`: WebKit-derived style, four spaces, no tabs, a 120-column limit, and left-aligned pointers. Format touched files with `clang-format -i Core/Application/src/main.cpp`. Follow existing Qt/C++ conventions: PascalCase classes (`WorkTimeCalculator`), camelCase functions and locals (`calculateWorkTimeResult`), `m_` prefixes for members, and matching `.h`/`.cpp` filenames. Include project headers from the `Core/` root, for example `#include "Attendance/WorkTimeCalculator.h"`. Keep `Q_OBJECT` classes in headers so CMake AUTOMOC can process them.
 
 ## Testing Guidelines
 

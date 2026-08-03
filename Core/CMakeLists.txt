@@ -1,16 +1,6 @@
-# 自动收集源文件
-file(GLOB_RECURSE APP_SOURCES
-        "*.cpp"
-        "Utils/*.cpp"
-        "Cal/*.cpp"
-)
-file(GLOB_RECURSE APP_HEADERS
-        "*.h"
-        "Utils/*.h"
-        "Cal/*.h"
-)
-# 收集类型定义头文件
-file(GLOB_RECURSE TYPE_HEADERS "Types/*.h")
+# 自动收集各功能目录中的源文件和头文件
+file(GLOB_RECURSE APP_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp")
+file(GLOB_RECURSE APP_HEADERS CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/*.h")
 
 # 资源文件配置
 set(RESOURCE_DIR "${CMAKE_SOURCE_DIR}/resources")
@@ -42,7 +32,6 @@ endif ()
 # 创建可执行文件
 add_executable(${PROJECT_NAME}
         ${APP_SOURCES}
-        ${TYPE_HEADERS}
         ${APP_HEADERS}
         ${APP_RESOURCES}
         ${WIN_RESOURCES}  # 添加Windows资源文件
@@ -50,10 +39,7 @@ add_executable(${PROJECT_NAME}
 
 # 设置包含目录
 target_include_directories(${PROJECT_NAME} PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}          # src目录
-        ${CMAKE_CURRENT_SOURCE_DIR}/Types    # Types目录
-        ${CMAKE_CURRENT_SOURCE_DIR}/Utils    # Utils目录
-        ${CMAKE_CURRENT_SOURCE_DIR}/Cal      # Cal目录
+        ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
 # 链接Qt库
