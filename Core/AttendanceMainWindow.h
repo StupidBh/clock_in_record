@@ -1,5 +1,7 @@
 #pragma once
+#include "Types/AttendanceTypes.h"
 #include <QDate>
+#include <QDoubleSpinBox>
 #include <QLabel>
 #include <QMainWindow>
 #include <QMouseEvent>
@@ -34,14 +36,19 @@ private:
     void updateMonthlyStatistics();
     void loadGlobalSettings();
     void saveGlobalSettings();
+    void migrateLegacyRecordsToCurrentSchedule();
+    AttendanceRecord currentGlobalSettings() const;
 
     CustomCalendarWidget* m_calendar;
     QLabel* m_statsLabel;
     CollapsibleGroupBox* m_globalSettingsGroup;
+    QLabel* m_globalSettingsErrorLabel;
     QTimeEdit* m_globalWorkStartEdit;
     QTimeEdit* m_globalWorkEndEdit;
     QTimeEdit* m_globalLunchStartEdit;
     QTimeEdit* m_globalLunchEndEdit;
     QTimeEdit* m_globalDinnerStartEdit;
     QTimeEdit* m_globalDinnerEndEdit;
+    QTimeEdit* m_globalMealSubsidyTimeEdit;
+    QDoubleSpinBox* m_targetOvertimeHoursSpinBox;
 };

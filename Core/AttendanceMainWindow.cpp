@@ -168,6 +168,32 @@ void AttendanceMainWindow::setupUI()
     breakLayout->addWidget(m_globalDinnerEndEdit, 3, 1);
 
     globalDetailsLayout->addWidget(breakGroup);
+
+    QGroupBox* mealSubsidyGroup = new QGroupBox(QString("餐补设置"));
+    QHBoxLayout* mealSubsidyLayout = new QHBoxLayout(mealSubsidyGroup);
+    mealSubsidyLayout->addWidget(new QLabel(QString("餐补起算时间:")));
+    m_globalMealSubsidyTimeEdit = new QTimeEdit();
+    m_globalMealSubsidyTimeEdit->setDisplayFormat("hh:mm");
+    mealSubsidyLayout->addWidget(m_globalMealSubsidyTimeEdit);
+    globalDetailsLayout->addWidget(mealSubsidyGroup);
+
+    QGroupBox* overtimeTargetGroup = new QGroupBox(QString("加班目标"));
+    QHBoxLayout* overtimeTargetLayout = new QHBoxLayout(overtimeTargetGroup);
+    overtimeTargetLayout->addWidget(new QLabel(QString("日均加班时长:")));
+    m_targetOvertimeHoursSpinBox = new QDoubleSpinBox();
+    m_targetOvertimeHoursSpinBox->setRange(0.0, 24.0);
+    m_targetOvertimeHoursSpinBox->setDecimals(1);
+    m_targetOvertimeHoursSpinBox->setSingleStep(0.5);
+    m_targetOvertimeHoursSpinBox->setSuffix(QString(" 小时"));
+    overtimeTargetLayout->addWidget(m_targetOvertimeHoursSpinBox);
+    globalDetailsLayout->addWidget(overtimeTargetGroup);
+
+    m_globalSettingsErrorLabel = new QLabel();
+    m_globalSettingsErrorLabel->setWordWrap(true);
+    m_globalSettingsErrorLabel->setStyleSheet("color: #b00020; padding: 4px;");
+    m_globalSettingsErrorLabel->setVisible(false);
+    globalDetailsLayout->addWidget(m_globalSettingsErrorLabel);
+
     m_globalSettingsGroup->setContentLayout(globalDetailsLayout);
     rightLayout->addWidget(m_globalSettingsGroup);
     rightLayout->addStretch();
@@ -195,6 +221,7 @@ void AttendanceMainWindow::setupUI()
     connect(m_calendar, &CustomCalendarWidget::deleteRequested, this, &AttendanceMainWindow::onDeleteRequested);
 
     loadGlobalSettings();
+    migrateLegacyRecordsToCurrentSchedule();
 
     connect(m_globalWorkStartEdit, &QTimeEdit::timeChanged, this, &AttendanceMainWindow::onGlobalSettingsChanged);
     connect(m_globalWorkEndEdit, &QTimeEdit::timeChanged, this, &AttendanceMainWindow::onGlobalSettingsChanged);
@@ -202,6 +229,11 @@ void AttendanceMainWindow::setupUI()
     connect(m_globalLunchEndEdit, &QTimeEdit::timeChanged, this, &AttendanceMainWindow::onGlobalSettingsChanged);
     connect(m_globalDinnerStartEdit, &QTimeEdit::timeChanged, this, &AttendanceMainWindow::onGlobalSettingsChanged);
     connect(m_globalDinnerEndEdit, &QTimeEdit::timeChanged, this, &AttendanceMainWindow::onGlobalSettingsChanged);
+    connect(m_globalMealSubsidyTimeEdit, &QTimeEdit::timeChanged, this, &AttendanceMainWindow::onGlobalSettingsChanged);
+    connect(m_targetOvertimeHoursSpinBox,
+            qOverload<double>(&QDoubleSpinBox::valueChanged),
+            this,
+            &AttendanceMainWindow::onGlobalSettingsChanged);
 
     updateCalendarAppearance();
     updateMonthlyStatistics();
@@ -213,9 +245,9 @@ void AttendanceMainWindow::deleteAttendanceRecord(const QDate& date)
     QString key = date.toString("yyyy-MM-dd");
 
     // 删除所有相关的设置项
-    QStringList keys = { key + "/needAverageCal", key + "/arrival",     key + "/departure",
-                         key + "/workStart",      key + "/workEnd",     key + "/lunchStart",
-                         key + "/lunchEnd",       key + "/dinnerStart", key + "/dinnerEnd" };
+    QStringList keys = { key + "/needAverageCal", key + "/arrival",    key + "/departure", key + "/workStart",
+                         key + "/workEnd",        key + "/lunchStart", key + "/lunchEnd",  key + "/dinnerStart",
+                         key + "/dinnerEnd",      key + "/mealSubsidy" };
 
     for (const QString& k : keys) {
         settings.remove(k);
@@ -229,16 +261,40 @@ void AttendanceMainWindow::deleteAttendanceRecord(const QDate& date)
 void AttendanceMainWindow::loadGlobalSettings()
 {
     AttendanceRecord globalDefaults = loadGlobalTimeDefaults();
+    QSettings settings;
+    bool repairedInvalidSettings = false;
+    if (!WorkTimeCalculator::hasValidSchedule(globalDefaults)) {
+        globalDefaults = AttendanceRecord();
+        repairedInvalidSettings = true;
+    }
+
     m_globalWorkStartEdit->setTime(globalDefaults.workStartTime);
     m_globalWorkEndEdit->setTime(globalDefaults.workEndTime);
     m_globalLunchStartEdit->setTime(globalDefaults.lunchBreakStart);
     m_globalLunchEndEdit->setTime(globalDefaults.lunchBreakEnd);
     m_globalDinnerStartEdit->setTime(globalDefaults.dinnerBreakStart);
     m_globalDinnerEndEdit->setTime(globalDefaults.dinnerBreakEnd);
+    m_globalMealSubsidyTimeEdit->setTime(globalDefaults.mealSubsidyTime);
+
+    bool targetOvertimeOk = false;
+    int targetOvertimeMinutes = settings.value("settings/targetOvertimeMinutes", 150).toInt(&targetOvertimeOk);
+    if (!targetOvertimeOk || targetOvertimeMinutes < 0 || targetOvertimeMinutes > 24 * 60) {
+        targetOvertimeMinutes = 150;
+        repairedInvalidSettings = true;
+    }
+    m_targetOvertimeHoursSpinBox->setValue(targetOvertimeMinutes / 60.0);
+
+    if (repairedInvalidSettings) {
+        saveGlobalSettings();
+    }
 }
 
 void AttendanceMainWindow::saveGlobalSettings()
 {
+    if (!WorkTimeCalculator::hasValidSchedule(currentGlobalSettings())) {
+        return;
+    }
+
     QSettings settings;
     settings.setValue("settings/workStart", m_globalWorkStartEdit->time().toString("hh:mm"));
     settings.setValue("settings/workEnd", m_globalWorkEndEdit->time().toString("hh:mm"));
@@ -246,12 +302,89 @@ void AttendanceMainWindow::saveGlobalSettings()
     settings.setValue("settings/lunchEnd", m_globalLunchEndEdit->time().toString("hh:mm"));
     settings.setValue("settings/dinnerStart", m_globalDinnerStartEdit->time().toString("hh:mm"));
     settings.setValue("settings/dinnerEnd", m_globalDinnerEndEdit->time().toString("hh:mm"));
+    settings.setValue("settings/mealSubsidy", m_globalMealSubsidyTimeEdit->time().toString("hh:mm"));
+    settings.setValue("settings/targetOvertimeMinutes", qRound(m_targetOvertimeHoursSpinBox->value() * 60.0));
 }
 
 void AttendanceMainWindow::onGlobalSettingsChanged()
 {
+    bool isValid = WorkTimeCalculator::hasValidSchedule(currentGlobalSettings());
+    m_globalSettingsErrorLabel->setVisible(!isValid);
+    if (!isValid) {
+        m_globalSettingsErrorLabel->setText(QString("结束时间必须晚于开始时间，且午餐与晚餐时间不能重叠。"));
+        return;
+    }
+
+    m_globalSettingsErrorLabel->clear();
     saveGlobalSettings();
     updateMonthlyStatistics();
+}
+
+AttendanceRecord AttendanceMainWindow::currentGlobalSettings() const
+{
+    AttendanceRecord record;
+    record.workStartTime = m_globalWorkStartEdit->time();
+    record.workEndTime = m_globalWorkEndEdit->time();
+    record.lunchBreakStart = m_globalLunchStartEdit->time();
+    record.lunchBreakEnd = m_globalLunchEndEdit->time();
+    record.dinnerBreakStart = m_globalDinnerStartEdit->time();
+    record.dinnerBreakEnd = m_globalDinnerEndEdit->time();
+    record.mealSubsidyTime = m_globalMealSubsidyTimeEdit->time();
+    return record;
+}
+
+void AttendanceMainWindow::migrateLegacyRecordsToCurrentSchedule()
+{
+    QSettings settings;
+    AttendanceRecord schedule = currentGlobalSettings();
+
+    for (const QString& group : settings.childGroups()) {
+        if (!QDate::fromString(group, "yyyy-MM-dd").isValid()) {
+            continue;
+        }
+
+        settings.beginGroup(group);
+        AttendanceRecord storedSchedule = schedule;
+        auto readTime = [&](const QString& name, const QTime& fallback) {
+            QTime value = QTime::fromString(settings.value(name).toString(), "hh:mm");
+            return value.isValid() ? value : fallback;
+        };
+        storedSchedule.workStartTime = readTime("workStart", schedule.workStartTime);
+        storedSchedule.workEndTime = readTime("workEnd", schedule.workEndTime);
+        storedSchedule.lunchBreakStart = readTime("lunchStart", schedule.lunchBreakStart);
+        storedSchedule.lunchBreakEnd = readTime("lunchEnd", schedule.lunchBreakEnd);
+        storedSchedule.dinnerBreakStart = readTime("dinnerStart", schedule.dinnerBreakStart);
+        storedSchedule.dinnerBreakEnd = readTime("dinnerEnd", schedule.dinnerBreakEnd);
+        storedSchedule.mealSubsidyTime = readTime("mealSubsidy", schedule.mealSubsidyTime);
+
+        if (settings.contains("arrival")) {
+            auto ensureTime = [&](const QString& name, const QTime& value) {
+                if (!settings.contains(name) ||
+                    !QTime::fromString(settings.value(name).toString(), "hh:mm").isValid()) {
+                    settings.setValue(name, value.toString("hh:mm"));
+                }
+            };
+
+            if (!WorkTimeCalculator::hasValidSchedule(storedSchedule)) {
+                settings.setValue("workStart", schedule.workStartTime.toString("hh:mm"));
+                settings.setValue("workEnd", schedule.workEndTime.toString("hh:mm"));
+                settings.setValue("lunchStart", schedule.lunchBreakStart.toString("hh:mm"));
+                settings.setValue("lunchEnd", schedule.lunchBreakEnd.toString("hh:mm"));
+                settings.setValue("dinnerStart", schedule.dinnerBreakStart.toString("hh:mm"));
+                settings.setValue("dinnerEnd", schedule.dinnerBreakEnd.toString("hh:mm"));
+            }
+            else {
+                ensureTime("workStart", storedSchedule.workStartTime);
+                ensureTime("workEnd", storedSchedule.workEndTime);
+                ensureTime("lunchStart", storedSchedule.lunchBreakStart);
+                ensureTime("lunchEnd", storedSchedule.lunchBreakEnd);
+                ensureTime("dinnerStart", storedSchedule.dinnerBreakStart);
+                ensureTime("dinnerEnd", storedSchedule.dinnerBreakEnd);
+            }
+            ensureTime("mealSubsidy", storedSchedule.mealSubsidyTime);
+        }
+        settings.endGroup();
+    }
 }
 
 void AttendanceMainWindow::updateCalendarAppearance()
@@ -303,12 +436,11 @@ void AttendanceMainWindow::updateMonthlyStatistics()
     QTime globalLunchEnd = m_globalLunchEndEdit->time();
     QTime globalDinnerStart = m_globalDinnerStartEdit->time();
     QTime globalDinnerEnd = m_globalDinnerEndEdit->time();
+    QTime globalMealSubsidyTime = m_globalMealSubsidyTimeEdit->time();
 
     int workDays = 0;
     int totalOvertimeMinutes = 0;
-    int totalLateMinutes = 0;
-    int totalEarlyLeaveMinutes = 0;
-
+    int mealSubsidyCount = 0;
     QDate date = startDate;
     while (date <= endDate) {
         QString key = date.toString("yyyy-MM-dd");
@@ -324,25 +456,33 @@ void AttendanceMainWindow::updateMonthlyStatistics()
             record.arrivalTime = QTime::fromString(settings.value(key + "/arrival").toString(), "hh:mm");
             record.departureTime = QTime::fromString(settings.value(key + "/departure").toString(), "hh:mm");
 
-            record.workStartTime = globalWorkStart;
-            record.workEndTime = globalWorkEnd;
-            record.lunchBreakStart = globalLunchStart;
-            record.lunchBreakEnd = globalLunchEnd;
-            record.dinnerBreakStart = globalDinnerStart;
-            record.dinnerBreakEnd = globalDinnerEnd;
+            auto readScheduleTime = [&](const QString& name, const QTime& fallback) {
+                QTime value =
+                    QTime::fromString(settings.value(key + "/" + name, fallback.toString("hh:mm")).toString(), "hh:mm");
+                return value.isValid() ? value : fallback;
+            };
+            record.workStartTime = readScheduleTime("workStart", globalWorkStart);
+            record.workEndTime = readScheduleTime("workEnd", globalWorkEnd);
+            record.lunchBreakStart = readScheduleTime("lunchStart", globalLunchStart);
+            record.lunchBreakEnd = readScheduleTime("lunchEnd", globalLunchEnd);
+            record.dinnerBreakStart = readScheduleTime("dinnerStart", globalDinnerStart);
+            record.dinnerBreakEnd = readScheduleTime("dinnerEnd", globalDinnerEnd);
+            record.mealSubsidyTime = readScheduleTime("mealSubsidy", globalMealSubsidyTime);
 
-            if (record.needAverageCal) {
-                workDays++;
+            bool hasValidAttendance = WorkTimeCalculator::hasValidAttendanceRange(record);
+            if (hasValidAttendance && record.departureTime >= record.mealSubsidyTime) {
+                mealSubsidyCount++;
             }
 
-            // 计算工作时间数据
-            WorkTimeResult result = WorkTimeCalculator::calculateWorkTimeResult(record);
-
-            if (result.overtimeMinutes > 0) {
-                totalOvertimeMinutes += result.overtimeMinutes;
+            if (hasValidAttendance && WorkTimeCalculator::hasValidSchedule(record)) {
+                WorkTimeResult result = WorkTimeCalculator::calculateWorkTimeResult(record);
+                if (record.needAverageCal) {
+                    workDays++;
+                }
+                if (result.overtimeMinutes > 0) {
+                    totalOvertimeMinutes += result.overtimeMinutes;
+                }
             }
-            totalLateMinutes += result.lateMinutes;
-            totalEarlyLeaveMinutes += result.earlyLeaveMinutes;
 
             // tableView model 数据映射
             QVariantMap info;
@@ -356,34 +496,28 @@ void AttendanceMainWindow::updateMonthlyStatistics()
 
     QString stats = QString("统计月份: %1年%2月\n").arg(year).arg(month);
     stats += QString("工作天数: %1天\n").arg(workDays);
+    const int targetMinutesPerDay = qRound(m_targetOvertimeHoursSpinBox->value() * 60.0);
+    const int targetOvertimeMinutes = targetMinutesPerDay * workDays;
+
+    auto formatMinutes = [](int minutes) {
+        int absoluteMinutes = minutes < 0 ? -minutes : minutes;
+        QString sign = minutes < 0 ? QString("-") : QString();
+        return QString("%1%2小时%3分钟").arg(sign).arg(absoluteMinutes / 60).arg(absoluteMinutes % 60);
+    };
+
     if (workDays > 0) {
         double average_overtime_hours = totalOvertimeMinutes / (60.0 * workDays);
-        std::string msg = std::format("均加班时间: {:.3f}\n", average_overtime_hours);
-        stats += QString(msg.c_str());
-
-        const double targetRatioPerDay = 2.5;                   // 2.5 小时
-        const int targetMinutesPerDay = targetRatioPerDay * 60; // 2.5 小时 × 60
-
-        if (average_overtime_hours < targetRatioPerDay) {
-            int lackMinutes = targetMinutesPerDay * workDays - totalOvertimeMinutes;
-            int lackHours = lackMinutes / 60;
-            int remainMinutes = lackMinutes % 60;
-
-            msg = lackHours != 0 ? std::format("缺加班时间: {}小时{}分钟\n", lackHours, remainMinutes)
-                                 : std::format("缺加班时间: {}分钟\n", remainMinutes);
-            stats += QString(msg.c_str());
-        }
-        else if (average_overtime_hours > targetRatioPerDay) {
-            int extraMinutes = totalOvertimeMinutes - targetMinutesPerDay * workDays;
-            int extraHours = extraMinutes / 60;
-            int remainMinutes = extraMinutes % 60;
-
-            msg = extraHours != 0 ? std::format("余加班时间: {}小时{}分钟\n", extraHours, remainMinutes)
-                                  : std::format("余加班时间: {}分钟\n", remainMinutes);
-            stats += QString(msg.c_str());
-        }
+        stats += QString("均加班时间: %1小时\n").arg(average_overtime_hours, 0, 'f', 3);
     }
-    stats += QString("总加班时间: %1小时%2分钟").arg(totalOvertimeMinutes / 60).arg(totalOvertimeMinutes % 60);
+    if (totalOvertimeMinutes < targetOvertimeMinutes) {
+        int lackMinutes = targetOvertimeMinutes - totalOvertimeMinutes;
+        stats += QString("缺加班时间: %1\n").arg(formatMinutes(lackMinutes));
+    }
+    else if (totalOvertimeMinutes > targetOvertimeMinutes) {
+        int extraMinutes = totalOvertimeMinutes - targetOvertimeMinutes;
+        stats += QString("余加班时间: %1\n").arg(formatMinutes(extraMinutes));
+    }
+    stats += QString("餐补次数: %1").arg(mealSubsidyCount);
 
     m_statsLabel->setText(stats);
 }
