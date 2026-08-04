@@ -3,6 +3,7 @@
 #include "Calendar/CustomCalendarWidget.h"
 #include "Settings/TimeSettingDialog.h"
 #include "Widgets/CollapsibleGroupBox.h"
+#include <QApplication>
 #include <QGridLayout>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -12,7 +13,6 @@
 #include <QTextCharFormat>
 #include <QSettings>
 #include <QMessageBox>
-#include <QSignalBlocker>
 
 AttendanceMainWindow::AttendanceMainWindow(QWidget* parent) :
     QMainWindow(parent)
@@ -22,6 +22,7 @@ AttendanceMainWindow::AttendanceMainWindow(QWidget* parent) :
     resize(900, 680);
 
     setupUI();
+    qApp->installEventFilter(this);
 }
 
 void AttendanceMainWindow::raiseAndActivate()
@@ -32,24 +33,16 @@ void AttendanceMainWindow::raiseAndActivate()
     activateWindow();
 }
 
-void AttendanceMainWindow::mousePressEvent(QMouseEvent* event)
+bool AttendanceMainWindow::eventFilter(QObject* watched, QEvent* event)
 {
-    // 检查点击位置是否在日历区域外
-    if (m_calendar) {
-        QPoint calendarPos = m_calendar->mapFromGlobal(event->globalPosition().toPoint());
-        QRect calendarRect = m_calendar->rect();
-
-        // 如果点击在日历外，重置选择状态
-        if (!calendarRect.contains(calendarPos)) {
-            int shownYear = m_calendar->yearShown();
-            int shownMonth = m_calendar->monthShown();
-            QSignalBlocker blocker(m_calendar);
-            m_calendar->setSelectedDate(QDate(shownYear, shownMonth, 1).addYears(1));
-            m_calendar->setCurrentPage(shownYear, shownMonth);
+    if (event->type() == QEvent::MouseButtonPress && m_calendar) {
+        auto* clickedWidget = qobject_cast<QWidget*>(watched);
+        if (clickedWidget && clickedWidget != m_calendar && !m_calendar->isAncestorOf(clickedWidget)) {
+            m_calendar->clearDateSelection();
         }
     }
 
-    QMainWindow::mousePressEvent(event);
+    return QMainWindow::eventFilter(watched, event);
 }
 
 void AttendanceMainWindow::onDateClicked(const QDate& date)

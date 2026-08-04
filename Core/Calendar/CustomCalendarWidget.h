@@ -15,6 +15,7 @@ public:
 
     void setCustomData(const QDate& date, const QVariantMap& value);
     void removeCustomData(const QDate& date);
+    void clearDateSelection();
 signals:
     void deleteRequested(const QDate& date);
 

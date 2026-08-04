@@ -3,6 +3,7 @@
 #include <QStyle>
 #include <QApplication>
 #include <QContextMenuEvent>
+#include <QMouseEvent>
 #include <QPainter>
 
 CustomCalendarWidget::CustomCalendarWidget(QWidget* parent) :
@@ -19,10 +20,18 @@ CustomCalendarWidget::CustomCalendarWidget(QWidget* parent) :
 
 bool CustomCalendarWidget::eventFilter(QObject* watched, QEvent* event)
 {
-    if (m_tableView && watched == m_tableView->viewport() && event->type() == QEvent::ContextMenu) {
-        auto* contextMenuEvent = static_cast<QContextMenuEvent*>(event);
-        showContextMenu(contextMenuEvent->pos());
-        return true;
+    if (m_tableView && watched == m_tableView->viewport()) {
+        if (event->type() == QEvent::MouseButtonPress) {
+            auto* mouseEvent = static_cast<QMouseEvent*>(event);
+            if (mouseEvent->button() == Qt::LeftButton && selectionMode() == QCalendarWidget::NoSelection) {
+                setSelectionMode(QCalendarWidget::SingleSelection);
+            }
+        }
+        else if (event->type() == QEvent::ContextMenu) {
+            auto* contextMenuEvent = static_cast<QContextMenuEvent*>(event);
+            showContextMenu(contextMenuEvent->pos());
+            return true;
+        }
     }
 
     return QCalendarWidget::eventFilter(watched, event);
@@ -90,6 +99,11 @@ void CustomCalendarWidget::removeCustomData(const QDate& date)
 {
     m_data.remove(date);
     updateCell(date);
+}
+
+void CustomCalendarWidget::clearDateSelection()
+{
+    setSelectionMode(QCalendarWidget::NoSelection);
 }
 
 void CustomCalendarWidget::showContextMenu(const QPoint& pos)

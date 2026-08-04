@@ -3,9 +3,9 @@
 #include <QCheckBox>
 #include <QDate>
 #include <QDoubleSpinBox>
+#include <QEvent>
 #include <QLabel>
 #include <QMainWindow>
-#include <QMouseEvent>
 #include <QTimeEdit>
 
 class CollapsibleGroupBox;
@@ -21,7 +21,7 @@ public:
     void raiseAndActivate();
 
 protected:
-    void mousePressEvent(QMouseEvent* event) override;
+    bool eventFilter(QObject* watched, QEvent* event) override;
 
 private slots:
     void onDateClicked(const QDate& date);
