@@ -7,6 +7,7 @@
 #include <QMessageBox>
 #include <QPushButton>
 #include <QSettings>
+#include <QSignalBlocker>
 
 TimeSettingDialog::TimeSettingDialog(const QDate& date, QWidget* parent) :
     QDialog(parent),
@@ -183,13 +184,27 @@ void TimeSettingDialog::loadRecord()
         m_globalDefaults = currentSchedule;
     }
 
-    m_arrivalTimeEdit->setTime(
+    const bool hasStoredRecord = settings.contains(key + "/arrival");
+    QTime arrivalTime =
         QTime::fromString(settings.value(key + "/arrival", defaults.arrivalTime.toString("hh:mm")).toString(),
-                          "hh:mm"));
-
-    m_departureTimeEdit->setTime(
+                          "hh:mm");
+    const QTime departureTime =
         QTime::fromString(settings.value(key + "/departure", defaults.departureTime.toString("hh:mm")).toString(),
-                          "hh:mm"));
+                          "hh:mm");
+
+    if (!hasStoredRecord && m_date == QDate::currentDate()) {
+        const QTime now = QTime::currentTime();
+        const QTime currentMinute(now.hour(), now.minute());
+        if (currentMinute < departureTime) {
+            arrivalTime = currentMinute;
+        }
+    }
+
+    const QSignalBlocker arrivalBlocker(m_arrivalTimeEdit);
+    const QSignalBlocker departureBlocker(m_departureTimeEdit);
+    m_arrivalTimeEdit->setTime(arrivalTime);
+    m_departureTimeEdit->setTime(departureTime);
+    calculateWorkTime();
 }
 
 void TimeSettingDialog::saveRecord()
