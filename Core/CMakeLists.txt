@@ -57,21 +57,6 @@ if (WIN32)
 endif ()
 
 
-# 在现有代码的最后添加
-# 安装可执行文件
-install(TARGETS ${PROJECT_NAME}
-        RUNTIME DESTINATION bin
-        COMPONENT Runtime
-)
-
-# 安装资源文件（如果需要）
-if (EXISTS "${RESOURCE_DIR}")
-    install(DIRECTORY "${RESOURCE_DIR}/"
-            DESTINATION share/${PROJECT_NAME}/resources
-            COMPONENT Resources
-    )
-endif ()
-
 # 仅在 Windows 平台下且非静态编译时执行
 if (WIN32)
     # 自动查找当前构建环境匹配的 windeployqt 路径
