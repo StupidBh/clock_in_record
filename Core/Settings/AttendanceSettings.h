@@ -22,8 +22,7 @@ namespace AttendanceSettings {
 
     [[nodiscard]] bool hasRecord(const QSettings& settings, const QDate& date);
     [[nodiscard]] AttendanceRecord createRecord(const QDate& date, const AttendanceRecord& schedule);
-    [[nodiscard]] std::optional<AttendanceRecord>
-        loadRecord(const QSettings& settings, const QDate& date, const AttendanceRecord& scheduleFallback);
+    [[nodiscard]] std::optional<AttendanceRecord> loadRecord(const QSettings& settings, const QDate& date, const AttendanceRecord& scheduleFallback);
     void saveRecord(QSettings& settings, const QDate& date, const AttendanceRecord& record);
     void removeRecord(QSettings& settings, const QDate& date);
     void migrateLegacyRecords(QSettings& settings, const AttendanceRecord& currentSchedule);

@@ -3,7 +3,6 @@
 #include <QSettings>
 #include <QStyle>
 #include <QApplication>
-#include <QContextMenuEvent>
 #include <QMouseEvent>
 #include <QPainter>
 
@@ -23,13 +22,13 @@ bool CustomCalendarWidget::eventFilter(QObject* watched, QEvent* event)
 {
     if (m_tableView && watched == m_tableView->viewport()) {
         if (event->type() == QEvent::MouseButtonPress) {
-            auto* mouseEvent = static_cast<QMouseEvent*>(event);
+            auto* mouseEvent = dynamic_cast<QMouseEvent*>(event);
             if (mouseEvent->button() == Qt::LeftButton && selectionMode() == QCalendarWidget::NoSelection) {
                 setSelectionMode(QCalendarWidget::SingleSelection);
             }
         }
         else if (event->type() == QEvent::ContextMenu) {
-            auto* contextMenuEvent = static_cast<QContextMenuEvent*>(event);
+            auto* contextMenuEvent = dynamic_cast<QContextMenuEvent*>(event);
             showContextMenu(contextMenuEvent->pos());
             return true;
         }
@@ -38,7 +37,7 @@ bool CustomCalendarWidget::eventFilter(QObject* watched, QEvent* event)
     return QCalendarWidget::eventFilter(watched, event);
 }
 
-void CustomCalendarWidget::paintCell(QPainter* painter, const QRect& rect, QDate date) const
+void CustomCalendarWidget::paintCell(QPainter* painter, const QRect& rect, const QDate date) const
 {
     m_dateRects[date] = rect;
 

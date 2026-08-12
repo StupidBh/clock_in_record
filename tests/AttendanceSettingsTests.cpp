@@ -119,15 +119,12 @@ namespace {
             return;
         }
 
-        expectTrue("cross-date offset remaining overtime",
-                   statisticsLabel->text().contains("总加班时长: 3小时30分钟"));
+        expectTrue("cross-date offset remaining overtime", statisticsLabel->text().contains("总加班时长: 3小时30分钟"));
         expectFalse("cross-date offset clears missing work", statisticsLabel->text().contains("缺少标准工时"));
 
         checkBox->setChecked(false);
-        expectTrue("disabled cross-date offset keeps overtime",
-                   statisticsLabel->text().contains("总加班时长: 4小时30分钟"));
-        expectTrue("disabled cross-date offset keeps missing work",
-                   statisticsLabel->text().contains("缺少标准工时: 1小时0分钟"));
+        expectTrue("disabled cross-date offset keeps overtime", statisticsLabel->text().contains("总加班时长: 4小时30分钟"));
+        expectTrue("disabled cross-date offset keeps missing work", statisticsLabel->text().contains("缺少标准工时: 1小时0分钟"));
 
         settings.clear();
     }

@@ -7,7 +7,6 @@
 #include <QApplication>
 #include <QGridLayout>
 #include <QVBoxLayout>
-#include <QHBoxLayout>
 #include <QGroupBox>
 #include <QSplitter>
 #include <QLocale>
@@ -100,10 +99,9 @@ void AttendanceMainWindow::setupUI()
     leftLayout->addWidget(m_calendar);
 
     // 添加使用说明
-    QLabel* helpLabel = new QLabel(QString(
-        "使用说明：\n• 左键点击日期设置考勤时间\n• 右键点击有记录的日期可删除记录\n• 点击日历外区域可重置选择状态"));
-    helpLabel->setStyleSheet(
-        "color: #666; font-size: 12px; padding: 10px; background-color: #f5f5f5; border-radius: 5px;");
+    QLabel* helpLabel =
+        new QLabel(QString("使用说明：\n• 左键点击日期设置考勤时间\n• 右键点击有记录的日期可删除记录\n• 点击日历外区域可重置选择状态"));
+    helpLabel->setStyleSheet("color: #666; font-size: 12px; padding: 10px; background-color: #f5f5f5; border-radius: 5px;");
     helpLabel->setWordWrap(true);
     leftLayout->addWidget(helpLabel);
 
@@ -225,28 +223,21 @@ void AttendanceMainWindow::setupUI()
     loadGlobalSettings();
     migrateLegacyRecordsToCurrentSchedule();
 
-    const std::array timeEditors { m_globalWorkStartEdit,    m_globalWorkEndEdit,      m_globalLunchStartEdit,
-                                   m_globalLunchEndEdit,     m_globalDinnerStartEdit, m_globalDinnerEndEdit,
-                                   m_globalMealSubsidyTimeEdit };
+    const std::array timeEditors { m_globalWorkStartEdit,   m_globalWorkEndEdit,   m_globalLunchStartEdit,     m_globalLunchEndEdit,
+                                   m_globalDinnerStartEdit, m_globalDinnerEndEdit, m_globalMealSubsidyTimeEdit };
     for (QTimeEdit* timeEditor : timeEditors) {
         connect(timeEditor, &QTimeEdit::timeChanged, this, &AttendanceMainWindow::onGlobalSettingsChanged);
     }
     connect(m_mealSubsidyEnabledCheckBox, &QCheckBox::toggled, m_globalMealSubsidyTimeEdit, &QTimeEdit::setEnabled);
     connect(m_mealSubsidyEnabledCheckBox, &QCheckBox::toggled, this, &AttendanceMainWindow::onGlobalSettingsChanged);
-    connect(m_overtimeOffsetsMissingWorkCheckBox,
-            &QCheckBox::toggled,
-            this,
-            &AttendanceMainWindow::onGlobalSettingsChanged);
-    connect(m_targetOvertimeHoursSpinBox,
-            &QDoubleSpinBox::valueChanged,
-            this,
-            &AttendanceMainWindow::onGlobalSettingsChanged);
+    connect(m_overtimeOffsetsMissingWorkCheckBox, &QCheckBox::toggled, this, &AttendanceMainWindow::onGlobalSettingsChanged);
+    connect(m_targetOvertimeHoursSpinBox, &QDoubleSpinBox::valueChanged, this, &AttendanceMainWindow::onGlobalSettingsChanged);
 
     updateCalendarAppearance();
     updateMonthlyStatistics();
 }
 
-void AttendanceMainWindow::deleteAttendanceRecord(const QDate& date)
+void AttendanceMainWindow::deleteAttendanceRecord(const QDate& date) const
 {
     QSettings settings;
     AttendanceSettings::removeRecord(settings, date);
@@ -260,7 +251,7 @@ void AttendanceMainWindow::deleteAttendanceRecord(const QDate& date)
     updateMonthlyStatistics();
 }
 
-void AttendanceMainWindow::loadGlobalSettings()
+void AttendanceMainWindow::loadGlobalSettings() const
 {
     QSettings settings;
     const AttendanceSettings::GlobalSettings globalSettings = AttendanceSettings::loadGlobalSettings(settings);
@@ -283,7 +274,7 @@ void AttendanceMainWindow::loadGlobalSettings()
     }
 }
 
-void AttendanceMainWindow::saveGlobalSettings()
+void AttendanceMainWindow::saveGlobalSettings() const
 {
     if (!WorkTimeCalculator::hasValidSchedule(currentGlobalSettings())) {
         return;
@@ -298,7 +289,7 @@ void AttendanceMainWindow::saveGlobalSettings()
     AttendanceSettings::saveGlobalSettings(settings, globalSettings);
 }
 
-void AttendanceMainWindow::onGlobalSettingsChanged()
+void AttendanceMainWindow::onGlobalSettingsChanged() const
 {
     bool isValid = WorkTimeCalculator::hasValidSchedule(currentGlobalSettings());
     m_globalSettingsErrorLabel->setVisible(!isValid);
@@ -325,13 +316,13 @@ AttendanceRecord AttendanceMainWindow::currentGlobalSettings() const
     return record;
 }
 
-void AttendanceMainWindow::migrateLegacyRecordsToCurrentSchedule()
+void AttendanceMainWindow::migrateLegacyRecordsToCurrentSchedule() const
 {
     QSettings settings;
     AttendanceSettings::migrateLegacyRecords(settings, currentGlobalSettings());
 }
 
-void AttendanceMainWindow::updateCalendarAppearance()
+void AttendanceMainWindow::updateCalendarAppearance() const
 {
     int year = m_calendar->yearShown();
     int month = m_calendar->monthShown();
@@ -363,7 +354,7 @@ void AttendanceMainWindow::updateCalendarAppearance()
     }
 }
 
-void AttendanceMainWindow::updateMonthlyStatistics()
+void AttendanceMainWindow::updateMonthlyStatistics() const
 {
     int year = m_calendar->yearShown();
     int month = m_calendar->monthShown();
@@ -421,7 +412,7 @@ void AttendanceMainWindow::updateMonthlyStatistics()
     const int targetMinutesPerDay = qRound(m_targetOvertimeHoursSpinBox->value() * 60.0);
     const int targetOvertimeMinutes = targetMinutesPerDay * workDays;
 
-    auto formatMinutes = [](int minutes) {
+    auto formatMinutes = [](const int minutes) {
         int absoluteMinutes = minutes < 0 ? -minutes : minutes;
         QString sign = minutes < 0 ? QString("-") : QString();
         return QString("%1%2小时%3分钟").arg(sign).arg(absoluteMinutes / 60).arg(absoluteMinutes % 60);

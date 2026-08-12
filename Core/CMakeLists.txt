@@ -60,16 +60,12 @@ target_link_libraries(${PROJECT_NAME}
         Qt6::Network
 )
 
-# Windows特定设置
+# 仅在 Windows 平台下且非静态编译时执行
 if (WIN32)
     set_target_properties(${PROJECT_NAME} PROPERTIES
             WIN32_EXECUTABLE TRUE
     )
-endif ()
 
-
-# 仅在 Windows 平台下且非静态编译时执行
-if (WIN32)
     # 自动查找当前构建环境匹配的 windeployqt 路径
     find_program(WINDEPLOYQT_EXECUTABLE windeployqt HINTS "${Qt6_DIR}/../../../bin")
     if (WINDEPLOYQT_EXECUTABLE)

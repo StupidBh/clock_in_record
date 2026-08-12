@@ -27,8 +27,8 @@ namespace {
 
     std::array<TimeRange, 2> breakRanges(const AttendanceRecord& record)
     {
-        return { TimeRange { record.lunchBreakStart, record.lunchBreakEnd },
-                 TimeRange { record.dinnerBreakStart, record.dinnerBreakEnd } };
+        return { TimeRange { .start = record.lunchBreakStart, .end = record.lunchBreakEnd },
+                 TimeRange { .start = record.dinnerBreakStart, .end = record.dinnerBreakEnd } };
     }
 
     int calculateBreakMinutes(const AttendanceRecord& record, const TimeRange& range)
@@ -63,8 +63,7 @@ namespace {
 namespace WorkTimeCalculator {
     bool hasValidAttendanceRange(const AttendanceRecord& record)
     {
-        return record.arrivalTime.isValid() && record.departureTime.isValid() &&
-               record.arrivalTime < record.departureTime;
+        return record.arrivalTime.isValid() && record.departureTime.isValid() && record.arrivalTime < record.departureTime;
     }
 
     bool hasValidSchedule(const AttendanceRecord& record)
@@ -73,14 +72,13 @@ namespace WorkTimeCalculator {
             return start.isValid() && end.isValid() && start < end;
         };
 
-        if (!isValidRange(record.workStartTime, record.workEndTime) ||
-            !isValidRange(record.lunchBreakStart, record.lunchBreakEnd) ||
+        if (!isValidRange(record.workStartTime, record.workEndTime) || !isValidRange(record.lunchBreakStart, record.lunchBreakEnd) ||
             !isValidRange(record.dinnerBreakStart, record.dinnerBreakEnd)) {
             return false;
         }
 
-        return !rangesOverlap({ record.lunchBreakStart, record.lunchBreakEnd },
-                              { record.dinnerBreakStart, record.dinnerBreakEnd });
+        return !rangesOverlap({ .start = record.lunchBreakStart, .end = record.lunchBreakEnd },
+                              { .start = record.dinnerBreakStart, .end = record.dinnerBreakEnd });
     }
 
     WorkTimeResult calculateWorkTimeResult(const AttendanceRecord& record)
@@ -101,21 +99,20 @@ namespace WorkTimeCalculator {
             result.earlyLeaveMinutes = record.departureTime.secsTo(record.workEndTime) / 60;
         }
 
-        const TimeRange attendanceRange { record.arrivalTime, record.departureTime };
+        const TimeRange attendanceRange { .start = record.arrivalTime, .end = record.departureTime };
         result.totalBreakMinutes = calculateBreakMinutes(record, attendanceRange);
         result.actualWorkMinutes = calculateWorkingMinutes(record, attendanceRange);
-        result.standardWorkMinutes = calculateWorkingMinutes(record, { record.workStartTime, record.workEndTime });
+        result.standardWorkMinutes = calculateWorkingMinutes(record, { .start = record.workStartTime, .end = record.workEndTime });
 
         const QTime standardAttendanceStart = laterTime(record.arrivalTime, record.workStartTime);
         const QTime standardAttendanceEnd = earlierTime(record.departureTime, record.workEndTime);
-        const int standardAttendanceMinutes =
-            calculateWorkingMinutes(record, { standardAttendanceStart, standardAttendanceEnd });
+        const int standardAttendanceMinutes = calculateWorkingMinutes(record, { .start = standardAttendanceStart, .end = standardAttendanceEnd });
         result.missingWorkMinutes = result.standardWorkMinutes - standardAttendanceMinutes;
 
         const QTime earlyOvertimeEnd = earlierTime(record.departureTime, record.workStartTime);
         const QTime lateOvertimeStart = laterTime(record.arrivalTime, record.workEndTime);
-        result.overtimeMinutes = calculateWorkingMinutes(record, { record.arrivalTime, earlyOvertimeEnd }) +
-                                 calculateWorkingMinutes(record, { lateOvertimeStart, record.departureTime });
+        result.overtimeMinutes = calculateWorkingMinutes(record, { .start = record.arrivalTime, .end = earlyOvertimeEnd }) +
+                                 calculateWorkingMinutes(record, { .start = lateOvertimeStart, .end = record.departureTime });
 
         return result;
     }

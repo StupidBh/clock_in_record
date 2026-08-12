@@ -27,17 +27,17 @@ private slots:
     void onDateClicked(const QDate& date);
     void onMonthChanged();
     void onDeleteRequested(const QDate& date);
-    void onGlobalSettingsChanged();
+    void onGlobalSettingsChanged() const;
 
 private:
     void setupUI();
 
-    void deleteAttendanceRecord(const QDate& date);
-    void updateCalendarAppearance();
-    void updateMonthlyStatistics();
-    void loadGlobalSettings();
-    void saveGlobalSettings();
-    void migrateLegacyRecordsToCurrentSchedule();
+    void deleteAttendanceRecord(const QDate& date) const;
+    void updateCalendarAppearance() const;
+    void updateMonthlyStatistics() const;
+    void loadGlobalSettings() const;
+    void saveGlobalSettings() const;
+    void migrateLegacyRecordsToCurrentSchedule() const;
     AttendanceRecord currentGlobalSettings() const;
 
     CustomCalendarWidget* m_calendar;

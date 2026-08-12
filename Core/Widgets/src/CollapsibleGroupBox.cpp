@@ -26,7 +26,7 @@ CollapsibleGroupBox::CollapsibleGroupBox(const QString& title, QWidget* parent) 
     updateButtonText();
 }
 
-void CollapsibleGroupBox::setContentLayout(QLayout* layout)
+void CollapsibleGroupBox::setContentLayout(QLayout* layout) const
 {
     delete m_contentWidget->layout();
     m_contentWidget->setLayout(layout);
@@ -39,7 +39,7 @@ void CollapsibleGroupBox::toggle(bool checked)
     updateButtonText();
 }
 
-void CollapsibleGroupBox::updateButtonText()
+void CollapsibleGroupBox::updateButtonText() const
 {
     QString arrow = m_collapsed ? ">" : "v";
     m_toggleButton->setText(arrow + " " + m_title);

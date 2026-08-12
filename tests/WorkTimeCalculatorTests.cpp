@@ -78,8 +78,7 @@ namespace {
         expectEqual("enabled offset missing work", offset.missingWorkMinutes, 30);
 
         record.departureTime = QTime(20, 0);
-        const WorkTimeResult overtimeRemains =
-            WorkTimeCalculator::applyOvertimeOffset(WorkTimeCalculator::calculateWorkTimeResult(record), true);
+        const WorkTimeResult overtimeRemains = WorkTimeCalculator::applyOvertimeOffset(WorkTimeCalculator::calculateWorkTimeResult(record), true);
         expectEqual("enabled offset remaining overtime", overtimeRemains.overtimeMinutes, 30);
         expectEqual("enabled offset no missing work", overtimeRemains.missingWorkMinutes, 0);
 

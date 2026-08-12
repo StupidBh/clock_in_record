@@ -16,13 +16,13 @@ public:
     AttendanceRecord getRecord() const;
 
 private slots:
-    void calculateWorkTime();
+    void calculateWorkTime() const;
     void saveAndClose();
 
 private:
     void setupUI();
     void loadRecord();
-    void saveRecord();
+    void saveRecord() const;
 
     QDate m_date;
     QCheckBox* m_needAverageCalCheckBox;

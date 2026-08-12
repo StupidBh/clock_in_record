@@ -46,7 +46,7 @@ AttendanceRecord TimeSettingDialog::getRecord() const
     return record;
 }
 
-void TimeSettingDialog::calculateWorkTime()
+void TimeSettingDialog::calculateWorkTime() const
 {
     AttendanceRecord record = getRecord();
 
@@ -62,7 +62,7 @@ void TimeSettingDialog::calculateWorkTime()
     WorkTimeResult result = WorkTimeCalculator::calculateWorkTimeResult(record);
     result = WorkTimeCalculator::applyOvertimeOffset(result, m_overtimeOffsetsMissingWork);
 
-    auto fmtMin = [](int minutes) {
+    auto fmtMin = [](const int minutes) {
         return QString("%1小时%2分钟").arg(minutes / 60).arg(minutes % 60);
     };
 
@@ -113,7 +113,7 @@ void TimeSettingDialog::saveAndClose()
 
 void TimeSettingDialog::setupUI()
 {
-    QVBoxLayout* mainLayout = new QVBoxLayout(this);
+    QVBoxLayout* mainLayout = new QVBoxLayout(this); // NOLINT(*-use-auto)
 
     // 基本时间设置组
     QGroupBox* basicTimeGroup = new QGroupBox(QString("基本时间"));
@@ -186,7 +186,7 @@ void TimeSettingDialog::loadRecord()
     calculateWorkTime();
 }
 
-void TimeSettingDialog::saveRecord()
+void TimeSettingDialog::saveRecord() const
 {
     QSettings settings;
     AttendanceSettings::saveRecord(settings, m_date, getRecord());

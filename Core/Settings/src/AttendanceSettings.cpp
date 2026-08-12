@@ -15,13 +15,13 @@ namespace {
     };
 
     constexpr std::array ScheduleFields {
-        ScheduleField { "workStart", &AttendanceRecord::workStartTime },
-        ScheduleField { "workEnd", &AttendanceRecord::workEndTime },
-        ScheduleField { "lunchStart", &AttendanceRecord::lunchBreakStart },
-        ScheduleField { "lunchEnd", &AttendanceRecord::lunchBreakEnd },
-        ScheduleField { "dinnerStart", &AttendanceRecord::dinnerBreakStart },
-        ScheduleField { "dinnerEnd", &AttendanceRecord::dinnerBreakEnd },
-        ScheduleField { "mealSubsidy", &AttendanceRecord::mealSubsidyTime },
+        ScheduleField { .name = "workStart", .value = &AttendanceRecord::workStartTime },
+        ScheduleField { .name = "workEnd", .value = &AttendanceRecord::workEndTime },
+        ScheduleField { .name = "lunchStart", .value = &AttendanceRecord::lunchBreakStart },
+        ScheduleField { .name = "lunchEnd", .value = &AttendanceRecord::lunchBreakEnd },
+        ScheduleField { .name = "dinnerStart", .value = &AttendanceRecord::dinnerBreakStart },
+        ScheduleField { .name = "dinnerEnd", .value = &AttendanceRecord::dinnerBreakEnd },
+        ScheduleField { .name = "mealSubsidy", .value = &AttendanceRecord::mealSubsidyTime },
     };
 
     QString recordGroup(const QDate& date)
@@ -50,12 +50,11 @@ namespace {
         settings.setValue(key, value.toString(TimeFormat));
     }
 
-    AttendanceRecord
-        loadScheduleUnchecked(const QSettings& settings, const QString& group, const AttendanceRecord& fallback)
+    AttendanceRecord loadScheduleUnchecked(const QSettings& settings, const QString& group, const AttendanceRecord& fallback)
     {
         AttendanceRecord schedule = fallback;
-        for (const auto& field : ScheduleFields) {
-            schedule.*field.value = readTime(settings, groupKey(group, field.name), fallback.*field.value);
+        for (const auto& [name, value] : ScheduleFields) {
+            schedule.*value = readTime(settings, groupKey(group, name), fallback.*value);
         }
 
         return schedule;
@@ -76,8 +75,8 @@ namespace {
 
     void saveSchedule(QSettings& settings, const QString& group, const AttendanceRecord& schedule)
     {
-        for (const auto& field : ScheduleFields) {
-            writeTime(settings, groupKey(group, field.name), schedule.*field.value);
+        for (const auto& [name, value] : ScheduleFields) {
+            writeTime(settings, groupKey(group, name), schedule.*value);
         }
     }
 } // namespace
@@ -87,14 +86,12 @@ namespace AttendanceSettings {
     {
         GlobalSettings globalSettings;
         const AttendanceRecord defaults;
-        const AttendanceRecord rawSchedule =
-            loadScheduleUnchecked(settings, QLatin1String(GlobalSettingsGroup), defaults);
+        const AttendanceRecord rawSchedule = loadScheduleUnchecked(settings, QLatin1String(GlobalSettingsGroup), defaults);
         globalSettings.requiresRepair = !WorkTimeCalculator::hasValidSchedule(rawSchedule);
         globalSettings.schedule = globalSettings.requiresRepair ? defaults : rawSchedule;
 
         globalSettings.mealSubsidyEnabled = settings.value("settings/mealSubsidyEnabled", true).toBool();
-        globalSettings.overtimeOffsetsMissingWork =
-            settings.value("settings/overtimeOffsetsMissingWork", false).toBool();
+        globalSettings.overtimeOffsetsMissingWork = settings.value("settings/overtimeOffsetsMissingWork", false).toBool();
 
         bool targetOk = false;
         globalSettings.targetOvertimeMinutes = settings.value("settings/targetOvertimeMinutes", 150).toInt(&targetOk);
@@ -129,8 +126,7 @@ namespace AttendanceSettings {
         return record;
     }
 
-    std::optional<AttendanceRecord>
-        loadRecord(const QSettings& settings, const QDate& date, const AttendanceRecord& scheduleFallback)
+    std::optional<AttendanceRecord> loadRecord(const QSettings& settings, const QDate& date, const AttendanceRecord& scheduleFallback)
     {
         if (!hasRecord(settings, date)) {
             return std::nullopt;
