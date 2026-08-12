@@ -43,7 +43,8 @@ void CustomCalendarWidget::paintCell(QPainter* painter, const QRect& rect, QDate
 
     QCalendarWidget::paintCell(painter, rect, date);
 
-    if (date == selectedDate()) {
+    const bool isSelected = selectionMode() != QCalendarWidget::NoSelection && date == selectedDate();
+    if (isSelected) {
         painter->save();
         painter->setRenderHint(QPainter::Antialiasing);
         painter->setPen(Qt::NoPen);
@@ -76,7 +77,7 @@ void CustomCalendarWidget::paintCell(QPainter* painter, const QRect& rect, QDate
         QFont font = painter->font();
         font.setPointSize(7);
         painter->setFont(font);
-        painter->setPen(date == selectedDate() ? QPen(Qt::white) : QPen(QColor(0, 70, 170)));
+        painter->setPen(isSelected ? QPen(Qt::white) : QPen(QColor(0, 70, 170)));
 
         const QVariantMap& info = it.value();
         QRect contentRect = rect.adjusted(2, 2, -2, -2);
@@ -103,7 +104,9 @@ void CustomCalendarWidget::removeCustomData(const QDate& date)
 
 void CustomCalendarWidget::clearDateSelection()
 {
+    const QDate previouslySelectedDate = selectedDate();
     setSelectionMode(QCalendarWidget::NoSelection);
+    updateCell(previouslySelectedDate);
 }
 
 void CustomCalendarWidget::showContextMenu(const QPoint& pos)
