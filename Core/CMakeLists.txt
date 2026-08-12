@@ -1,7 +1,13 @@
+file(GLOB_RECURSE ATTENDANCE_CALCULATION_SOURCES CONFIGURE_DEPENDS
+        "${CMAKE_CURRENT_SOURCE_DIR}/Attendance/*.cpp"
+)
+file(GLOB_RECURSE ATTENDANCE_CALCULATION_HEADERS CONFIGURE_DEPENDS
+        "${CMAKE_CURRENT_SOURCE_DIR}/Attendance/*.h"
+)
+
 add_library(attendance_calculation STATIC
-        Attendance/AttendanceTypes.h
-        Attendance/WorkTimeCalculator.h
-        Attendance/src/WorkTimeCalculator.cpp
+        ${ATTENDANCE_CALCULATION_SOURCES}
+        ${ATTENDANCE_CALCULATION_HEADERS}
 )
 add_library(Attendance::Calculation ALIAS attendance_calculation)
 
@@ -13,17 +19,31 @@ target_link_libraries(attendance_calculation PUBLIC
         Qt6::Core
 )
 
+file(GLOB_RECURSE ATTENDANCE_UI_SOURCES CONFIGURE_DEPENDS
+        "${CMAKE_CURRENT_SOURCE_DIR}/Application/*.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/Calendar/*.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/Settings/*.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/Widgets/*.cpp"
+)
+file(GLOB_RECURSE ATTENDANCE_UI_HEADERS CONFIGURE_DEPENDS
+        "${CMAKE_CURRENT_SOURCE_DIR}/Application/*.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/Calendar/*.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/Settings/*.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/Widgets/*.h"
+)
+
+set(ATTENDANCE_ENTRYPOINT_SOURCES ${ATTENDANCE_UI_SOURCES})
+list(FILTER ATTENDANCE_ENTRYPOINT_SOURCES INCLUDE REGEX "/Main\\.cpp$")
+list(FILTER ATTENDANCE_UI_SOURCES EXCLUDE REGEX "/Main\\.cpp$")
+
+list(LENGTH ATTENDANCE_ENTRYPOINT_SOURCES ATTENDANCE_ENTRYPOINT_COUNT)
+if (NOT ATTENDANCE_ENTRYPOINT_COUNT EQUAL 1)
+    message(FATAL_ERROR "Expected exactly one Main.cpp entry point, found ${ATTENDANCE_ENTRYPOINT_COUNT}")
+endif ()
+
 add_library(attendance_ui STATIC
-        Application/AttendanceMainWindow.h
-        Application/src/AttendanceMainWindow.cpp
-        Calendar/CustomCalendarWidget.h
-        Calendar/src/CustomCalendarWidget.cpp
-        Settings/AttendanceSettings.h
-        Settings/src/AttendanceSettings.cpp
-        Settings/TimeSettingDialog.h
-        Settings/src/TimeSettingDialog.cpp
-        Widgets/CollapsibleGroupBox.h
-        Widgets/src/CollapsibleGroupBox.cpp
+        ${ATTENDANCE_UI_SOURCES}
+        ${ATTENDANCE_UI_HEADERS}
 )
 add_library(Attendance::Ui ALIAS attendance_ui)
 
@@ -64,7 +84,7 @@ endif ()
 
 # 创建可执行文件
 add_executable(${PROJECT_NAME}
-        Application/src/Main.cpp
+        ${ATTENDANCE_ENTRYPOINT_SOURCES}
         ${APP_RESOURCES}
         ${WIN_RESOURCES}
 )

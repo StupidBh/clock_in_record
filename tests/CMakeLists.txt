@@ -1,20 +1,22 @@
-add_executable(WorkTimeCalculatorTests
-        WorkTimeCalculatorTests.cpp
+file(GLOB_RECURSE ATTENDANCE_TEST_SOURCES CONFIGURE_DEPENDS
+        "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp"
+)
+file(GLOB_RECURSE ATTENDANCE_TEST_HEADERS CONFIGURE_DEPENDS
+        "${CMAKE_CURRENT_SOURCE_DIR}/*.h"
 )
 
-target_link_libraries(WorkTimeCalculatorTests PRIVATE
-        Attendance::Calculation
-)
+foreach (ATTENDANCE_TEST_SOURCE IN LISTS ATTENDANCE_TEST_SOURCES)
+    get_filename_component(ATTENDANCE_TEST_TARGET "${ATTENDANCE_TEST_SOURCE}" NAME_WE)
 
-add_test(NAME WorkTimeCalculatorTests COMMAND WorkTimeCalculatorTests)
+    add_executable(${ATTENDANCE_TEST_TARGET}
+            "${ATTENDANCE_TEST_SOURCE}"
+            ${ATTENDANCE_TEST_HEADERS}
+    )
 
-add_executable(AttendanceSettingsTests
-        AttendanceSettingsTests.cpp
-)
+    target_link_libraries(${ATTENDANCE_TEST_TARGET} PRIVATE
+            Attendance::Ui
+    )
 
-target_link_libraries(AttendanceSettingsTests PRIVATE
-        Attendance::Ui
-)
-
-add_test(NAME AttendanceSettingsTests COMMAND AttendanceSettingsTests)
-set_tests_properties(AttendanceSettingsTests PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=windows")
+    add_test(NAME ${ATTENDANCE_TEST_TARGET} COMMAND ${ATTENDANCE_TEST_TARGET})
+    set_tests_properties(${ATTENDANCE_TEST_TARGET} PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=windows")
+endforeach ()
