@@ -22,19 +22,9 @@ inline AttendanceRecord loadGlobalTimeDefaults()
     return record;
 }
 
-// 工作时间计算工具类
-class WorkTimeCalculator {
-public:
-    static bool hasValidAttendanceRange(const AttendanceRecord& record);
-    static bool hasValidSchedule(const AttendanceRecord& record);
-    static WorkTimeResult calculateWorkTimeResult(const AttendanceRecord& record);
-    static WorkTimeResult applyOvertimeOffset(WorkTimeResult result, bool enabled);
-
-private:
-    // 辅助函数
-    static bool isTimeRangeOverlap(const QTime& start1, const QTime& end1, const QTime& start2, const QTime& end2);
-    static int calculateBreakMinutes(const AttendanceRecord& record, const QTime& start, const QTime& end);
-    static int calculateWorkingMinutes(const AttendanceRecord& record, const QTime& start, const QTime& end);
-    static QTime maxTime(const QTime& time1, const QTime& time2);
-    static QTime minTime(const QTime& time1, const QTime& time2);
-};
+namespace WorkTimeCalculator {
+    [[nodiscard]] bool hasValidAttendanceRange(const AttendanceRecord& record);
+    [[nodiscard]] bool hasValidSchedule(const AttendanceRecord& record);
+    [[nodiscard]] WorkTimeResult calculateWorkTimeResult(const AttendanceRecord& record);
+    [[nodiscard]] WorkTimeResult applyOvertimeOffset(WorkTimeResult result, bool enabled);
+}

@@ -4,30 +4,16 @@
 // 打卡记录结构体
 struct AttendanceRecord
 {
-    bool needAverageCal;    // 是否加入平均加班计算
-    QTime arrivalTime;      // 到达公司时间
-    QTime departureTime;    // 离开公司时间
-    QTime workStartTime;    // 标准上班时间
-    QTime workEndTime;      // 标准下班时间
-    QTime lunchBreakStart;  // 午餐开始时间
-    QTime lunchBreakEnd;    // 午餐结束时间
-    QTime dinnerBreakStart; // 晚餐开始时间
-    QTime dinnerBreakEnd;   // 晚餐结束时间
-    QTime mealSubsidyTime;  // 餐补起算时间
-
-    AttendanceRecord()
-    {
-        needAverageCal = true;
-        arrivalTime = QTime(9, 0);
-        departureTime = QTime(18, 0);
-        workStartTime = QTime(9, 0);
-        workEndTime = QTime(18, 0);
-        lunchBreakStart = QTime(12, 30);
-        lunchBreakEnd = QTime(13, 30);
-        dinnerBreakStart = QTime(18, 0);
-        dinnerBreakEnd = QTime(18, 30);
-        mealSubsidyTime = QTime(21, 0);
-    }
+    bool needAverageCal = true;       // 是否加入平均加班计算
+    QTime arrivalTime { 9, 0 };       // 到达公司时间
+    QTime departureTime { 18, 0 };    // 离开公司时间
+    QTime workStartTime { 9, 0 };     // 标准上班时间
+    QTime workEndTime { 18, 0 };      // 标准下班时间
+    QTime lunchBreakStart { 12, 30 }; // 午餐开始时间
+    QTime lunchBreakEnd { 13, 30 };   // 午餐结束时间
+    QTime dinnerBreakStart { 18, 0 }; // 晚餐开始时间
+    QTime dinnerBreakEnd { 18, 30 };  // 晚餐结束时间
+    QTime mealSubsidyTime { 21, 0 };  // 餐补起算时间
 };
 
 // 工作时间计算结果
