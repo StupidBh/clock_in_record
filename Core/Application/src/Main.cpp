@@ -18,7 +18,7 @@ int main(int argc, char* argv[])
     font.setPointSize(9);
     app.setFont(font);
 
-    const QString serverName = "AttendanceApp-SingleInstance";
+    const QString serverName = QStringLiteral("AttendanceApp-SingleInstance");
 
     // Step 1: try to connect to an existing instance
     {
@@ -40,9 +40,11 @@ int main(int argc, char* argv[])
 
     AttendanceMainWindow window;
 
-    QObject::connect(&localServer, &QLocalServer::newConnection, [&window, &localServer]() {
-        auto* client = localServer.nextPendingConnection();
-        client->deleteLater();
+    QObject::connect(&localServer, &QLocalServer::newConnection, &window, [&window, &localServer]() {
+        while (auto* client = localServer.nextPendingConnection()) {
+            client->disconnectFromServer();
+            client->deleteLater();
+        }
         window.raiseAndActivate();
     });
 

@@ -15,6 +15,8 @@
 #include <QSettings>
 #include <QMessageBox>
 
+#include <array>
+
 AttendanceMainWindow::AttendanceMainWindow(QWidget* parent) :
     QMainWindow(parent)
 {
@@ -222,13 +224,12 @@ void AttendanceMainWindow::setupUI()
     loadGlobalSettings();
     migrateLegacyRecordsToCurrentSchedule();
 
-    connect(m_globalWorkStartEdit, &QTimeEdit::timeChanged, this, &AttendanceMainWindow::onGlobalSettingsChanged);
-    connect(m_globalWorkEndEdit, &QTimeEdit::timeChanged, this, &AttendanceMainWindow::onGlobalSettingsChanged);
-    connect(m_globalLunchStartEdit, &QTimeEdit::timeChanged, this, &AttendanceMainWindow::onGlobalSettingsChanged);
-    connect(m_globalLunchEndEdit, &QTimeEdit::timeChanged, this, &AttendanceMainWindow::onGlobalSettingsChanged);
-    connect(m_globalDinnerStartEdit, &QTimeEdit::timeChanged, this, &AttendanceMainWindow::onGlobalSettingsChanged);
-    connect(m_globalDinnerEndEdit, &QTimeEdit::timeChanged, this, &AttendanceMainWindow::onGlobalSettingsChanged);
-    connect(m_globalMealSubsidyTimeEdit, &QTimeEdit::timeChanged, this, &AttendanceMainWindow::onGlobalSettingsChanged);
+    const std::array timeEditors { m_globalWorkStartEdit,    m_globalWorkEndEdit,      m_globalLunchStartEdit,
+                                   m_globalLunchEndEdit,     m_globalDinnerStartEdit, m_globalDinnerEndEdit,
+                                   m_globalMealSubsidyTimeEdit };
+    for (QTimeEdit* timeEditor : timeEditors) {
+        connect(timeEditor, &QTimeEdit::timeChanged, this, &AttendanceMainWindow::onGlobalSettingsChanged);
+    }
     connect(m_mealSubsidyEnabledCheckBox, &QCheckBox::toggled, m_globalMealSubsidyTimeEdit, &QTimeEdit::setEnabled);
     connect(m_mealSubsidyEnabledCheckBox, &QCheckBox::toggled, this, &AttendanceMainWindow::onGlobalSettingsChanged);
     connect(m_overtimeOffsetsMissingWorkCheckBox,
@@ -236,7 +237,7 @@ void AttendanceMainWindow::setupUI()
             this,
             &AttendanceMainWindow::onGlobalSettingsChanged);
     connect(m_targetOvertimeHoursSpinBox,
-            qOverload<double>(&QDoubleSpinBox::valueChanged),
+            &QDoubleSpinBox::valueChanged,
             this,
             &AttendanceMainWindow::onGlobalSettingsChanged);
 
@@ -370,24 +371,8 @@ void AttendanceMainWindow::updateMonthlyStatistics()
 
     QSettings settings;
 
-    // 直接使用已缓存在 QTimeEdit 部件中的全局时间设置，避免重复读取注册表
-    QTime globalWorkStart = m_globalWorkStartEdit->time();
-    QTime globalWorkEnd = m_globalWorkEndEdit->time();
-    QTime globalLunchStart = m_globalLunchStartEdit->time();
-    QTime globalLunchEnd = m_globalLunchEndEdit->time();
-    QTime globalDinnerStart = m_globalDinnerStartEdit->time();
-    QTime globalDinnerEnd = m_globalDinnerEndEdit->time();
-    bool mealSubsidyEnabled = m_mealSubsidyEnabledCheckBox->isChecked();
-    QTime globalMealSubsidyTime = m_globalMealSubsidyTimeEdit->time();
-
-    AttendanceRecord scheduleFallback;
-    scheduleFallback.workStartTime = globalWorkStart;
-    scheduleFallback.workEndTime = globalWorkEnd;
-    scheduleFallback.lunchBreakStart = globalLunchStart;
-    scheduleFallback.lunchBreakEnd = globalLunchEnd;
-    scheduleFallback.dinnerBreakStart = globalDinnerStart;
-    scheduleFallback.dinnerBreakEnd = globalDinnerEnd;
-    scheduleFallback.mealSubsidyTime = globalMealSubsidyTime;
+    const AttendanceRecord scheduleFallback = currentGlobalSettings();
+    const bool mealSubsidyEnabled = m_mealSubsidyEnabledCheckBox->isChecked();
 
     int workDays = 0;
     int totalOvertimeMinutes = 0;
