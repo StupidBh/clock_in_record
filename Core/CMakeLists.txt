@@ -1,6 +1,39 @@
-# 自动收集各功能目录中的源文件和头文件
-file(GLOB_RECURSE APP_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp")
-file(GLOB_RECURSE APP_HEADERS CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/*.h")
+add_library(attendance_calculation STATIC
+        Attendance/AttendanceTypes.h
+        Attendance/WorkTimeCalculator.h
+        Attendance/src/WorkTimeCalculator.cpp
+)
+add_library(Attendance::Calculation ALIAS attendance_calculation)
+
+target_include_directories(attendance_calculation PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}
+)
+target_link_libraries(attendance_calculation PUBLIC
+        attendance_project_options
+        Qt6::Core
+)
+
+add_library(attendance_ui STATIC
+        Application/AttendanceMainWindow.h
+        Application/src/AttendanceMainWindow.cpp
+        Calendar/CustomCalendarWidget.h
+        Calendar/src/CustomCalendarWidget.cpp
+        Settings/AttendanceSettings.h
+        Settings/src/AttendanceSettings.cpp
+        Settings/TimeSettingDialog.h
+        Settings/src/TimeSettingDialog.cpp
+        Widgets/CollapsibleGroupBox.h
+        Widgets/src/CollapsibleGroupBox.cpp
+)
+add_library(Attendance::Ui ALIAS attendance_ui)
+
+target_include_directories(attendance_ui PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}
+)
+target_link_libraries(attendance_ui PUBLIC
+        Attendance::Calculation
+        Qt6::Widgets
+)
 
 # 资源文件配置
 set(RESOURCE_DIR "${CMAKE_SOURCE_DIR}/resources")
@@ -31,22 +64,15 @@ endif ()
 
 # 创建可执行文件
 add_executable(${PROJECT_NAME}
-        ${APP_SOURCES}
-        ${APP_HEADERS}
+        Application/src/Main.cpp
         ${APP_RESOURCES}
-        ${WIN_RESOURCES}  # 添加Windows资源文件
-)
-
-# 设置包含目录
-target_include_directories(${PROJECT_NAME} PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}
+        ${WIN_RESOURCES}
 )
 
 # 链接Qt库
 target_link_libraries(${PROJECT_NAME}
-        Qt${QT_VERSION_MAJOR}::Core
-        Qt${QT_VERSION_MAJOR}::Widgets
-        Qt${QT_VERSION_MAJOR}::Network
+        Attendance::Ui
+        Qt6::Network
 )
 
 # Windows特定设置
@@ -60,7 +86,7 @@ endif ()
 # 仅在 Windows 平台下且非静态编译时执行
 if (WIN32)
     # 自动查找当前构建环境匹配的 windeployqt 路径
-    find_program(WINDEPLOYQT_EXECUTABLE windeployqt HINTS "${Qt6_DIR}/../../../bin" "${Qt5_DIR}/../../../bin")
+    find_program(WINDEPLOYQT_EXECUTABLE windeployqt HINTS "${Qt6_DIR}/../../../bin")
     if (WINDEPLOYQT_EXECUTABLE)
         # 添加构建后自定义命令
         add_custom_command(TARGET AttendanceApp POST_BUILD
