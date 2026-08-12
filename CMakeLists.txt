@@ -29,9 +29,9 @@ qt_standard_project_setup()
 add_library(attendance_project_options INTERFACE)
 target_compile_features(attendance_project_options INTERFACE c_std_17 cxx_std_20)
 target_compile_options(attendance_project_options INTERFACE
-        "$<$<COMPILE_LANG_AND_ID:C,MSVC>:/utf-8>"
-        "$<$<COMPILE_LANG_AND_ID:CXX,MSVC>:/utf-8>"
-        "$<$<COMPILE_LANG_AND_ID:CXX,MSVC>:/Zc:__cplusplus>"
+        "$<$<COMPILE_LANG_AND_ID:C,MSVC>:/W4>"
+        "$<$<COMPILE_LANG_AND_ID:CXX,MSVC>:/W4>"
+        "$<$<COMPILE_LANG_AND_ID:CXX,MSVC>:/permissive->"
 )
 
 add_subdirectory(Core)
