@@ -14,32 +14,6 @@ file(GLOB HEADER_RESOURCES CONFIGURE_DEPENDS
         "${CMAKE_CURRENT_SOURCE_DIR}/Widgets/*.h"
 )
 
-set(ENTRYPOINT_RESOURCES ${CPP_RESOURCES})
-list(FILTER ENTRYPOINT_RESOURCES INCLUDE REGEX "/Main\\.cpp$")
-list(FILTER CPP_RESOURCES EXCLUDE REGEX "/Main\\.cpp$")
-
-list(LENGTH ENTRYPOINT_RESOURCES ENTRYPOINT_COUNT)
-if (NOT ENTRYPOINT_COUNT EQUAL 1)
-    message(FATAL_ERROR "Expected exactly one Main.cpp entry point, found ${ENTRYPOINT_COUNT}")
-endif ()
-
-add_library(${PROJECT_NAME}Core STATIC
-        ${CPP_RESOURCES}
-        ${HEADER_RESOURCES}
-)
-add_library(Attendance::Core ALIAS ${PROJECT_NAME}Core)
-
-target_include_directories(${PROJECT_NAME}Core PUBLIC
-        ${CMAKE_CURRENT_SOURCE_DIR}
-)
-target_compile_options(${PROJECT_NAME}Core PUBLIC
-        "$<$<COMPILE_LANG_AND_ID:C,MSVC>:/W4>"
-        "$<$<COMPILE_LANG_AND_ID:CXX,MSVC>:/W4;/permissive->"
-)
-target_link_libraries(${PROJECT_NAME}Core PUBLIC
-        Qt6::Widgets
-)
-
 # 资源文件配置
 set(RESOURCE_DIR "${CMAKE_SOURCE_DIR}/resources")
 set(APP_RESOURCES "${RESOURCE_DIR}/resources.qrc")
@@ -69,14 +43,20 @@ endif ()
 
 # 创建可执行文件
 add_executable(${PROJECT_NAME}
-        ${ENTRYPOINT_RESOURCES}
+        ${CPP_RESOURCES}
+        ${HEADER_RESOURCES}
         ${APP_RESOURCES}
         ${WIN_RESOURCES}
 )
 
-# 链接Qt库
+# 设置包含目录
+target_include_directories(${PROJECT_NAME} PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+# 链接 Qt 库
 target_link_libraries(${PROJECT_NAME}
-        Attendance::Core
+        Qt6::Widgets
         Qt6::Network
 )
 
@@ -94,8 +74,8 @@ if (WIN32)
     find_program(WINDEPLOYQT_EXECUTABLE windeployqt HINTS "${Qt6_DIR}/../../../bin")
     if (WINDEPLOYQT_EXECUTABLE)
         # 添加构建后自定义命令
-        add_custom_command(TARGET AttendanceApp POST_BUILD
-                COMMAND ${WINDEPLOYQT_EXECUTABLE} $<TARGET_FILE:AttendanceApp>
+        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+                COMMAND ${WINDEPLOYQT_EXECUTABLE} $<TARGET_FILE:${PROJECT_NAME}>
                 COMMENT "Deploying Qt dependency DLLs to the output directory..."
         )
     else ()

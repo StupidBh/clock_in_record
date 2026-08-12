@@ -27,6 +27,11 @@ find_package(Qt6 6.11 REQUIRED COMPONENTS Core Widgets Network)
 qt_standard_project_setup()
 set(CMAKE_AUTORCC ON)
 
+add_compile_options(
+        "$<$<COMPILE_LANG_AND_ID:C,MSVC>:/W4>"
+        "$<$<COMPILE_LANG_AND_ID:CXX,MSVC>:/W4;/permissive->"
+)
+
 add_subdirectory(Core)
 
 if (BUILD_TESTING)
