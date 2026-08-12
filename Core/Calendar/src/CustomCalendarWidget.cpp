@@ -1,4 +1,5 @@
 #include "Calendar/CustomCalendarWidget.h"
+#include "Settings/AttendanceSettings.h"
 #include <QSettings>
 #include <QStyle>
 #include <QApplication>
@@ -118,8 +119,7 @@ void CustomCalendarWidget::showContextMenu(const QPoint& pos)
 
     // 检查该日期是否有记录
     QSettings settings;
-    QString key = clickedDate.toString("yyyy-MM-dd");
-    if (!settings.contains(key + "/arrival")) {
+    if (!AttendanceSettings::hasRecord(settings, clickedDate)) {
         return; // 没有记录，不显示菜单
     }
 

@@ -21,6 +21,7 @@ add_executable(AttendanceSettingsTests
         ${CMAKE_SOURCE_DIR}/Core/Calendar/CustomCalendarWidget.h
         ${CMAKE_SOURCE_DIR}/Core/Calendar/src/CustomCalendarWidget.cpp
         ${CMAKE_SOURCE_DIR}/Core/Settings/TimeSettingDialog.h
+        ${CMAKE_SOURCE_DIR}/Core/Settings/src/AttendanceSettings.cpp
         ${CMAKE_SOURCE_DIR}/Core/Settings/src/TimeSettingDialog.cpp
         ${CMAKE_SOURCE_DIR}/Core/Widgets/CollapsibleGroupBox.h
         ${CMAKE_SOURCE_DIR}/Core/Widgets/src/CollapsibleGroupBox.cpp

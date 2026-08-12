@@ -1,5 +1,6 @@
 #include "Settings/TimeSettingDialog.h"
 #include "Attendance/WorkTimeCalculator.h"
+#include "Settings/AttendanceSettings.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QGridLayout>
@@ -12,11 +13,13 @@
 TimeSettingDialog::TimeSettingDialog(const QDate& date, QWidget* parent) :
     QDialog(parent),
     m_date(date),
-    m_globalDefaults(loadGlobalTimeDefaults()),
+    m_globalDefaults(),
     m_overtimeOffsetsMissingWork(false)
 {
     QSettings settings;
-    m_overtimeOffsetsMissingWork = settings.value("settings/overtimeOffsetsMissingWork", false).toBool();
+    const AttendanceSettings::GlobalSettings globalSettings = AttendanceSettings::loadGlobalSettings(settings);
+    m_globalDefaults = globalSettings.schedule;
+    m_overtimeOffsetsMissingWork = globalSettings.overtimeOffsetsMissingWork;
 
     setWindowTitle(QString("设置打卡时间 - %1").arg(date.toString("yyyy-MM-dd")));
     setModal(true);
@@ -163,68 +166,28 @@ void TimeSettingDialog::setupUI()
 void TimeSettingDialog::loadRecord()
 {
     QSettings settings;
-    QString key = m_date.toString("yyyy-MM-dd");
+    const auto storedRecord = AttendanceSettings::loadRecord(settings, m_date, m_globalDefaults);
+    AttendanceRecord record = storedRecord.value_or(AttendanceSettings::createRecord(m_date, m_globalDefaults));
+    m_globalDefaults = record;
 
-    int dayOfWeek = m_date.dayOfWeek();
-    bool defaultNeedAverage = (dayOfWeek != 6 && dayOfWeek != 7);
-    m_needAverageCalCheckBox->setChecked(settings.value(key + "/needAverageCal", defaultNeedAverage).toBool());
-
-    AttendanceRecord defaults;
-    AttendanceRecord currentSchedule = m_globalDefaults;
-
-    auto readScheduleTime = [&](const QString& name, const QTime& fallback) {
-        QTime value =
-            QTime::fromString(settings.value(key + "/" + name, fallback.toString("hh:mm")).toString(), "hh:mm");
-        return value.isValid() ? value : fallback;
-    };
-
-    m_globalDefaults.workStartTime = readScheduleTime("workStart", m_globalDefaults.workStartTime);
-    m_globalDefaults.workEndTime = readScheduleTime("workEnd", m_globalDefaults.workEndTime);
-    m_globalDefaults.lunchBreakStart = readScheduleTime("lunchStart", m_globalDefaults.lunchBreakStart);
-    m_globalDefaults.lunchBreakEnd = readScheduleTime("lunchEnd", m_globalDefaults.lunchBreakEnd);
-    m_globalDefaults.dinnerBreakStart = readScheduleTime("dinnerStart", m_globalDefaults.dinnerBreakStart);
-    m_globalDefaults.dinnerBreakEnd = readScheduleTime("dinnerEnd", m_globalDefaults.dinnerBreakEnd);
-    m_globalDefaults.mealSubsidyTime = readScheduleTime("mealSubsidy", m_globalDefaults.mealSubsidyTime);
-    if (!WorkTimeCalculator::hasValidSchedule(m_globalDefaults)) {
-        m_globalDefaults = currentSchedule;
-    }
-
-    const bool hasStoredRecord = settings.contains(key + "/arrival");
-    QTime arrivalTime =
-        QTime::fromString(settings.value(key + "/arrival", defaults.arrivalTime.toString("hh:mm")).toString(),
-                          "hh:mm");
-    const QTime departureTime =
-        QTime::fromString(settings.value(key + "/departure", defaults.departureTime.toString("hh:mm")).toString(),
-                          "hh:mm");
-
-    if (!hasStoredRecord && m_date == QDate::currentDate()) {
+    if (!storedRecord && m_date == QDate::currentDate()) {
         const QTime now = QTime::currentTime();
         const QTime currentMinute(now.hour(), now.minute());
-        if (currentMinute < departureTime) {
-            arrivalTime = currentMinute;
+        if (currentMinute < record.departureTime) {
+            record.arrivalTime = currentMinute;
         }
     }
 
     const QSignalBlocker arrivalBlocker(m_arrivalTimeEdit);
     const QSignalBlocker departureBlocker(m_departureTimeEdit);
-    m_arrivalTimeEdit->setTime(arrivalTime);
-    m_departureTimeEdit->setTime(departureTime);
+    m_needAverageCalCheckBox->setChecked(record.needAverageCal);
+    m_arrivalTimeEdit->setTime(record.arrivalTime);
+    m_departureTimeEdit->setTime(record.departureTime);
     calculateWorkTime();
 }
 
 void TimeSettingDialog::saveRecord()
 {
     QSettings settings;
-    QString key = m_date.toString("yyyy-MM-dd");
-
-    settings.setValue(key + "/needAverageCal", m_needAverageCalCheckBox->isChecked());
-    settings.setValue(key + "/arrival", m_arrivalTimeEdit->time().toString("hh:mm"));
-    settings.setValue(key + "/departure", m_departureTimeEdit->time().toString("hh:mm"));
-    settings.setValue(key + "/workStart", m_globalDefaults.workStartTime.toString("hh:mm"));
-    settings.setValue(key + "/workEnd", m_globalDefaults.workEndTime.toString("hh:mm"));
-    settings.setValue(key + "/lunchStart", m_globalDefaults.lunchBreakStart.toString("hh:mm"));
-    settings.setValue(key + "/lunchEnd", m_globalDefaults.lunchBreakEnd.toString("hh:mm"));
-    settings.setValue(key + "/dinnerStart", m_globalDefaults.dinnerBreakStart.toString("hh:mm"));
-    settings.setValue(key + "/dinnerEnd", m_globalDefaults.dinnerBreakEnd.toString("hh:mm"));
-    settings.setValue(key + "/mealSubsidy", m_globalDefaults.mealSubsidyTime.toString("hh:mm"));
+    AttendanceSettings::saveRecord(settings, m_date, getRecord());
 }
