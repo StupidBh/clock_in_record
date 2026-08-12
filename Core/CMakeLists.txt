@@ -32,8 +32,11 @@ add_library(Attendance::Core ALIAS ${PROJECT_NAME}Core)
 target_include_directories(${PROJECT_NAME}Core PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}
 )
+target_compile_options(${PROJECT_NAME}Core PUBLIC
+        "$<$<COMPILE_LANG_AND_ID:C,MSVC>:/W4>"
+        "$<$<COMPILE_LANG_AND_ID:CXX,MSVC>:/W4;/permissive->"
+)
 target_link_libraries(${PROJECT_NAME}Core PUBLIC
-        attendance_project_options
         Qt6::Widgets
 )
 
