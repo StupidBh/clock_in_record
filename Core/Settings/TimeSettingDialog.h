@@ -30,4 +30,5 @@ private:
     QTimeEdit* m_departureTimeEdit;
     QLabel* m_resultLabel;
     AttendanceRecord m_globalDefaults;
+    bool m_overtimeOffsetsMissingWork;
 };

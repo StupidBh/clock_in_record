@@ -12,8 +12,12 @@
 TimeSettingDialog::TimeSettingDialog(const QDate& date, QWidget* parent) :
     QDialog(parent),
     m_date(date),
-    m_globalDefaults(loadGlobalTimeDefaults())
+    m_globalDefaults(loadGlobalTimeDefaults()),
+    m_overtimeOffsetsMissingWork(false)
 {
+    QSettings settings;
+    m_overtimeOffsetsMissingWork = settings.value("settings/overtimeOffsetsMissingWork", false).toBool();
+
     setWindowTitle(QString("设置打卡时间 - %1").arg(date.toString("yyyy-MM-dd")));
     setModal(true);
     resize(400, 320);
@@ -53,6 +57,7 @@ void TimeSettingDialog::calculateWorkTime()
     }
 
     WorkTimeResult result = WorkTimeCalculator::calculateWorkTimeResult(record);
+    result = WorkTimeCalculator::applyOvertimeOffset(result, m_overtimeOffsetsMissingWork);
 
     auto fmtMin = [](int minutes) {
         return QString("%1小时%2分钟").arg(minutes / 60).arg(minutes % 60);
@@ -75,12 +80,12 @@ void TimeSettingDialog::calculateWorkTime()
         resultText += QString("[休息时间] %1\n").arg(fmtMin(result.totalBreakMinutes));
     }
     if (result.overtimeMinutes > 0) {
-        resultText += QString("[加班时间] %1").arg(fmtMin(result.overtimeMinutes));
+        resultText += QString("[加班时间] %1\n").arg(fmtMin(result.overtimeMinutes));
     }
-    else if (result.overtimeMinutes < 0) {
-        resultText += QString("[欠缺时间] %1").arg(fmtMin(-result.overtimeMinutes));
+    if (result.missingWorkMinutes > 0) {
+        resultText += QString("[缺少标准工时] %1").arg(fmtMin(result.missingWorkMinutes));
     }
-    else {
+    if (result.overtimeMinutes == 0 && result.missingWorkMinutes == 0) {
         resultText += QString("[今日无缺]");
     }
 
@@ -133,7 +138,7 @@ void TimeSettingDialog::setupUI()
     QVBoxLayout* resultLayout = new QVBoxLayout(resultGroup);
     m_resultLabel = new QLabel(QString(""));
     m_resultLabel->setWordWrap(true);
-    m_resultLabel->setFixedHeight(130);
+    m_resultLabel->setFixedHeight(150);
     m_resultLabel->setStyleSheet("padding: 10px; background-color: #f0f0f0; border-radius: 5px;");
     resultLayout->addWidget(m_resultLabel);
     mainLayout->addWidget(resultGroup);

@@ -52,5 +52,6 @@ private:
     QTimeEdit* m_globalDinnerEndEdit;
     QCheckBox* m_mealSubsidyEnabledCheckBox;
     QTimeEdit* m_globalMealSubsidyTimeEdit;
+    QCheckBox* m_overtimeOffsetsMissingWorkCheckBox;
     QDoubleSpinBox* m_targetOvertimeHoursSpinBox;
 };

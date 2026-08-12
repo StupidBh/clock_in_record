@@ -37,6 +37,7 @@ struct WorkTimeResult
     int standardWorkMinutes = 0; // 标准工作时间（分钟）
     int lateMinutes = 0;         // 迟到时间（分钟）
     int earlyLeaveMinutes = 0;   // 早退时间（分钟）
-    int overtimeMinutes = 0;     // 加班时间（分钟）
+    int overtimeMinutes = 0;     // 标准工作时段外的工作时间（分钟）
+    int missingWorkMinutes = 0;  // 标准工作时段内缺少的工作时间（分钟）
     int totalBreakMinutes = 0;   // 总休息时间（分钟）
 };

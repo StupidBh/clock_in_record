@@ -172,15 +172,18 @@ void AttendanceMainWindow::setupUI()
     mealSubsidyLayout->addWidget(m_globalMealSubsidyTimeEdit, 1, 1);
     globalDetailsLayout->addWidget(mealSubsidyGroup);
 
-    QGroupBox* overtimeTargetGroup = new QGroupBox(QString("加班目标"));
-    QHBoxLayout* overtimeTargetLayout = new QHBoxLayout(overtimeTargetGroup);
-    overtimeTargetLayout->addWidget(new QLabel(QString("日均加班时长:")));
+    QGroupBox* overtimeTargetGroup = new QGroupBox(QString("加班设置"));
+    QGridLayout* overtimeTargetLayout = new QGridLayout(overtimeTargetGroup);
+    overtimeTargetLayout->addWidget(new QLabel(QString("日均加班时长:")), 0, 0);
     m_targetOvertimeHoursSpinBox = new QDoubleSpinBox();
     m_targetOvertimeHoursSpinBox->setRange(0.0, 24.0);
     m_targetOvertimeHoursSpinBox->setDecimals(1);
     m_targetOvertimeHoursSpinBox->setSingleStep(0.5);
     m_targetOvertimeHoursSpinBox->setSuffix(QString(" 小时"));
-    overtimeTargetLayout->addWidget(m_targetOvertimeHoursSpinBox);
+    overtimeTargetLayout->addWidget(m_targetOvertimeHoursSpinBox, 0, 1);
+    m_overtimeOffsetsMissingWorkCheckBox = new QCheckBox(QString("加班抵扣缺少的标准工时"));
+    m_overtimeOffsetsMissingWorkCheckBox->setObjectName("overtimeOffsetsMissingWorkCheckBox");
+    overtimeTargetLayout->addWidget(m_overtimeOffsetsMissingWorkCheckBox, 1, 0, 1, 2);
     globalDetailsLayout->addWidget(overtimeTargetGroup);
 
     m_globalSettingsErrorLabel = new QLabel();
@@ -227,6 +230,10 @@ void AttendanceMainWindow::setupUI()
     connect(m_globalMealSubsidyTimeEdit, &QTimeEdit::timeChanged, this, &AttendanceMainWindow::onGlobalSettingsChanged);
     connect(m_mealSubsidyEnabledCheckBox, &QCheckBox::toggled, m_globalMealSubsidyTimeEdit, &QTimeEdit::setEnabled);
     connect(m_mealSubsidyEnabledCheckBox, &QCheckBox::toggled, this, &AttendanceMainWindow::onGlobalSettingsChanged);
+    connect(m_overtimeOffsetsMissingWorkCheckBox,
+            &QCheckBox::toggled,
+            this,
+            &AttendanceMainWindow::onGlobalSettingsChanged);
     connect(m_targetOvertimeHoursSpinBox,
             qOverload<double>(&QDoubleSpinBox::valueChanged),
             this,
@@ -279,6 +286,8 @@ void AttendanceMainWindow::loadGlobalSettings()
     m_mealSubsidyEnabledCheckBox->setChecked(mealSubsidyEnabled);
     m_globalMealSubsidyTimeEdit->setTime(globalDefaults.mealSubsidyTime);
     m_globalMealSubsidyTimeEdit->setEnabled(mealSubsidyEnabled);
+    m_overtimeOffsetsMissingWorkCheckBox->setChecked(
+        settings.value("settings/overtimeOffsetsMissingWork", false).toBool());
 
     bool targetOvertimeOk = false;
     int targetOvertimeMinutes = settings.value("settings/targetOvertimeMinutes", 150).toInt(&targetOvertimeOk);
@@ -308,6 +317,7 @@ void AttendanceMainWindow::saveGlobalSettings()
     settings.setValue("settings/dinnerEnd", m_globalDinnerEndEdit->time().toString("hh:mm"));
     settings.setValue("settings/mealSubsidyEnabled", m_mealSubsidyEnabledCheckBox->isChecked());
     settings.setValue("settings/mealSubsidy", m_globalMealSubsidyTimeEdit->time().toString("hh:mm"));
+    settings.setValue("settings/overtimeOffsetsMissingWork", m_overtimeOffsetsMissingWorkCheckBox->isChecked());
     settings.setValue("settings/targetOvertimeMinutes", qRound(m_targetOvertimeHoursSpinBox->value() * 60.0));
 }
 
@@ -446,7 +456,9 @@ void AttendanceMainWindow::updateMonthlyStatistics()
 
     int workDays = 0;
     int totalOvertimeMinutes = 0;
+    int totalMissingWorkMinutes = 0;
     int mealSubsidyCount = 0;
+    const bool overtimeOffsetsMissingWork = m_overtimeOffsetsMissingWorkCheckBox->isChecked();
     QDate date = startDate;
     while (date <= endDate) {
         QString key = date.toString("yyyy-MM-dd");
@@ -485,9 +497,9 @@ void AttendanceMainWindow::updateMonthlyStatistics()
                 if (record.needAverageCal) {
                     workDays++;
                 }
-                if (result.overtimeMinutes > 0) {
-                    totalOvertimeMinutes += result.overtimeMinutes;
-                }
+                result = WorkTimeCalculator::applyOvertimeOffset(result, overtimeOffsetsMissingWork);
+                totalOvertimeMinutes += result.overtimeMinutes;
+                totalMissingWorkMinutes += result.missingWorkMinutes;
             }
 
             // tableView model 数据映射
@@ -527,6 +539,9 @@ void AttendanceMainWindow::updateMonthlyStatistics()
             int extraMinutes = totalOvertimeMinutes - targetOvertimeMinutes;
             stats += QString("余加班时间: %1\n").arg(formatMinutes(extraMinutes));
         }
+    }
+    if (totalMissingWorkMinutes > 0) {
+        stats += QString("缺少标准工时: %1\n").arg(formatMinutes(totalMissingWorkMinutes));
     }
     if (mealSubsidyEnabled) {
         stats += QString("餐补次数: %1").arg(mealSubsidyCount);
