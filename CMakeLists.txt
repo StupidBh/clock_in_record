@@ -25,6 +25,7 @@ endif ()
 find_package(Qt6 6.11 REQUIRED COMPONENTS Core Widgets Network)
 
 qt_standard_project_setup()
+set(CMAKE_AUTORCC ON)
 
 add_library(attendance_project_options INTERFACE)
 target_compile_features(attendance_project_options INTERFACE c_std_17 cxx_std_20)
