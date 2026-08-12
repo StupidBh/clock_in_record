@@ -1,57 +1,39 @@
-file(GLOB_RECURSE ATTENDANCE_CALCULATION_SOURCES CONFIGURE_DEPENDS
-        "${CMAKE_CURRENT_SOURCE_DIR}/Attendance/*.cpp"
-)
-file(GLOB_RECURSE ATTENDANCE_CALCULATION_HEADERS CONFIGURE_DEPENDS
-        "${CMAKE_CURRENT_SOURCE_DIR}/Attendance/*.h"
-)
-
-add_library(attendance_calculation STATIC
-        ${ATTENDANCE_CALCULATION_SOURCES}
-        ${ATTENDANCE_CALCULATION_HEADERS}
-)
-add_library(Attendance::Calculation ALIAS attendance_calculation)
-
-target_include_directories(attendance_calculation PUBLIC
-        ${CMAKE_CURRENT_SOURCE_DIR}
-)
-target_link_libraries(attendance_calculation PUBLIC
-        attendance_project_options
-        Qt6::Core
+file(GLOB CPP_RESOURCES CONFIGURE_DEPENDS
+        "${CMAKE_CURRENT_SOURCE_DIR}/Application/src/*.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/Attendance/src/*.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/Calendar/src/*.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/Settings/src/*.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/Widgets/src/*.cpp"
 )
 
-file(GLOB_RECURSE ATTENDANCE_UI_SOURCES CONFIGURE_DEPENDS
-        "${CMAKE_CURRENT_SOURCE_DIR}/Application/*.cpp"
-        "${CMAKE_CURRENT_SOURCE_DIR}/Calendar/*.cpp"
-        "${CMAKE_CURRENT_SOURCE_DIR}/Settings/*.cpp"
-        "${CMAKE_CURRENT_SOURCE_DIR}/Widgets/*.cpp"
-)
-file(GLOB_RECURSE ATTENDANCE_UI_HEADERS CONFIGURE_DEPENDS
+file(GLOB HEADER_RESOURCES CONFIGURE_DEPENDS
         "${CMAKE_CURRENT_SOURCE_DIR}/Application/*.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/Attendance/*.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/Calendar/*.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/Settings/*.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/Widgets/*.h"
 )
 
-set(ATTENDANCE_ENTRYPOINT_SOURCES ${ATTENDANCE_UI_SOURCES})
-list(FILTER ATTENDANCE_ENTRYPOINT_SOURCES INCLUDE REGEX "/Main\\.cpp$")
-list(FILTER ATTENDANCE_UI_SOURCES EXCLUDE REGEX "/Main\\.cpp$")
+set(ENTRYPOINT_RESOURCES ${CPP_RESOURCES})
+list(FILTER ENTRYPOINT_RESOURCES INCLUDE REGEX "/Main\\.cpp$")
+list(FILTER CPP_RESOURCES EXCLUDE REGEX "/Main\\.cpp$")
 
-list(LENGTH ATTENDANCE_ENTRYPOINT_SOURCES ATTENDANCE_ENTRYPOINT_COUNT)
-if (NOT ATTENDANCE_ENTRYPOINT_COUNT EQUAL 1)
-    message(FATAL_ERROR "Expected exactly one Main.cpp entry point, found ${ATTENDANCE_ENTRYPOINT_COUNT}")
+list(LENGTH ENTRYPOINT_RESOURCES ENTRYPOINT_COUNT)
+if (NOT ENTRYPOINT_COUNT EQUAL 1)
+    message(FATAL_ERROR "Expected exactly one Main.cpp entry point, found ${ENTRYPOINT_COUNT}")
 endif ()
 
-add_library(attendance_ui STATIC
-        ${ATTENDANCE_UI_SOURCES}
-        ${ATTENDANCE_UI_HEADERS}
+add_library(${PROJECT_NAME}Core STATIC
+        ${CPP_RESOURCES}
+        ${HEADER_RESOURCES}
 )
-add_library(Attendance::Ui ALIAS attendance_ui)
+add_library(Attendance::Core ALIAS ${PROJECT_NAME}Core)
 
-target_include_directories(attendance_ui PUBLIC
+target_include_directories(${PROJECT_NAME}Core PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}
 )
-target_link_libraries(attendance_ui PUBLIC
-        Attendance::Calculation
+target_link_libraries(${PROJECT_NAME}Core PUBLIC
+        attendance_project_options
         Qt6::Widgets
 )
 
@@ -84,14 +66,14 @@ endif ()
 
 # 创建可执行文件
 add_executable(${PROJECT_NAME}
-        ${ATTENDANCE_ENTRYPOINT_SOURCES}
+        ${ENTRYPOINT_RESOURCES}
         ${APP_RESOURCES}
         ${WIN_RESOURCES}
 )
 
 # 链接Qt库
 target_link_libraries(${PROJECT_NAME}
-        Attendance::Ui
+        Attendance::Core
         Qt6::Network
 )
 
