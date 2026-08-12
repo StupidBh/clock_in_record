@@ -82,6 +82,15 @@ namespace {
             WorkTimeCalculator::applyOvertimeOffset(WorkTimeCalculator::calculateWorkTimeResult(record), true);
         expectEqual("enabled offset remaining overtime", overtimeRemains.overtimeMinutes, 30);
         expectEqual("enabled offset no missing work", overtimeRemains.missingWorkMinutes, 0);
+
+        record.departureTime = QTime(23, 0);
+        const WorkTimeResult largeOvertime = WorkTimeCalculator::calculateWorkTimeResult(record);
+        expectEqual("large overtime before offset", largeOvertime.overtimeMinutes, 270);
+        expectEqual("missing work before large offset", largeOvertime.missingWorkMinutes, 60);
+
+        const WorkTimeResult largeOvertimeRemains = WorkTimeCalculator::applyOvertimeOffset(largeOvertime, true);
+        expectEqual("large overtime after offset", largeOvertimeRemains.overtimeMinutes, 210);
+        expectEqual("missing work after large offset", largeOvertimeRemains.missingWorkMinutes, 0);
     }
 
     void testLateArrivalAndEarlyDeparture()

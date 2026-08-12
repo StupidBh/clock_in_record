@@ -3,6 +3,7 @@
 
 #include <QApplication>
 #include <QCheckBox>
+#include <QLabel>
 #include <QSettings>
 #include <QTemporaryDir>
 
@@ -85,6 +86,51 @@ namespace {
 
         settings.clear();
     }
+
+    void testMonthlyOffsetAcrossDates()
+    {
+        QSettings settings;
+        settings.clear();
+
+        AttendanceSettings::GlobalSettings globalSettings;
+        globalSettings.overtimeOffsetsMissingWork = true;
+        globalSettings.targetOvertimeMinutes = 0;
+        AttendanceSettings::saveGlobalSettings(settings, globalSettings);
+
+        const QDate firstDate(QDate::currentDate().year(), QDate::currentDate().month(), 1);
+        AttendanceRecord missingWorkRecord = AttendanceSettings::createRecord(firstDate, globalSettings.schedule);
+        missingWorkRecord.arrivalTime = QTime(10, 0);
+        missingWorkRecord.departureTime = QTime(18, 0);
+        AttendanceSettings::saveRecord(settings, firstDate, missingWorkRecord);
+
+        const QDate secondDate = firstDate.addDays(1);
+        AttendanceRecord overtimeRecord = AttendanceSettings::createRecord(secondDate, globalSettings.schedule);
+        overtimeRecord.arrivalTime = QTime(9, 0);
+        overtimeRecord.departureTime = QTime(23, 0);
+        AttendanceSettings::saveRecord(settings, secondDate, overtimeRecord);
+
+        AttendanceMainWindow window;
+        auto* statisticsLabel = window.findChild<QLabel*>("monthlyStatisticsLabel");
+        auto* checkBox = window.findChild<QCheckBox*>("overtimeOffsetsMissingWorkCheckBox");
+        expectTrue("monthly statistics label exists", statisticsLabel != nullptr);
+        expectTrue("monthly offset checkbox exists", checkBox != nullptr);
+        if (!statisticsLabel || !checkBox) {
+            settings.clear();
+            return;
+        }
+
+        expectTrue("cross-date offset remaining overtime",
+                   statisticsLabel->text().contains("总加班时长: 3小时30分钟"));
+        expectFalse("cross-date offset clears missing work", statisticsLabel->text().contains("缺少标准工时"));
+
+        checkBox->setChecked(false);
+        expectTrue("disabled cross-date offset keeps overtime",
+                   statisticsLabel->text().contains("总加班时长: 4小时30分钟"));
+        expectTrue("disabled cross-date offset keeps missing work",
+                   statisticsLabel->text().contains("缺少标准工时: 1小时0分钟"));
+
+        settings.clear();
+    }
 } // namespace
 
 int main(int argc, char* argv[])
@@ -125,6 +171,8 @@ int main(int argc, char* argv[])
             expectTrue("persisted offset value", checkBox->isChecked());
         }
     }
+
+    testMonthlyOffsetAcrossDates();
 
     return failures == 0 ? 0 : 1;
 }

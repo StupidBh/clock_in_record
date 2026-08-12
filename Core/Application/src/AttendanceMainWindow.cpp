@@ -114,6 +114,7 @@ void AttendanceMainWindow::setupUI()
     QGroupBox* statsGroup = new QGroupBox(QString("月度统计"));
     QVBoxLayout* statsLayout = new QVBoxLayout(statsGroup);
     m_statsLabel = new QLabel(QString("请选择月份查看统计"));
+    m_statsLabel->setObjectName("monthlyStatisticsLabel");
     m_statsLabel->setWordWrap(true);
     m_statsLabel->setStyleSheet("padding: 10px; background-color: #f9f9f9; border-radius: 5px;");
     statsLayout->addWidget(m_statsLabel);
@@ -390,11 +391,10 @@ void AttendanceMainWindow::updateMonthlyStatistics()
             }
 
             if (hasValidAttendance && WorkTimeCalculator::hasValidSchedule(record)) {
-                WorkTimeResult result = WorkTimeCalculator::calculateWorkTimeResult(record);
+                const WorkTimeResult result = WorkTimeCalculator::calculateWorkTimeResult(record);
                 if (record.needAverageCal) {
                     workDays++;
                 }
-                result = WorkTimeCalculator::applyOvertimeOffset(result, overtimeOffsetsMissingWork);
                 totalOvertimeMinutes += result.overtimeMinutes;
                 totalMissingWorkMinutes += result.missingWorkMinutes;
             }
@@ -408,6 +408,13 @@ void AttendanceMainWindow::updateMonthlyStatistics()
         }
         date = date.addDays(1);
     }
+
+    WorkTimeResult monthlyResult;
+    monthlyResult.overtimeMinutes = totalOvertimeMinutes;
+    monthlyResult.missingWorkMinutes = totalMissingWorkMinutes;
+    monthlyResult = WorkTimeCalculator::applyOvertimeOffset(monthlyResult, overtimeOffsetsMissingWork);
+    totalOvertimeMinutes = monthlyResult.overtimeMinutes;
+    totalMissingWorkMinutes = monthlyResult.missingWorkMinutes;
 
     QString stats = QString("统计月份: %1年%2月\n").arg(year).arg(month);
     stats += QString("工作天数: %1天\n").arg(workDays);
