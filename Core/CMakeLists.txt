@@ -111,9 +111,9 @@ if (WIN32)
         # 添加构建后自定义命令
         add_custom_command(TARGET AttendanceApp POST_BUILD
                 COMMAND ${WINDEPLOYQT_EXECUTABLE} $<TARGET_FILE:AttendanceApp>
-                COMMENT "正在自动部署 Qt 依赖 DLL 到输出目录..."
+                COMMENT "Deploying Qt dependency DLLs to the output directory..."
         )
     else ()
-        message(WARNING "未找到 windeployqt 程序，无法自动部署 DLL。")
+        message(WARNING "windeployqt was not found; Qt dependency DLLs cannot be deployed automatically.")
     endif ()
 endif ()
