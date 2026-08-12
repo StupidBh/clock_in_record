@@ -250,6 +250,10 @@ void AttendanceMainWindow::deleteAttendanceRecord(const QDate& date)
         settings.remove(k);
     }
 
+    // The calendar view can include dates from adjacent months, which are outside the monthly refresh range.
+    m_calendar->setDateTextFormat(date, QTextCharFormat());
+    m_calendar->removeCustomData(date);
+
     // 更新界面
     updateCalendarAppearance();
     updateMonthlyStatistics();
