@@ -38,7 +38,7 @@ private:
     void loadGlobalSettings() const;
     void saveGlobalSettings() const;
     void migrateLegacyRecordsToCurrentSchedule() const;
-    AttendanceRecord currentGlobalSettings() const;
+    [[nodiscard]] AttendanceRecord currentGlobalSettings() const;
 
     CustomCalendarWidget* m_calendar;
     QLabel* m_statsLabel;
