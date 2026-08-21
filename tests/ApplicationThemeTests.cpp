@@ -78,7 +78,6 @@ namespace {
 
         const QColor windowBackground = palette.color(QPalette::Window);
         verifyLabelContrast("statistics label", u"monthlyStatisticsLabel"_s, windowBackground);
-        verifyLabelContrast("help label", u"helpLabel"_s, windowBackground);
         verifyLabelContrast("calculation result label", u"calculationResultLabel"_s, windowBackground);
         verifyLabelContrast("settings error label", u"settingsErrorLabel"_s, windowBackground);
 

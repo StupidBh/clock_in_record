@@ -5,14 +5,16 @@
 #include "Settings/AttendanceSettings.h"
 
 #include <QCheckBox>
+#include <QDialogButtonBox>
 #include <QGridLayout>
 #include <QGroupBox>
-#include <QHBoxLayout>
 #include <QLabel>
 #include <QMessageBox>
 #include <QPushButton>
 #include <QSettings>
 #include <QSignalBlocker>
+#include <QSizePolicy>
+#include <QStyle>
 #include <QTimeEdit>
 #include <QVBoxLayout>
 
@@ -29,7 +31,8 @@ TimeSettingDialog::TimeSettingDialog(const QDate& date, QWidget* parent) :
 
     setWindowTitle(u"设置打卡时间 - %1"_s.arg(date.toString(u"yyyy-MM-dd"_s)));
     setModal(true);
-    resize(400, 320);
+    setMinimumSize(380, 360);
+    resize(440, 420);
 
     setupUi();
     loadRecord();
@@ -86,19 +89,36 @@ void TimeSettingDialog::saveAndClose()
     accept();
 }
 
+void TimeSettingDialog::deleteAndClose()
+{
+    const auto response = QMessageBox::question(this,
+                                                u"确认删除"_s,
+                                                u"确定要删除 %1 的考勤记录吗？"_s.arg(m_date.toString(u"yyyy-MM-dd"_s)),
+                                                QMessageBox::Yes | QMessageBox::No,
+                                                QMessageBox::No);
+    if (response != QMessageBox::Yes) {
+        return;
+    }
+
+    QSettings settings;
+    AttendanceSettings::removeRecord(settings, m_date);
+    accept();
+}
+
 void TimeSettingDialog::setupUi()
 {
     auto* const mainLayout = new QVBoxLayout(this);
 
     auto* const basicTimeGroup = new QGroupBox(u"基本时间"_s);
     auto* const basicTimeLayout = new QGridLayout(basicTimeGroup);
+    basicTimeLayout->setColumnStretch(1, 1);
 
-    basicTimeLayout->addWidget(new QLabel(u"到达公司时间:"_s), 0, 0);
+    basicTimeLayout->addWidget(new QLabel(u"到达时间："_s), 0, 0);
     m_arrivalTimeEdit = new QTimeEdit();
     m_arrivalTimeEdit->setDisplayFormat(u"hh:mm"_s);
     basicTimeLayout->addWidget(m_arrivalTimeEdit, 0, 1);
 
-    basicTimeLayout->addWidget(new QLabel(u"离开公司时间:"_s), 1, 0);
+    basicTimeLayout->addWidget(new QLabel(u"离开时间："_s), 1, 0);
     m_departureTimeEdit = new QTimeEdit();
     m_departureTimeEdit->setDisplayFormat(u"hh:mm"_s);
     basicTimeLayout->addWidget(m_departureTimeEdit, 1, 1);
@@ -114,21 +134,25 @@ void TimeSettingDialog::setupUi()
     m_resultLabel = new QLabel();
     m_resultLabel->setObjectName(u"calculationResultLabel"_s);
     m_resultLabel->setWordWrap(true);
-    m_resultLabel->setFixedHeight(150);
+    m_resultLabel->setMinimumHeight(120);
+    m_resultLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::MinimumExpanding);
     resultLayout->addWidget(m_resultLabel);
-    mainLayout->addWidget(resultGroup);
+    mainLayout->addWidget(resultGroup, 1);
 
-    auto* const buttonLayout = new QHBoxLayout();
-    auto* const saveButton = new QPushButton(u"保存"_s);
-    auto* const cancelButton = new QPushButton(u"取消"_s);
+    auto* const buttonBox = new QDialogButtonBox();
+    m_deleteButton = new QPushButton(u"删除记录"_s);
+    m_deleteButton->setObjectName(u"deleteRecordButton"_s);
+    m_deleteButton->setIcon(style()->standardIcon(QStyle::SP_TrashIcon));
+    buttonBox->addButton(m_deleteButton, QDialogButtonBox::DestructiveRole);
+    auto* const cancelButton = buttonBox->addButton(u"取消"_s, QDialogButtonBox::RejectRole);
+    auto* const saveButton = buttonBox->addButton(u"保存"_s, QDialogButtonBox::AcceptRole);
+    saveButton->setObjectName(u"primaryButton"_s);
+    saveButton->setDefault(true);
 
+    connect(m_deleteButton, &QPushButton::clicked, this, &TimeSettingDialog::deleteAndClose);
     connect(saveButton, &QPushButton::clicked, this, &TimeSettingDialog::saveAndClose);
     connect(cancelButton, &QPushButton::clicked, this, &QDialog::reject);
-
-    buttonLayout->addStretch();
-    buttonLayout->addWidget(saveButton);
-    buttonLayout->addWidget(cancelButton);
-    mainLayout->addLayout(buttonLayout);
+    mainLayout->addWidget(buttonBox);
 
     connect(m_arrivalTimeEdit, &QTimeEdit::timeChanged, this, &TimeSettingDialog::calculateWorkTime);
     connect(m_departureTimeEdit, &QTimeEdit::timeChanged, this, &TimeSettingDialog::calculateWorkTime);
@@ -138,6 +162,7 @@ void TimeSettingDialog::loadRecord()
 {
     QSettings settings;
     const auto storedRecord = AttendanceSettings::loadRecord(settings, m_date, m_globalDefaults);
+    m_deleteButton->setVisible(storedRecord.has_value());
     AttendanceRecord loadedRecord = storedRecord.value_or(AttendanceSettings::createRecord(m_date, m_globalDefaults));
     m_globalDefaults = loadedRecord;
 

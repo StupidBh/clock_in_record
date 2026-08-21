@@ -4,7 +4,7 @@
 #include <QWidget>
 
 class QLayout;
-class QPushButton;
+class QToolButton;
 
 // 自定义可折叠的分组
 class CollapsibleGroupBox final : public QWidget {
@@ -19,9 +19,9 @@ private slots:
     void toggle(bool checked);
 
 private:
-    void updateButtonText() const;
+    void updateButtonState() const;
 
-    QPushButton* m_toggleButton = nullptr;
+    QToolButton* m_toggleButton = nullptr;
     QWidget* m_contentWidget = nullptr;
     QString m_title;
 };

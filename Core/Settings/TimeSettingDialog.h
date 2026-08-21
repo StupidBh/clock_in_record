@@ -6,6 +6,7 @@
 
 class QCheckBox;
 class QLabel;
+class QPushButton;
 class QTimeEdit;
 
 // 时间设置对话框
@@ -18,6 +19,7 @@ public:
 
 private slots:
     void calculateWorkTime() const;
+    void deleteAndClose();
     void saveAndClose();
 
 private:
@@ -30,6 +32,7 @@ private:
     QTimeEdit* m_arrivalTimeEdit = nullptr;
     QTimeEdit* m_departureTimeEdit = nullptr;
     QLabel* m_resultLabel = nullptr;
+    QPushButton* m_deleteButton = nullptr;
     AttendanceRecord m_globalDefaults;
     bool m_overtimeOffsetsMissingWork = false;
 };

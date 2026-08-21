@@ -3,6 +3,7 @@
 #include "Settings/AttendanceSettings.h"
 
 #include <QContextMenuEvent>
+#include <QFontMetrics>
 #include <QMenu>
 #include <QMouseEvent>
 #include <QPainter>
@@ -12,6 +13,7 @@
 #include <QTableView>
 #include <QTextCharFormat>
 
+#include <algorithm>
 #include <utility>
 
 using namespace Qt::StringLiterals;
@@ -19,6 +21,8 @@ using namespace Qt::StringLiterals;
 CustomCalendarWidget::CustomCalendarWidget(QWidget* parent) :
     QCalendarWidget(parent)
 {
+    setVerticalHeaderFormat(QCalendarWidget::NoVerticalHeader);
+
     m_tableView = findChild<QTableView*>();
     if (m_tableView && m_tableView->viewport()) {
         m_tableView->viewport()->installEventFilter(this);
@@ -65,6 +69,63 @@ void CustomCalendarWidget::paintCell(QPainter* painter, const QRect& rect, const
     const QPalette calendarPalette = palette();
     const QColor highlight = calendarPalette.color(QPalette::Highlight);
     const QColor highlightedText = calendarPalette.color(QPalette::HighlightedText);
+
+    const auto it = m_attendanceData.constFind(date);
+    if (it != m_attendanceData.constEnd()) {
+        QPainterStateGuard guard(painter);
+        painter->setRenderHint(QPainter::Antialiasing);
+        painter->setClipRect(rect.adjusted(1, 1, -1, -1));
+
+        const QTextCharFormat format = dateTextFormat(date);
+        QColor background = calendarPalette.color(QPalette::Base);
+        if (format.background().style() != Qt::NoBrush) {
+            background = format.background().color();
+        }
+
+        const QRect cellRect = rect.adjusted(1, 3, -1, -3);
+        painter->setPen(Qt::NoPen);
+        painter->setBrush(isSelected ? highlight : background);
+        painter->drawRoundedRect(cellRect, 3, 3);
+
+        QColor foreground = calendarPalette.color(QPalette::Text);
+        if (format.foreground().style() != Qt::NoBrush) {
+            foreground = format.foreground().color();
+        }
+        painter->setPen(isSelected ? highlightedText : foreground);
+
+        QFont dayFont = painter->font();
+        dayFont.setWeight(QFont::DemiBold);
+        painter->setFont(dayFont);
+        const int dayLineHeight = QFontMetrics(dayFont).height();
+        const QRect dayRect = cellRect.adjusted(5, 1, -5, 0);
+        painter->drawText(dayRect, Qt::AlignLeft | Qt::AlignTop, QString::number(date.day()));
+
+        QFont timeFont = dayFont;
+        timeFont.setWeight(QFont::Normal);
+        if (timeFont.pointSizeF() > 0.0) {
+            timeFont.setPointSizeF(std::max(8.0, timeFont.pointSizeF() * 0.9));
+        }
+        else if (timeFont.pixelSize() > 0) {
+            timeFont.setPixelSize(std::max(11, timeFont.pixelSize() - 1));
+        }
+        painter->setFont(timeFont);
+
+        const CalendarAttendanceData& attendanceData = it.value();
+        const QRect timeRect = cellRect.adjusted(3, dayLineHeight, -3, -2);
+        const int halfHeight = timeRect.height() / 2;
+        const QRect arrivalRect(timeRect.left(), timeRect.top(), timeRect.width(), halfHeight);
+        const QRect departureRect(timeRect.left(), timeRect.top() + halfHeight, timeRect.width(), halfHeight);
+        painter->drawText(arrivalRect, Qt::AlignCenter, attendanceData.arrivalTime);
+        painter->drawText(departureRect, Qt::AlignCenter, attendanceData.departureTime);
+
+        if (date == QDate::currentDate() && !isSelected) {
+            painter->setBrush(Qt::NoBrush);
+            painter->setPen(QPen(highlight, 1));
+            painter->drawRoundedRect(cellRect.adjusted(1, 1, -1, -1), 2, 2);
+        }
+        return;
+    }
+
     if (isSelected) {
         QPainterStateGuard guard(painter);
         painter->setRenderHint(QPainter::Antialiasing);
@@ -87,24 +148,6 @@ void CustomCalendarWidget::paintCell(QPainter* painter, const QRect& rect, const
         painter->setPen(highlight);
 
         painter->drawText(rect, Qt::AlignCenter, QString::number(date.day()));
-    }
-
-    const auto it = m_attendanceData.constFind(date);
-    if (it != m_attendanceData.constEnd()) {
-        QPainterStateGuard guard(painter);
-        QFont font = painter->font();
-        font.setPointSize(7);
-        painter->setFont(font);
-        painter->setPen(isSelected ? QPen(highlightedText)
-                                   : QPen(AttendanceTheme::attendanceForeground(calendarPalette)));
-
-        const CalendarAttendanceData& attendanceData = it.value();
-        const QRect contentRect = rect.adjusted(2, 2, -2, -2);
-        const int halfHeight = contentRect.height() / 2;
-        const QRect arrivalRect(contentRect.left(), contentRect.top(), contentRect.width(), halfHeight);
-        const QRect departureRect(contentRect.left(), contentRect.top() + halfHeight, contentRect.width(), halfHeight);
-        painter->drawText(arrivalRect, Qt::AlignCenter, attendanceData.arrivalTime);
-        painter->drawText(departureRect, Qt::AlignCenter, attendanceData.departureTime);
     }
 }
 

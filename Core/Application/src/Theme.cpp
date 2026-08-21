@@ -98,21 +98,24 @@ QLabel {
     background-color: transparent;
 }
 QLabel#pageTitleLabel {
-    font-size: 18px;
+    font-size: 20px;
     font-weight: 600;
-    padding: 10px;
+    padding: 0;
 }
-QLabel#helpLabel,
-QLabel#monthlyStatisticsLabel,
 QLabel#calculationResultLabel {
     background-color: @SURFACE@;
     border: 1px solid @BORDER@;
     border-radius: 4px;
     padding: 10px;
 }
-QLabel#helpLabel {
-    color: @MUTED_TEXT@;
-    font-size: 12px;
+QLabel#sectionTitleLabel {
+    font-size: 14px;
+    font-weight: 600;
+}
+QLabel#monthlyStatisticsLabel {
+    background-color: transparent;
+    border: none;
+    padding: 0 0 4px 0;
 }
 QLabel#settingsErrorLabel {
     color: @ERROR@;
@@ -131,7 +134,17 @@ QGroupBox::title {
     left: 8px;
     padding: 0 4px;
     color: @TEXT@;
-    background-color: @WINDOW@;
+    background-color: @SURFACE@;
+}
+QWidget#inspectorPanel {
+    background-color: @SURFACE@;
+}
+QScrollArea#inspectorScrollArea {
+    background-color: @SURFACE@;
+    border-left: 1px solid @BORDER@;
+}
+QFrame#inspectorSeparator {
+    color: @BORDER@;
 }
 QPushButton {
     color: @TEXT@;
@@ -147,15 +160,33 @@ QPushButton:hover {
 QPushButton:pressed {
     background-color: @BORDER@;
 }
-QPushButton#collapsibleToggleButton {
+QPushButton#primaryButton {
+    color: @ACCENT_TEXT@;
+    background-color: @ACCENT@;
+    border-color: @ACCENT@;
+}
+QPushButton#primaryButton:hover {
+    background-color: @ACCENT_HOVER@;
+    border-color: @ACCENT_HOVER@;
+}
+QPushButton#primaryButton:pressed {
+    background-color: @ACCENT_PRESSED@;
+    border-color: @ACCENT_PRESSED@;
+}
+QPushButton#deleteRecordButton {
+    color: @ERROR@;
+    background-color: transparent;
+}
+QToolButton#collapsibleToggleButton {
+    color: @TEXT@;
     background-color: transparent;
     border: none;
     font-weight: 600;
     padding: 6px 4px;
     text-align: left;
 }
-QPushButton#collapsibleToggleButton:hover,
-QPushButton#collapsibleToggleButton:checked {
+QToolButton#collapsibleToggleButton:hover,
+QToolButton#collapsibleToggleButton:checked {
     background-color: @RAISED_SURFACE@;
 }
 QTimeEdit, QDoubleSpinBox {
@@ -224,6 +255,7 @@ QCalendarWidget QHeaderView::section {
 }
 QSplitter::handle {
     background-color: transparent;
+    width: 8px;
 }
 )");
 

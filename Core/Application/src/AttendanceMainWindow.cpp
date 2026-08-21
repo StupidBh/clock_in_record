@@ -12,13 +12,15 @@
 #include <QApplication>
 #include <QCheckBox>
 #include <QDoubleSpinBox>
+#include <QFrame>
 #include <QGridLayout>
 #include <QGroupBox>
-#include <QHBoxLayout>
 #include <QLabel>
 #include <QLocale>
 #include <QMessageBox>
+#include <QScrollArea>
 #include <QSettings>
+#include <QSizePolicy>
 #include <QSplitter>
 #include <QStringView>
 #include <QTextCharFormat>
@@ -57,8 +59,8 @@ AttendanceMainWindow::AttendanceMainWindow(QWidget* parent) :
     QMainWindow(parent)
 {
     setWindowTitle(u"打卡管理系统"_s);
-    setMinimumSize(800, 600);
-    resize(900, 680);
+    setMinimumSize(720, 520);
+    resize(980, 700);
 
     setupUi();
     qApp->installEventFilter(this);
@@ -126,14 +128,21 @@ void AttendanceMainWindow::setupUi()
     auto* const centralWidget = new QWidget();
     setCentralWidget(centralWidget);
 
-    auto* const mainLayout = new QHBoxLayout(centralWidget);
-
-    auto* const leftLayout = new QVBoxLayout();
+    auto* const mainLayout = new QVBoxLayout(centralWidget);
+    mainLayout->setContentsMargins(16, 14, 16, 16);
+    mainLayout->setSpacing(12);
 
     auto* const titleLabel = new QLabel(u"考勤日历"_s);
     titleLabel->setObjectName(u"pageTitleLabel"_s);
-    titleLabel->setAlignment(Qt::AlignCenter);
-    leftLayout->addWidget(titleLabel);
+    titleLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+    titleLabel->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+    mainLayout->addWidget(titleLabel);
+
+    auto* const splitter = new QSplitter(Qt::Horizontal);
+    splitter->setChildrenCollapsible(false);
+
+    auto* const leftLayout = new QVBoxLayout();
+    leftLayout->setContentsMargins(0, 0, 0, 0);
 
     m_calendar = new CustomCalendarWidget();
     m_calendar->setLocale(QLocale::Chinese);
@@ -141,53 +150,67 @@ void AttendanceMainWindow::setupUi()
     m_calendar->setGridVisible(true);
     leftLayout->addWidget(m_calendar);
 
-    auto* const helpLabel = new QLabel(
-        u"使用说明：\n• 左键点击日期设置考勤时间\n• 右键点击有记录的日期可删除记录\n• 点击日历外区域可重置选择状态"_s);
-    helpLabel->setObjectName(u"helpLabel"_s);
-    helpLabel->setWordWrap(true);
-    leftLayout->addWidget(helpLabel);
+    auto* const leftWidget = new QWidget();
+    leftWidget->setLayout(leftLayout);
+    splitter->addWidget(leftWidget);
 
-    auto* const rightLayout = new QVBoxLayout();
+    auto* const rightWidget = new QWidget();
+    rightWidget->setObjectName(u"inspectorPanel"_s);
+    auto* const rightLayout = new QVBoxLayout(rightWidget);
+    rightLayout->setContentsMargins(16, 14, 16, 16);
+    rightLayout->setSpacing(12);
 
-    auto* const statsGroup = new QGroupBox(u"月度统计"_s);
-    auto* const statsLayout = new QVBoxLayout(statsGroup);
+    auto* const statsTitleLabel = new QLabel(u"月度统计"_s);
+    statsTitleLabel->setObjectName(u"sectionTitleLabel"_s);
+    rightLayout->addWidget(statsTitleLabel);
+
     m_statsLabel = new QLabel(u"请选择月份查看统计"_s);
     m_statsLabel->setObjectName(u"monthlyStatisticsLabel"_s);
     m_statsLabel->setWordWrap(true);
-    statsLayout->addWidget(m_statsLabel);
-    rightLayout->addWidget(statsGroup);
+    rightLayout->addWidget(m_statsLabel);
+
+    auto* const separator = new QFrame();
+    separator->setObjectName(u"inspectorSeparator"_s);
+    separator->setFrameShape(QFrame::HLine);
+    rightLayout->addWidget(separator);
 
     auto* const globalSettingsGroup = new CollapsibleGroupBox(u"全局工作时间设置"_s);
     auto* const globalDetailsLayout = new QVBoxLayout();
+    globalDetailsLayout->setContentsMargins(0, 0, 0, 0);
+    globalDetailsLayout->setSpacing(10);
 
-    auto* const standardGroup = new QGroupBox(u"标准工作时间"_s);
+    auto* const standardGroup = new QGroupBox(u"标准工时"_s);
     auto* const standardLayout = new QGridLayout(standardGroup);
+    standardLayout->setColumnStretch(1, 1);
 
-    m_globalWorkStartEdit = addTimeEditor(*standardLayout, u"标准上班时间:", 0);
-    m_globalWorkEndEdit = addTimeEditor(*standardLayout, u"标准下班时间:", 1);
+    m_globalWorkStartEdit = addTimeEditor(*standardLayout, u"上班时间：", 0);
+    m_globalWorkEndEdit = addTimeEditor(*standardLayout, u"下班时间：", 1);
 
     globalDetailsLayout->addWidget(standardGroup);
 
-    auto* const breakGroup = new QGroupBox(u"休息时间设置"_s);
+    auto* const breakGroup = new QGroupBox(u"休息时间"_s);
     auto* const breakLayout = new QGridLayout(breakGroup);
+    breakLayout->setColumnStretch(1, 1);
 
-    m_globalLunchStartEdit = addTimeEditor(*breakLayout, u"午餐开始时间:", 0);
-    m_globalLunchEndEdit = addTimeEditor(*breakLayout, u"午餐结束时间:", 1);
-    m_globalDinnerStartEdit = addTimeEditor(*breakLayout, u"晚餐开始时间:", 2);
-    m_globalDinnerEndEdit = addTimeEditor(*breakLayout, u"晚餐结束时间:", 3);
+    m_globalLunchStartEdit = addTimeEditor(*breakLayout, u"午餐开始：", 0);
+    m_globalLunchEndEdit = addTimeEditor(*breakLayout, u"午餐结束：", 1);
+    m_globalDinnerStartEdit = addTimeEditor(*breakLayout, u"晚餐开始：", 2);
+    m_globalDinnerEndEdit = addTimeEditor(*breakLayout, u"晚餐结束：", 3);
 
     globalDetailsLayout->addWidget(breakGroup);
 
-    auto* const mealSubsidyGroup = new QGroupBox(u"餐补设置"_s);
+    auto* const mealSubsidyGroup = new QGroupBox(u"餐补"_s);
     auto* const mealSubsidyLayout = new QGridLayout(mealSubsidyGroup);
+    mealSubsidyLayout->setColumnStretch(1, 1);
     m_mealSubsidyEnabledCheckBox = new QCheckBox(u"启用餐补统计"_s);
     mealSubsidyLayout->addWidget(m_mealSubsidyEnabledCheckBox, 0, 0, 1, 2);
-    m_globalMealSubsidyTimeEdit = addTimeEditor(*mealSubsidyLayout, u"餐补起算时间:", 1);
+    m_globalMealSubsidyTimeEdit = addTimeEditor(*mealSubsidyLayout, u"起算时间：", 1);
     globalDetailsLayout->addWidget(mealSubsidyGroup);
 
-    auto* const overtimeTargetGroup = new QGroupBox(u"加班设置"_s);
+    auto* const overtimeTargetGroup = new QGroupBox(u"加班"_s);
     auto* const overtimeTargetLayout = new QGridLayout(overtimeTargetGroup);
-    overtimeTargetLayout->addWidget(new QLabel(u"日均加班时长:"_s), 0, 0);
+    overtimeTargetLayout->setColumnStretch(1, 1);
+    overtimeTargetLayout->addWidget(new QLabel(u"日均时长："_s), 0, 0);
     m_targetOvertimeHoursSpinBox = new QDoubleSpinBox();
     m_targetOvertimeHoursSpinBox->setRange(0.0, 24.0);
     m_targetOvertimeHoursSpinBox->setDecimals(1);
@@ -209,21 +232,20 @@ void AttendanceMainWindow::setupUi()
     rightLayout->addWidget(globalSettingsGroup);
     rightLayout->addStretch();
 
-    auto* const splitter = new QSplitter(Qt::Horizontal);
-
-    auto* const leftWidget = new QWidget();
-    leftWidget->setLayout(leftLayout);
-
-    auto* const rightWidget = new QWidget();
-    rightWidget->setLayout(rightLayout);
-    rightWidget->setMaximumWidth(350);
-
-    splitter->addWidget(leftWidget);
-    splitter->addWidget(rightWidget);
+    auto* const inspectorScrollArea = new QScrollArea();
+    inspectorScrollArea->setObjectName(u"inspectorScrollArea"_s);
+    inspectorScrollArea->setWidgetResizable(true);
+    inspectorScrollArea->setFrameShape(QFrame::NoFrame);
+    inspectorScrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    inspectorScrollArea->setMinimumWidth(280);
+    inspectorScrollArea->setMaximumWidth(380);
+    inspectorScrollArea->setWidget(rightWidget);
+    splitter->addWidget(inspectorScrollArea);
     splitter->setStretchFactor(0, 2);
     splitter->setStretchFactor(1, 1);
+    splitter->setSizes({ 640, 300 });
 
-    mainLayout->addWidget(splitter);
+    mainLayout->addWidget(splitter, 1);
 
     connect(m_calendar, &QCalendarWidget::clicked, this, &AttendanceMainWindow::onDateClicked);
     connect(m_calendar, &QCalendarWidget::currentPageChanged, this, &AttendanceMainWindow::onMonthChanged);
