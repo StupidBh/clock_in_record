@@ -32,6 +32,7 @@ Makefile
 *.vcxproj.filters
 *.sln.docstates
 .vs/
+.idea/
 x64/
 x86/
 
