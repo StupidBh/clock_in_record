@@ -1,10 +1,12 @@
 #include "Calendar/CustomCalendarWidget.h"
+#include "Application/Theme.h"
 #include "Settings/AttendanceSettings.h"
 #include <QSettings>
 #include <QStyle>
 #include <QApplication>
 #include <QMouseEvent>
 #include <QPainter>
+#include <QTextCharFormat>
 
 CustomCalendarWidget::CustomCalendarWidget(QWidget* parent) :
     QCalendarWidget(parent),
@@ -14,6 +16,7 @@ CustomCalendarWidget::CustomCalendarWidget(QWidget* parent) :
     if (m_tableView && m_tableView->viewport()) {
         m_tableView->viewport()->installEventFilter(this);
     }
+    updateThemeFormats();
 
     connect(this, &QCalendarWidget::currentPageChanged, this, [this]() { m_dateRects.clear(); });
 }
@@ -37,6 +40,14 @@ bool CustomCalendarWidget::eventFilter(QObject* watched, QEvent* event)
     return QCalendarWidget::eventFilter(watched, event);
 }
 
+void CustomCalendarWidget::changeEvent(QEvent* event)
+{
+    QCalendarWidget::changeEvent(event);
+    if (event->type() == QEvent::ApplicationPaletteChange || event->type() == QEvent::PaletteChange) {
+        updateThemeFormats();
+    }
+}
+
 void CustomCalendarWidget::paintCell(QPainter* painter, const QRect& rect, const QDate date) const
 {
     m_dateRects[date] = rect;
@@ -44,14 +55,17 @@ void CustomCalendarWidget::paintCell(QPainter* painter, const QRect& rect, const
     QCalendarWidget::paintCell(painter, rect, date);
 
     const bool isSelected = selectionMode() != QCalendarWidget::NoSelection && date == selectedDate();
+    const QPalette calendarPalette = palette();
+    const QColor highlight = calendarPalette.color(QPalette::Highlight);
+    const QColor highlightedText = calendarPalette.color(QPalette::HighlightedText);
     if (isSelected) {
         painter->save();
         painter->setRenderHint(QPainter::Antialiasing);
         painter->setPen(Qt::NoPen);
-        painter->setBrush(QColor(0, 145, 255));
+        painter->setBrush(highlight);
 
         painter->drawRoundedRect(rect.x(), rect.y() + 3, rect.width(), rect.height() - 6, 3, 3);
-        painter->setPen(QColor(255, 255, 255));
+        painter->setPen(highlightedText);
 
         painter->drawText(rect, Qt::AlignCenter, QString::number(date.day()));
         painter->restore();
@@ -60,11 +74,11 @@ void CustomCalendarWidget::paintCell(QPainter* painter, const QRect& rect, const
         painter->save();
         painter->setRenderHint(QPainter::Antialiasing);
         painter->setPen(Qt::NoPen);
-        painter->setBrush(QColor(0, 161, 255));
+        painter->setBrush(highlight);
         painter->drawRoundedRect(rect.x(), rect.y() + 3, rect.width(), rect.height() - 6, 3, 3);
-        painter->setBrush(QColor(255, 255, 255));
+        painter->setBrush(calendarPalette.color(QPalette::Base));
         painter->drawRoundedRect(rect.x() + 1, rect.y() + 4, rect.width() - 2, rect.height() - 8, 2, 2);
-        painter->setPen(QColor(0, 161, 255));
+        painter->setPen(highlight);
 
         painter->drawText(rect, Qt::AlignCenter, QString::number(date.day()));
 
@@ -77,7 +91,8 @@ void CustomCalendarWidget::paintCell(QPainter* painter, const QRect& rect, const
         QFont font = painter->font();
         font.setPointSize(7);
         painter->setFont(font);
-        painter->setPen(isSelected ? QPen(Qt::white) : QPen(QColor(0, 70, 170)));
+        painter->setPen(isSelected ? QPen(highlightedText)
+                                   : QPen(AttendanceTheme::attendanceForeground(calendarPalette)));
 
         const QVariantMap& info = it.value();
         QRect contentRect = rect.adjusted(2, 2, -2, -2);
@@ -145,4 +160,12 @@ QDate CustomCalendarWidget::getDateFromPosition(const QPoint& pos) const
     }
 
     return { };
+}
+
+void CustomCalendarWidget::updateThemeFormats()
+{
+    QTextCharFormat weekendFormat;
+    weekendFormat.setForeground(AttendanceTheme::weekendForeground(palette()));
+    setWeekdayTextFormat(Qt::Saturday, weekendFormat);
+    setWeekdayTextFormat(Qt::Sunday, weekendFormat);
 }

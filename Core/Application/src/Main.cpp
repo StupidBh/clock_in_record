@@ -1,13 +1,18 @@
 #include "Application/AttendanceMainWindow.h"
+#include "Application/Theme.h"
 #include <QApplication>
 #include <QFont>
 #include <QIcon>
 #include <QLocalServer>
 #include <QLocalSocket>
+#include <QStyleFactory>
+#include <QStyleHints>
 
 int main(int argc, char* argv[])
 {
     QApplication app(argc, argv);
+
+    app.setStyle(QStyleFactory::create(QStringLiteral("Fusion")));
 
     app.setWindowIcon(QIcon(":/Icons/logo.ico"));
     app.setApplicationName("AttendanceApp");
@@ -17,6 +22,12 @@ int main(int argc, char* argv[])
     font.setFamily("Microsoft YaHei");
     font.setPointSize(9);
     app.setFont(font);
+
+    AttendanceTheme::apply(app, app.styleHints()->colorScheme());
+    QObject::connect(
+        app.styleHints(), &QStyleHints::colorSchemeChanged, &app, [&app](const Qt::ColorScheme colorScheme) {
+            AttendanceTheme::apply(app, colorScheme);
+        });
 
     const QString serverName = QStringLiteral("AttendanceApp-SingleInstance");
 

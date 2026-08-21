@@ -140,9 +140,9 @@ void TimeSettingDialog::setupUI()
     QGroupBox* resultGroup = new QGroupBox(QString("计算结果"));
     QVBoxLayout* resultLayout = new QVBoxLayout(resultGroup);
     m_resultLabel = new QLabel(QString(""));
+    m_resultLabel->setObjectName("calculationResultLabel");
     m_resultLabel->setWordWrap(true);
     m_resultLabel->setFixedHeight(150);
-    m_resultLabel->setStyleSheet("padding: 10px; background-color: #f0f0f0; border-radius: 5px;");
     resultLayout->addWidget(m_resultLabel);
     mainLayout->addWidget(resultGroup);
 

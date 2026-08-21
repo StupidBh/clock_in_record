@@ -1,4 +1,5 @@
 #include "Application/AttendanceMainWindow.h"
+#include "Application/Theme.h"
 #include "Attendance/WorkTimeCalculator.h"
 #include "Calendar/CustomCalendarWidget.h"
 #include "Settings/AttendanceSettings.h"
@@ -47,6 +48,14 @@ bool AttendanceMainWindow::eventFilter(QObject* watched, QEvent* event)
     return QMainWindow::eventFilter(watched, event);
 }
 
+void AttendanceMainWindow::changeEvent(QEvent* event)
+{
+    QMainWindow::changeEvent(event);
+    if (event->type() == QEvent::ApplicationPaletteChange && m_calendar) {
+        updateCalendarAppearance();
+    }
+}
+
 void AttendanceMainWindow::onDateClicked(const QDate& date)
 {
     TimeSettingDialog dialog(date, this);
@@ -87,8 +96,8 @@ void AttendanceMainWindow::setupUI()
     QVBoxLayout* leftLayout = new QVBoxLayout();
 
     QLabel* titleLabel = new QLabel(QString("考勤日历"));
+    titleLabel->setObjectName("pageTitleLabel");
     titleLabel->setAlignment(Qt::AlignCenter);
-    titleLabel->setStyleSheet("font-size: 18px; font-weight: bold; padding: 10px;");
     leftLayout->addWidget(titleLabel);
 
     // 使用自定义日历控件
@@ -101,7 +110,7 @@ void AttendanceMainWindow::setupUI()
     // 添加使用说明
     QLabel* helpLabel =
         new QLabel(QString("使用说明：\n• 左键点击日期设置考勤时间\n• 右键点击有记录的日期可删除记录\n• 点击日历外区域可重置选择状态"));
-    helpLabel->setStyleSheet("color: #666; font-size: 12px; padding: 10px; background-color: #f5f5f5; border-radius: 5px;");
+    helpLabel->setObjectName("helpLabel");
     helpLabel->setWordWrap(true);
     leftLayout->addWidget(helpLabel);
 
@@ -114,7 +123,6 @@ void AttendanceMainWindow::setupUI()
     m_statsLabel = new QLabel(QString("请选择月份查看统计"));
     m_statsLabel->setObjectName("monthlyStatisticsLabel");
     m_statsLabel->setWordWrap(true);
-    m_statsLabel->setStyleSheet("padding: 10px; background-color: #f9f9f9; border-radius: 5px;");
     statsLayout->addWidget(m_statsLabel);
     rightLayout->addWidget(statsGroup);
 
@@ -189,8 +197,8 @@ void AttendanceMainWindow::setupUI()
     globalDetailsLayout->addWidget(overtimeTargetGroup);
 
     m_globalSettingsErrorLabel = new QLabel();
+    m_globalSettingsErrorLabel->setObjectName("settingsErrorLabel");
     m_globalSettingsErrorLabel->setWordWrap(true);
-    m_globalSettingsErrorLabel->setStyleSheet("color: #b00020; padding: 4px;");
     m_globalSettingsErrorLabel->setVisible(false);
     globalDetailsLayout->addWidget(m_globalSettingsErrorLabel);
 
@@ -223,15 +231,23 @@ void AttendanceMainWindow::setupUI()
     loadGlobalSettings();
     migrateLegacyRecordsToCurrentSchedule();
 
-    const std::array timeEditors { m_globalWorkStartEdit,   m_globalWorkEndEdit,   m_globalLunchStartEdit,     m_globalLunchEndEdit,
-                                   m_globalDinnerStartEdit, m_globalDinnerEndEdit, m_globalMealSubsidyTimeEdit };
+    const std::array timeEditors {
+        m_globalWorkStartEdit,   m_globalWorkEndEdit, m_globalLunchStartEdit, m_globalLunchEndEdit,
+        m_globalDinnerStartEdit, m_globalDinnerEndEdit, m_globalMealSubsidyTimeEdit,
+    };
     for (QTimeEdit* timeEditor : timeEditors) {
         connect(timeEditor, &QTimeEdit::timeChanged, this, &AttendanceMainWindow::onGlobalSettingsChanged);
     }
     connect(m_mealSubsidyEnabledCheckBox, &QCheckBox::toggled, m_globalMealSubsidyTimeEdit, &QTimeEdit::setEnabled);
     connect(m_mealSubsidyEnabledCheckBox, &QCheckBox::toggled, this, &AttendanceMainWindow::onGlobalSettingsChanged);
-    connect(m_overtimeOffsetsMissingWorkCheckBox, &QCheckBox::toggled, this, &AttendanceMainWindow::onGlobalSettingsChanged);
-    connect(m_targetOvertimeHoursSpinBox, &QDoubleSpinBox::valueChanged, this, &AttendanceMainWindow::onGlobalSettingsChanged);
+    connect(m_overtimeOffsetsMissingWorkCheckBox,
+            &QCheckBox::toggled,
+            this,
+            &AttendanceMainWindow::onGlobalSettingsChanged);
+    connect(m_targetOvertimeHoursSpinBox,
+            &QDoubleSpinBox::valueChanged,
+            this,
+            &AttendanceMainWindow::onGlobalSettingsChanged);
 
     updateCalendarAppearance();
     updateMonthlyStatistics();
@@ -335,14 +351,12 @@ void AttendanceMainWindow::updateCalendarAppearance() const
     QDate date = startDate;
     while (date <= endDate) {
         if (AttendanceSettings::hasRecord(settings, date)) {
-            // 有打卡记录，显示绿色背景
             QTextCharFormat format;
-            QColor defaultCol(144, 238, 144); // 浅绿色
             const auto record = AttendanceSettings::loadRecord(settings, date, schedule);
-            if (record && !record->needAverageCal) {
-                defaultCol = QColor("#acfdea");
-            }
-            format.setBackground(defaultCol);
+            const bool excludedFromAverage = record && !record->needAverageCal;
+            const QPalette calendarPalette = m_calendar->palette();
+            format.setBackground(AttendanceTheme::attendanceBackground(calendarPalette, excludedFromAverage));
+            format.setForeground(AttendanceTheme::attendanceForeground(calendarPalette));
 
             m_calendar->setDateTextFormat(date, format);
         }

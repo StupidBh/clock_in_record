@@ -22,6 +22,7 @@ public:
 
 protected:
     bool eventFilter(QObject* watched, QEvent* event) override;
+    void changeEvent(QEvent* event) override;
 
 private slots:
     void onDateClicked(const QDate& date);
@@ -40,7 +41,7 @@ private:
     void migrateLegacyRecordsToCurrentSchedule() const;
     [[nodiscard]] AttendanceRecord currentGlobalSettings() const;
 
-    CustomCalendarWidget* m_calendar;
+    CustomCalendarWidget* m_calendar = nullptr;
     QLabel* m_statsLabel;
     CollapsibleGroupBox* m_globalSettingsGroup;
     QLabel* m_globalSettingsErrorLabel;

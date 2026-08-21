@@ -4,6 +4,7 @@ add_library(Attendance::Core ALIAS attendance_core)
 target_sources(attendance_core
         PRIVATE
         Application/src/AttendanceMainWindow.cpp
+        Application/src/Theme.cpp
         Attendance/src/WorkTimeCalculator.cpp
         Calendar/src/CustomCalendarWidget.cpp
         Settings/src/AttendanceSettings.cpp
@@ -15,6 +16,7 @@ target_sources(attendance_core
         BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}"
         FILES
         Application/AttendanceMainWindow.h
+        Application/Theme.h
         Attendance/AttendanceTypes.h
         Attendance/WorkTimeCalculator.h
         Calendar/CustomCalendarWidget.h

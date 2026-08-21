@@ -16,6 +16,10 @@ public:
     void setCustomData(const QDate& date, const QVariantMap& value);
     void removeCustomData(const QDate& date);
     void clearDateSelection();
+
+protected:
+    void changeEvent(QEvent* event) override;
+
 signals:
     void deleteRequested(const QDate& date);
 
@@ -24,6 +28,7 @@ private slots:
 
 private:
     QDate getDateFromPosition(const QPoint& pos) const;
+    void updateThemeFormats();
 
     QMap<QDate, QVariantMap> m_data;
     mutable QMap<QDate, QRect> m_dateRects;

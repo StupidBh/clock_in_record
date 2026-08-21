@@ -10,11 +10,9 @@ CollapsibleGroupBox::CollapsibleGroupBox(const QString& title, QWidget* parent) 
     mainLayout->setContentsMargins(0, 0, 0, 0);
 
     m_toggleButton = new QPushButton();
+    m_toggleButton->setObjectName("collapsibleToggleButton");
     m_toggleButton->setCheckable(true);
     m_toggleButton->setChecked(false);
-    m_toggleButton->setStyleSheet(
-        "QPushButton { text-align: left; border: none; font-weight: bold; padding: 5px; }"
-        "QPushButton:checked { background-color: #e0e0e0; }");
     mainLayout->addWidget(m_toggleButton);
 
     m_contentWidget = new QWidget(this);
