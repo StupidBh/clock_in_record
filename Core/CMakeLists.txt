@@ -1,80 +1,83 @@
-file(GLOB CPP_RESOURCES CONFIGURE_DEPENDS
-        "${CMAKE_CURRENT_SOURCE_DIR}/Application/src/*.cpp"
-        "${CMAKE_CURRENT_SOURCE_DIR}/Attendance/src/*.cpp"
-        "${CMAKE_CURRENT_SOURCE_DIR}/Calendar/src/*.cpp"
-        "${CMAKE_CURRENT_SOURCE_DIR}/Settings/src/*.cpp"
-        "${CMAKE_CURRENT_SOURCE_DIR}/Widgets/src/*.cpp"
+add_library(attendance_core STATIC)
+add_library(Attendance::Core ALIAS attendance_core)
+
+target_sources(attendance_core
+        PRIVATE
+        Application/src/AttendanceMainWindow.cpp
+        Attendance/src/WorkTimeCalculator.cpp
+        Calendar/src/CustomCalendarWidget.cpp
+        Settings/src/AttendanceSettings.cpp
+        Settings/src/TimeSettingDialog.cpp
+        Widgets/src/CollapsibleGroupBox.cpp
+        PUBLIC
+        FILE_SET public_headers
+        TYPE HEADERS
+        BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}"
+        FILES
+        Application/AttendanceMainWindow.h
+        Attendance/AttendanceTypes.h
+        Attendance/WorkTimeCalculator.h
+        Calendar/CustomCalendarWidget.h
+        Settings/AttendanceSettings.h
+        Settings/TimeSettingDialog.h
+        Widgets/CollapsibleGroupBox.h
 )
 
-file(GLOB HEADER_RESOURCES CONFIGURE_DEPENDS
-        "${CMAKE_CURRENT_SOURCE_DIR}/Application/*.h"
-        "${CMAKE_CURRENT_SOURCE_DIR}/Attendance/*.h"
-        "${CMAKE_CURRENT_SOURCE_DIR}/Calendar/*.h"
-        "${CMAKE_CURRENT_SOURCE_DIR}/Settings/*.h"
-        "${CMAKE_CURRENT_SOURCE_DIR}/Widgets/*.h"
+target_link_libraries(attendance_core PUBLIC
+        attendance_project_options
+        Qt6::Widgets
 )
 
-# 资源文件配置
+set_target_properties(attendance_core PROPERTIES
+        CXX_EXTENSIONS OFF
+)
+
 set(RESOURCE_DIR "${CMAKE_SOURCE_DIR}/resources")
-set(APP_RESOURCES "${RESOURCE_DIR}/resources.qrc")
+qt_add_resources(APP_RESOURCE_SOURCES "${RESOURCE_DIR}/resources.qrc")
 
-# Windows特定资源文件处理
-set(WIN_RESOURCES "")
+set(APP_PLATFORM_SOURCES "")
 if (WIN32)
-    # 创建资源文件
-    set(RC_FILE "${CMAKE_CURRENT_BINARY_DIR}/app_icon.rc")
     set(ICON_PATH "${RESOURCE_DIR}/Icons/logo.ico")
-
-    # 确保图标文件存在
     if (EXISTS "${ICON_PATH}")
-        # 将路径转换为Windows格式并正确转义
-        file(TO_NATIVE_PATH "${ICON_PATH}" NATIVE_ICON_PATH)
+        cmake_path(NATIVE_PATH ICON_PATH NORMALIZE NATIVE_ICON_PATH)
         string(REPLACE "\\" "\\\\" ESCAPED_ICON_PATH "${NATIVE_ICON_PATH}")
-
-        file(WRITE ${RC_FILE} "
-#include <windows.h>
-IDI_ICON1 ICON \"${ESCAPED_ICON_PATH}\"
-")
-        set(WIN_RESOURCES ${RC_FILE})
+        configure_file(
+                "${RESOURCE_DIR}/app_icon.rc.in"
+                "${CMAKE_CURRENT_BINARY_DIR}/app_icon.rc"
+                @ONLY
+        )
+        list(APPEND APP_PLATFORM_SOURCES "${CMAKE_CURRENT_BINARY_DIR}/app_icon.rc")
     else ()
         message(WARNING "Icon file not found: ${ICON_PATH}")
     endif ()
 endif ()
 
-# 创建可执行文件
-add_executable(${PROJECT_NAME}
-        ${CPP_RESOURCES}
-        ${HEADER_RESOURCES}
-        ${APP_RESOURCES}
-        ${WIN_RESOURCES}
+qt_add_executable(${PROJECT_NAME} WIN32
+        Application/src/Main.cpp
+        ${APP_RESOURCE_SOURCES}
+        ${APP_PLATFORM_SOURCES}
 )
 
-# 设置包含目录
-target_include_directories(${PROJECT_NAME} PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}
-)
-
-# 链接 Qt 库
-target_link_libraries(${PROJECT_NAME}
-        Qt6::Widgets
+target_link_libraries(${PROJECT_NAME} PRIVATE
+        Attendance::Core
         Qt6::Network
 )
 
-# 仅在 Windows 平台下且非静态编译时执行
-if (WIN32)
-    set_target_properties(${PROJECT_NAME} PROPERTIES
-            WIN32_EXECUTABLE TRUE
-    )
+set_target_properties(${PROJECT_NAME} PROPERTIES
+        CXX_EXTENSIONS OFF
+)
 
-    # 自动查找当前构建环境匹配的 windeployqt 路径
-    find_program(WINDEPLOYQT_EXECUTABLE windeployqt HINTS "${Qt6_DIR}/../../../bin")
-    if (WINDEPLOYQT_EXECUTABLE)
-        # 添加构建后自定义命令
+if (WIN32)
+    if (TARGET Qt6::windeployqt)
         add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-                COMMAND ${WINDEPLOYQT_EXECUTABLE} $<TARGET_FILE:${PROJECT_NAME}>
+                COMMAND "$<TARGET_FILE:Qt6::windeployqt>"
+                "$<IF:$<CONFIG:Debug>,--debug,--release>"
+                --no-compiler-runtime
+                "$<TARGET_FILE:${PROJECT_NAME}>"
                 COMMENT "Deploying Qt dependency DLLs to the output directory..."
+                VERBATIM
         )
     else ()
-        message(WARNING "windeployqt was not found; Qt dependency DLLs cannot be deployed automatically.")
+        message(WARNING "The current Qt package does not provide windeployqt; Qt dependency DLLs cannot be deployed automatically.")
     endif ()
 endif ()
