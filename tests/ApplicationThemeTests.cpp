@@ -12,6 +12,8 @@
 #include <cmath>
 #include <iostream>
 
+using namespace Qt::StringLiterals;
+
 namespace {
     int failures = 0;
 
@@ -23,8 +25,8 @@ namespace {
 
     [[nodiscard]] double luminance(const QColor& color)
     {
-        return 0.2126 * linearChannel(color.red()) + 0.7152 * linearChannel(color.green())
-            + 0.0722 * linearChannel(color.blue());
+        return 0.2126 * linearChannel(color.red()) + 0.7152 * linearChannel(color.green()) +
+               0.0722 * linearChannel(color.blue());
     }
 
     [[nodiscard]] double contrastRatio(const QColor& first, const QColor& second)
@@ -41,12 +43,12 @@ namespace {
             return;
         }
 
-        std::cerr << name << ": expected contrast >= 4.5, got " << contrast << " ("
-                  << foreground.name().toStdString() << " on " << background.name().toStdString() << ")\n";
+        std::cerr << name << ": expected contrast >= 4.5, got " << contrast << " (" << foreground.name().toStdString()
+                  << " on " << background.name().toStdString() << ")\n";
         failures++;
     }
 
-    void verifyLabelContrast(const char* name, const char* objectName, const QColor& windowBackground)
+    void verifyLabelContrast(const char* name, const QString& objectName, const QColor& windowBackground)
     {
         QLabel label;
         label.setObjectName(objectName);
@@ -69,15 +71,16 @@ namespace {
 
         const QColor attendanceForeground = AttendanceTheme::attendanceForeground(palette);
         expectContrast("attendance", attendanceForeground, AttendanceTheme::attendanceBackground(palette, false));
-        expectContrast(
-            "excluded attendance", attendanceForeground, AttendanceTheme::attendanceBackground(palette, true));
+        expectContrast("excluded attendance",
+                       attendanceForeground,
+                       AttendanceTheme::attendanceBackground(palette, true));
         expectContrast("weekend", AttendanceTheme::weekendForeground(palette), palette.color(QPalette::Base));
 
         const QColor windowBackground = palette.color(QPalette::Window);
-        verifyLabelContrast("statistics label", "monthlyStatisticsLabel", windowBackground);
-        verifyLabelContrast("help label", "helpLabel", windowBackground);
-        verifyLabelContrast("calculation result label", "calculationResultLabel", windowBackground);
-        verifyLabelContrast("settings error label", "settingsErrorLabel", windowBackground);
+        verifyLabelContrast("statistics label", u"monthlyStatisticsLabel"_s, windowBackground);
+        verifyLabelContrast("help label", u"helpLabel"_s, windowBackground);
+        verifyLabelContrast("calculation result label", u"calculationResultLabel"_s, windowBackground);
+        verifyLabelContrast("settings error label", u"settingsErrorLabel"_s, windowBackground);
 
         CustomCalendarWidget calendar;
         calendar.ensurePolished();
@@ -91,8 +94,9 @@ namespace {
             return;
         }
         tableView->ensurePolished();
-        expectContrast(
-            "calendar", tableView->palette().color(QPalette::Text), tableView->palette().color(QPalette::Base));
+        expectContrast("calendar",
+                       tableView->palette().color(QPalette::Text),
+                       tableView->palette().color(QPalette::Base));
     }
 } // namespace
 

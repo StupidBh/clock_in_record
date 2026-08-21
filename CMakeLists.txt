@@ -26,6 +26,10 @@ target_compile_features(attendance_project_options INTERFACE cxx_std_23)
 target_compile_options(attendance_project_options INTERFACE
         "$<$<COMPILE_LANG_AND_ID:CXX,MSVC>:/W4;/permissive-;/utf-8;/Zc:__cplusplus>"
 )
+target_compile_definitions(attendance_project_options INTERFACE
+        QT_NO_CAST_FROM_ASCII
+        QT_NO_CAST_TO_ASCII
+)
 
 add_subdirectory(Core)
 

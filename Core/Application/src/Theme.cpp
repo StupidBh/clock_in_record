@@ -3,7 +3,10 @@
 #include <QApplication>
 #include <QPalette>
 
+#include <array>
 #include <utility>
+
+using namespace Qt::StringLiterals;
 
 namespace {
     struct ThemeColors
@@ -38,34 +41,16 @@ namespace {
     {
         if (dark) {
             return {
-                QColor("#1b1d20"),
-                QColor("#25282c"),
-                QColor("#30343a"),
-                QColor("#464b52"),
-                QColor("#f2f4f7"),
-                QColor("#aeb4bc"),
-                QColor("#176da8"),
-                QColor("#2082c2"),
-                QColor("#11557f"),
-                QColor("#ffffff"),
-                QColor("#ff7b86"),
-                QColor("#72bff0"),
+                QColor(u"#1b1d20"_s), QColor(u"#25282c"_s), QColor(u"#30343a"_s), QColor(u"#464b52"_s),
+                QColor(u"#f2f4f7"_s), QColor(u"#aeb4bc"_s), QColor(u"#176da8"_s), QColor(u"#2082c2"_s),
+                QColor(u"#11557f"_s), QColor(u"#ffffff"_s), QColor(u"#ff7b86"_s), QColor(u"#72bff0"_s),
             };
         }
 
         return {
-            QColor("#f4f6f8"),
-            QColor("#ffffff"),
-            QColor("#e9eef2"),
-            QColor("#c8d0d8"),
-            QColor("#20242a"),
-            QColor("#5f6872"),
-            QColor("#0b639b"),
-            QColor("#0e78b8"),
-            QColor("#084d79"),
-            QColor("#ffffff"),
-            QColor("#b4232d"),
-            QColor("#075f96"),
+            QColor(u"#f4f6f8"_s), QColor(u"#ffffff"_s), QColor(u"#e9eef2"_s), QColor(u"#c8d0d8"_s),
+            QColor(u"#20242a"_s), QColor(u"#5f6872"_s), QColor(u"#0b639b"_s), QColor(u"#0e78b8"_s),
+            QColor(u"#084d79"_s), QColor(u"#ffffff"_s), QColor(u"#b4232d"_s), QColor(u"#075f96"_s),
         };
     }
 
@@ -242,18 +227,18 @@ QSplitter::handle {
 }
 )");
 
-        const std::pair<QString, QColor> replacements[] = {
-            { QStringLiteral("@WINDOW@"), colors.window },
-            { QStringLiteral("@SURFACE@"), colors.surface },
-            { QStringLiteral("@RAISED_SURFACE@"), colors.raisedSurface },
-            { QStringLiteral("@BORDER@"), colors.border },
-            { QStringLiteral("@TEXT@"), colors.text },
-            { QStringLiteral("@MUTED_TEXT@"), colors.mutedText },
-            { QStringLiteral("@ACCENT@"), colors.accent },
-            { QStringLiteral("@ACCENT_HOVER@"), colors.accentHover },
-            { QStringLiteral("@ACCENT_PRESSED@"), colors.accentPressed },
-            { QStringLiteral("@ACCENT_TEXT@"), colors.accentText },
-            { QStringLiteral("@ERROR@"), colors.error },
+        const std::array replacements {
+            std::pair { u"@WINDOW@"_s, colors.window },
+            std::pair { u"@SURFACE@"_s, colors.surface },
+            std::pair { u"@RAISED_SURFACE@"_s, colors.raisedSurface },
+            std::pair { u"@BORDER@"_s, colors.border },
+            std::pair { u"@TEXT@"_s, colors.text },
+            std::pair { u"@MUTED_TEXT@"_s, colors.mutedText },
+            std::pair { u"@ACCENT@"_s, colors.accent },
+            std::pair { u"@ACCENT_HOVER@"_s, colors.accentHover },
+            std::pair { u"@ACCENT_PRESSED@"_s, colors.accentPressed },
+            std::pair { u"@ACCENT_TEXT@"_s, colors.accentText },
+            std::pair { u"@ERROR@"_s, colors.error },
         };
         for (const auto& [token, color] : replacements) {
             styleSheet.replace(token, color.name());
@@ -273,17 +258,17 @@ QColor AttendanceTheme::attendanceBackground(const QPalette& palette, const bool
 {
     const bool dark = palette.color(QPalette::Window).lightness() < 128;
     if (dark) {
-        return excludedFromAverage ? QColor("#214b48") : QColor("#244d43");
+        return excludedFromAverage ? QColor(u"#214b48"_s) : QColor(u"#244d43"_s);
     }
-    return excludedFromAverage ? QColor("#ddf4f0") : QColor("#d9f2e7");
+    return excludedFromAverage ? QColor(u"#ddf4f0"_s) : QColor(u"#d9f2e7"_s);
 }
 
 QColor AttendanceTheme::attendanceForeground(const QPalette& palette)
 {
-    return palette.color(QPalette::Window).lightness() < 128 ? QColor("#e4fbf4") : QColor("#174c3c");
+    return palette.color(QPalette::Window).lightness() < 128 ? QColor(u"#e4fbf4"_s) : QColor(u"#174c3c"_s);
 }
 
 QColor AttendanceTheme::weekendForeground(const QPalette& palette)
 {
-    return palette.color(QPalette::Window).lightness() < 128 ? QColor("#ff968f") : QColor("#9c3038");
+    return palette.color(QPalette::Window).lightness() < 128 ? QColor(u"#ff968f"_s) : QColor(u"#9c3038"_s);
 }

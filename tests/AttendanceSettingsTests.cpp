@@ -9,6 +9,8 @@
 
 #include <iostream>
 
+using namespace Qt::StringLiterals;
+
 namespace {
     int failures = 0;
 
@@ -79,10 +81,10 @@ namespace {
 
         const QDate legacyDate(2026, 8, 11);
         const QString legacyGroup = legacyDate.toString(Qt::ISODate);
-        settings.setValue(legacyGroup + "/arrival", "09:00");
-        settings.setValue(legacyGroup + "/departure", "18:00");
+        settings.setValue(legacyGroup + u"/arrival"_s, u"09:00"_s);
+        settings.setValue(legacyGroup + u"/departure"_s, u"18:00"_s);
         AttendanceSettings::migrateLegacyRecords(settings, loadedGlobalSettings.schedule);
-        expectTrue("legacy schedule migrated", settings.contains(legacyGroup + "/workStart"));
+        expectTrue("legacy schedule migrated", settings.contains(legacyGroup + u"/workStart"_s));
 
         settings.clear();
     }
@@ -110,8 +112,8 @@ namespace {
         AttendanceSettings::saveRecord(settings, secondDate, overtimeRecord);
 
         AttendanceMainWindow window;
-        auto* statisticsLabel = window.findChild<QLabel*>("monthlyStatisticsLabel");
-        auto* checkBox = window.findChild<QCheckBox*>("overtimeOffsetsMissingWorkCheckBox");
+        auto* statisticsLabel = window.findChild<QLabel*>(u"monthlyStatisticsLabel"_s);
+        auto* checkBox = window.findChild<QCheckBox*>(u"overtimeOffsetsMissingWorkCheckBox"_s);
         expectTrue("monthly statistics label exists", statisticsLabel != nullptr);
         expectTrue("monthly offset checkbox exists", checkBox != nullptr);
         if (!statisticsLabel || !checkBox) {
@@ -119,12 +121,15 @@ namespace {
             return;
         }
 
-        expectTrue("cross-date offset remaining overtime", statisticsLabel->text().contains("总加班时长: 3小时30分钟"));
-        expectFalse("cross-date offset clears missing work", statisticsLabel->text().contains("缺少标准工时"));
+        expectTrue("cross-date offset remaining overtime",
+                   statisticsLabel->text().contains(u"总加班时长: 3小时30分钟"_s));
+        expectFalse("cross-date offset clears missing work", statisticsLabel->text().contains(u"缺少标准工时"_s));
 
         checkBox->setChecked(false);
-        expectTrue("disabled cross-date offset keeps overtime", statisticsLabel->text().contains("总加班时长: 4小时30分钟"));
-        expectTrue("disabled cross-date offset keeps missing work", statisticsLabel->text().contains("缺少标准工时: 1小时0分钟"));
+        expectTrue("disabled cross-date offset keeps overtime",
+                   statisticsLabel->text().contains(u"总加班时长: 4小时30分钟"_s));
+        expectTrue("disabled cross-date offset keeps missing work",
+                   statisticsLabel->text().contains(u"缺少标准工时: 1小时0分钟"_s));
 
         settings.clear();
     }
@@ -139,8 +144,8 @@ int main(int argc, char* argv[])
         return 1;
     }
 
-    QCoreApplication::setOrganizationName("AttendanceAppTests");
-    QCoreApplication::setApplicationName("AttendanceSettingsTests");
+    QCoreApplication::setOrganizationName(u"AttendanceAppTests"_s);
+    QCoreApplication::setApplicationName(u"AttendanceSettingsTests"_s);
     QSettings::setDefaultFormat(QSettings::IniFormat);
     QSettings::setPath(QSettings::IniFormat, QSettings::UserScope, settingsDirectory.path());
 
@@ -148,7 +153,7 @@ int main(int argc, char* argv[])
 
     {
         AttendanceMainWindow window;
-        auto* checkBox = window.findChild<QCheckBox*>("overtimeOffsetsMissingWorkCheckBox");
+        auto* checkBox = window.findChild<QCheckBox*>(u"overtimeOffsetsMissingWorkCheckBox"_s);
         expectTrue("offset checkbox exists", checkBox != nullptr);
         if (checkBox) {
             expectFalse("offset default", checkBox->isChecked());
@@ -158,11 +163,11 @@ int main(int argc, char* argv[])
 
     QSettings settings;
     settings.sync();
-    expectTrue("offset setting persisted", settings.value("settings/overtimeOffsetsMissingWork", false).toBool());
+    expectTrue("offset setting persisted", settings.value(u"settings/overtimeOffsetsMissingWork"_s, false).toBool());
 
     {
         AttendanceMainWindow window;
-        auto* checkBox = window.findChild<QCheckBox*>("overtimeOffsetsMissingWorkCheckBox");
+        auto* checkBox = window.findChild<QCheckBox*>(u"overtimeOffsetsMissingWorkCheckBox"_s);
         expectTrue("persisted offset checkbox exists", checkBox != nullptr);
         if (checkBox) {
             expectTrue("persisted offset value", checkBox->isChecked());
