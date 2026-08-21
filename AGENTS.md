@@ -9,9 +9,18 @@ feature directory, public `*.h` files sit at the top level and implementations l
 declarations are under `resources/`; add new assets to `resources/resources.qrc`. Generated output belongs in `build/`
 and `bin/<Debug|Release>/` and must remain untracked.
 
+## Language and Dependency Baseline
+
+The supported project baseline is C++23, Qt 6.11.1, CMake 4.3 or newer, and MSVC 18 (Visual Studio 2026) targeting
+x64. Treat these versions as repository requirements, not machine-specific suggestions. All C++ targets must continue
+to require `cxx_std_23` with compiler extensions disabled. The required Qt components are Core, Widgets, and Network;
+use an MSVC-compatible Qt build when compiling with MSVC. Workstations may use different Qt installation paths, but
+must provide the path locally through `Qt6_DIR`. Any baseline version change must update this section, the root
+`CMakeLists.txt`, and the build commands together.
+
 ## Build, Test, and Development Commands
 
-The Windows build expects CMake 4.3.1+, Visual Studio 2026, and Qt 6.11.1. Select the Visual Studio/MSVC toolchain in
+The Windows build expects CMake 4.3+, Visual Studio 2026, and Qt 6.11.1. Select the Visual Studio/MSVC toolchain in
 the IDE and configure `Qt6_DIR` locally to point to that workstation's `lib/cmake/Qt6` directory. Do not commit
 machine-specific Qt paths.
 
