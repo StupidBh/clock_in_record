@@ -1,18 +1,25 @@
 #include "Calendar/CustomCalendarWidget.h"
 #include "Application/Theme.h"
 #include "Settings/AttendanceSettings.h"
-#include <QSettings>
-#include <QStyle>
-#include <QApplication>
+
+#include <QContextMenuEvent>
+#include <QMenu>
 #include <QMouseEvent>
 #include <QPainter>
+#include <QPainterStateGuard>
+#include <QSettings>
+#include <QStyle>
+#include <QTableView>
 #include <QTextCharFormat>
 
+#include <utility>
+
+using namespace Qt::StringLiterals;
+
 CustomCalendarWidget::CustomCalendarWidget(QWidget* parent) :
-    QCalendarWidget(parent),
-    m_tableView(nullptr)
+    QCalendarWidget(parent)
 {
-    m_tableView = this->findChild<QTableView*>();
+    m_tableView = findChild<QTableView*>();
     if (m_tableView && m_tableView->viewport()) {
         m_tableView->viewport()->installEventFilter(this);
     }
@@ -25,13 +32,13 @@ bool CustomCalendarWidget::eventFilter(QObject* watched, QEvent* event)
 {
     if (m_tableView && watched == m_tableView->viewport()) {
         if (event->type() == QEvent::MouseButtonPress) {
-            auto* mouseEvent = dynamic_cast<QMouseEvent*>(event);
+            const auto* mouseEvent = static_cast<QMouseEvent*>(event);
             if (mouseEvent->button() == Qt::LeftButton && selectionMode() == QCalendarWidget::NoSelection) {
                 setSelectionMode(QCalendarWidget::SingleSelection);
             }
         }
         else if (event->type() == QEvent::ContextMenu) {
-            auto* contextMenuEvent = dynamic_cast<QContextMenuEvent*>(event);
+            const auto* contextMenuEvent = static_cast<QContextMenuEvent*>(event);
             showContextMenu(contextMenuEvent->pos());
             return true;
         }
@@ -59,7 +66,7 @@ void CustomCalendarWidget::paintCell(QPainter* painter, const QRect& rect, const
     const QColor highlight = calendarPalette.color(QPalette::Highlight);
     const QColor highlightedText = calendarPalette.color(QPalette::HighlightedText);
     if (isSelected) {
-        painter->save();
+        QPainterStateGuard guard(painter);
         painter->setRenderHint(QPainter::Antialiasing);
         painter->setPen(Qt::NoPen);
         painter->setBrush(highlight);
@@ -68,10 +75,9 @@ void CustomCalendarWidget::paintCell(QPainter* painter, const QRect& rect, const
         painter->setPen(highlightedText);
 
         painter->drawText(rect, Qt::AlignCenter, QString::number(date.day()));
-        painter->restore();
     }
     else if (date == QDate::currentDate()) {
-        painter->save();
+        QPainterStateGuard guard(painter);
         painter->setRenderHint(QPainter::Antialiasing);
         painter->setPen(Qt::NoPen);
         painter->setBrush(highlight);
@@ -81,39 +87,36 @@ void CustomCalendarWidget::paintCell(QPainter* painter, const QRect& rect, const
         painter->setPen(highlight);
 
         painter->drawText(rect, Qt::AlignCenter, QString::number(date.day()));
-
-        painter->restore();
     }
 
-    auto it = m_data.constFind(date);
-    if (it != m_data.constEnd()) {
-        painter->save();
+    const auto it = m_attendanceData.constFind(date);
+    if (it != m_attendanceData.constEnd()) {
+        QPainterStateGuard guard(painter);
         QFont font = painter->font();
         font.setPointSize(7);
         painter->setFont(font);
         painter->setPen(isSelected ? QPen(highlightedText)
                                    : QPen(AttendanceTheme::attendanceForeground(calendarPalette)));
 
-        const QVariantMap& info = it.value();
-        QRect contentRect = rect.adjusted(2, 2, -2, -2);
-        int halfHeight = contentRect.height() / 2;
-        QRect arrivalRect(contentRect.left(), contentRect.top(), contentRect.width(), halfHeight);
-        QRect departureRect(contentRect.left(), contentRect.top() + halfHeight, contentRect.width(), halfHeight);
-        painter->drawText(arrivalRect, Qt::AlignCenter, info["arrivalTime"].toString());
-        painter->drawText(departureRect, Qt::AlignCenter, info["departureTime"].toString());
-        painter->restore();
+        const CalendarAttendanceData& attendanceData = it.value();
+        const QRect contentRect = rect.adjusted(2, 2, -2, -2);
+        const int halfHeight = contentRect.height() / 2;
+        const QRect arrivalRect(contentRect.left(), contentRect.top(), contentRect.width(), halfHeight);
+        const QRect departureRect(contentRect.left(), contentRect.top() + halfHeight, contentRect.width(), halfHeight);
+        painter->drawText(arrivalRect, Qt::AlignCenter, attendanceData.arrivalTime);
+        painter->drawText(departureRect, Qt::AlignCenter, attendanceData.departureTime);
     }
 }
 
-void CustomCalendarWidget::setCustomData(const QDate& date, const QVariantMap& value)
+void CustomCalendarWidget::setAttendanceData(const QDate& date, CalendarAttendanceData attendanceData)
 {
-    m_data[date] = value;
-    updateCell(date); // 触发paintCell
+    m_attendanceData.insert(date, std::move(attendanceData));
+    updateCell(date);
 }
 
-void CustomCalendarWidget::removeCustomData(const QDate& date)
+void CustomCalendarWidget::removeAttendanceData(const QDate& date)
 {
-    m_data.remove(date);
+    m_attendanceData.remove(date);
     updateCell(date);
 }
 
@@ -126,30 +129,28 @@ void CustomCalendarWidget::clearDateSelection()
 
 void CustomCalendarWidget::showContextMenu(const QPoint& pos)
 {
-    QDate clickedDate = getDateFromPosition(pos);
+    const QDate clickedDate = dateFromPosition(pos);
     if (!clickedDate.isValid()) {
         return;
     }
 
-    // 检查该日期是否有记录
     QSettings settings;
     if (!AttendanceSettings::hasRecord(settings, clickedDate)) {
-        return; // 没有记录，不显示菜单
+        return;
     }
 
-    // 创建右键菜单
     QMenu contextMenu(this);
-    QAction* deleteAction = contextMenu.addAction(QString("删除 %1 的记录").arg(clickedDate.toString("yyyy-MM-dd")));
+    QAction* const deleteAction = contextMenu.addAction(u"删除 %1 的记录"_s.arg(clickedDate.toString(u"yyyy-MM-dd"_s)));
     deleteAction->setIcon(style()->standardIcon(QStyle::SP_TrashIcon));
 
-    QPoint globalPos = m_tableView ? m_tableView->viewport()->mapToGlobal(pos) : mapToGlobal(pos);
-    QAction* selectedAction = contextMenu.exec(globalPos);
+    const QPoint globalPos = m_tableView ? m_tableView->viewport()->mapToGlobal(pos) : mapToGlobal(pos);
+    QAction* const selectedAction = contextMenu.exec(globalPos);
     if (selectedAction == deleteAction) {
         emit deleteRequested(clickedDate);
     }
 }
 
-QDate CustomCalendarWidget::getDateFromPosition(const QPoint& pos) const
+QDate CustomCalendarWidget::dateFromPosition(const QPoint& pos) const
 {
     // paintCell 已经拿到了 QCalendarWidget 最终用于绘制每个日期的真实 rect。
     // 直接用这些 rect 做命中测试，避免依赖内部 QTableView 的行列、表头和坐标转换细节。

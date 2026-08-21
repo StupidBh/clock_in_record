@@ -1,34 +1,35 @@
 #pragma once
 #include "Attendance/AttendanceTypes.h"
 
-#include <QCheckBox>
 #include <QDate>
 #include <QDialog>
-#include <QLabel>
-#include <QTimeEdit>
+
+class QCheckBox;
+class QLabel;
+class QTimeEdit;
 
 // 时间设置对话框
-class TimeSettingDialog : public QDialog {
+class TimeSettingDialog final : public QDialog {
     Q_OBJECT
 
 public:
     explicit TimeSettingDialog(const QDate& date, QWidget* parent = nullptr);
-    AttendanceRecord getRecord() const;
+    [[nodiscard]] AttendanceRecord record() const;
 
 private slots:
     void calculateWorkTime() const;
     void saveAndClose();
 
 private:
-    void setupUI();
+    void setupUi();
     void loadRecord();
     void saveRecord() const;
 
     QDate m_date;
-    QCheckBox* m_needAverageCalCheckBox;
-    QTimeEdit* m_arrivalTimeEdit;
-    QTimeEdit* m_departureTimeEdit;
-    QLabel* m_resultLabel;
+    QCheckBox* m_needAverageCalCheckBox = nullptr;
+    QTimeEdit* m_arrivalTimeEdit = nullptr;
+    QTimeEdit* m_departureTimeEdit = nullptr;
+    QLabel* m_resultLabel = nullptr;
     AttendanceRecord m_globalDefaults;
-    bool m_overtimeOffsetsMissingWork;
+    bool m_overtimeOffsetsMissingWork = false;
 };

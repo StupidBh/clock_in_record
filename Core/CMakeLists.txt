@@ -5,6 +5,8 @@ target_sources(attendance_core
         PRIVATE
         Application/src/AttendanceMainWindow.cpp
         Application/src/Theme.cpp
+        Attendance/src/AttendanceFormatter.cpp
+        Attendance/src/MonthlyStatisticsCalculator.cpp
         Attendance/src/WorkTimeCalculator.cpp
         Calendar/src/CustomCalendarWidget.cpp
         Settings/src/AttendanceSettings.cpp
@@ -17,7 +19,9 @@ target_sources(attendance_core
         FILES
         Application/AttendanceMainWindow.h
         Application/Theme.h
+        Attendance/AttendanceFormatter.h
         Attendance/AttendanceTypes.h
+        Attendance/MonthlyStatisticsCalculator.h
         Attendance/WorkTimeCalculator.h
         Calendar/CustomCalendarWidget.h
         Settings/AttendanceSettings.h

@@ -1,19 +1,18 @@
 #pragma once
+
 #include "Attendance/AttendanceTypes.h"
-#include <QCheckBox>
-#include <QDate>
-#include <QDoubleSpinBox>
-#include <QEvent>
-#include <QLabel>
+
 #include <QMainWindow>
-#include <QTimeEdit>
 
-class CollapsibleGroupBox;
-
+class QCheckBox;
+class QDate;
+class QDoubleSpinBox;
+class QLabel;
+class QTimeEdit;
 class CustomCalendarWidget;
 
 // 主窗口
-class AttendanceMainWindow : public QMainWindow {
+class AttendanceMainWindow final : public QMainWindow {
     Q_OBJECT
 
 public:
@@ -28,31 +27,30 @@ private slots:
     void onDateClicked(const QDate& date);
     void onMonthChanged();
     void onDeleteRequested(const QDate& date);
-    void onGlobalSettingsChanged() const;
+    void onGlobalSettingsChanged();
 
 private:
-    void setupUI();
+    void setupUi();
 
-    void deleteAttendanceRecord(const QDate& date) const;
-    void updateCalendarAppearance() const;
-    void updateMonthlyStatistics() const;
-    void loadGlobalSettings() const;
-    void saveGlobalSettings() const;
-    void migrateLegacyRecordsToCurrentSchedule() const;
-    [[nodiscard]] AttendanceRecord currentGlobalSettings() const;
+    void deleteAttendanceRecord(const QDate& date);
+    void updateCalendarAppearance();
+    void updateMonthlyStatistics();
+    void loadGlobalSettings();
+    void saveGlobalSettings();
+    void migrateLegacyRecordsToCurrentSchedule();
+    [[nodiscard]] AttendanceRecord currentSchedule() const;
 
     CustomCalendarWidget* m_calendar = nullptr;
-    QLabel* m_statsLabel;
-    CollapsibleGroupBox* m_globalSettingsGroup;
-    QLabel* m_globalSettingsErrorLabel;
-    QTimeEdit* m_globalWorkStartEdit;
-    QTimeEdit* m_globalWorkEndEdit;
-    QTimeEdit* m_globalLunchStartEdit;
-    QTimeEdit* m_globalLunchEndEdit;
-    QTimeEdit* m_globalDinnerStartEdit;
-    QTimeEdit* m_globalDinnerEndEdit;
-    QCheckBox* m_mealSubsidyEnabledCheckBox;
-    QTimeEdit* m_globalMealSubsidyTimeEdit;
-    QCheckBox* m_overtimeOffsetsMissingWorkCheckBox;
-    QDoubleSpinBox* m_targetOvertimeHoursSpinBox;
+    QLabel* m_statsLabel = nullptr;
+    QLabel* m_globalSettingsErrorLabel = nullptr;
+    QTimeEdit* m_globalWorkStartEdit = nullptr;
+    QTimeEdit* m_globalWorkEndEdit = nullptr;
+    QTimeEdit* m_globalLunchStartEdit = nullptr;
+    QTimeEdit* m_globalLunchEndEdit = nullptr;
+    QTimeEdit* m_globalDinnerStartEdit = nullptr;
+    QTimeEdit* m_globalDinnerEndEdit = nullptr;
+    QCheckBox* m_mealSubsidyEnabledCheckBox = nullptr;
+    QTimeEdit* m_globalMealSubsidyTimeEdit = nullptr;
+    QCheckBox* m_overtimeOffsetsMissingWorkCheckBox = nullptr;
+    QDoubleSpinBox* m_targetOvertimeHoursSpinBox = nullptr;
 };
