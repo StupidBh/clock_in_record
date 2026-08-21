@@ -57,6 +57,38 @@ overtime; add a CTest-backed unit target for new automated coverage.
 ## Commit & Pull Request Guidelines
 
 Recent commits use bracketed types such as `[feat]`, `[fix]`, `[refactor]`, `[style]`, and `[update]`; follow that
-pattern with a concise imperative summary. Pull requests should explain behavior and validation, link related issues,
-and include before/after screenshots for visible UI changes. Keep generated build files, IDE metadata, and user-specific
-`QSettings` data out of commits.
+pattern with a concise imperative summary. Use `[test]`, `[docs]`, or `[build]` when those types describe the change
+more precisely.
+
+### Commit Granularity
+
+- Give each commit one reviewable intent that can be described by one imperative sentence. If the summary needs "and"
+  to join independently useful changes, split the commit. File count and line count are not reasons by themselves to
+  split an otherwise atomic change.
+- Keep every commit buildable. It must pass the focused tests for its scope and must not rely on a later commit to add a
+  missing source file, CMake registration, Qt resource entry, migration, or required test fixture.
+- Commit implementation and its direct regression tests together. In particular, attendance calculation changes belong
+  with their `tests/` cases, new Qt classes belong with their `Core/CMakeLists.txt` registration, and new assets belong
+  with the corresponding `resources/resources.qrc` entry.
+- Keep persistence changes atomic: a `QSettings` key or record-format change, backward-compatible read or migration
+  logic, and restart-persistence coverage belong in the same commit.
+- Separate behavior-preserving refactors from behavior changes when the refactor is independently reviewable. Land the
+  refactor first, with tests still passing, then add the behavior. Do not manufacture a separate refactor commit for
+  trivial edits that only support one fix.
+- Isolate mechanical churn from semantic changes. Repository-wide formatting, line-ending normalization, bulk renames,
+  and generated-file refreshes each require a separate `[style]` or `[build]` commit so reviewers can ignore mechanical
+  diffs safely.
+- Keep unrelated feature areas separate. Calendar UI, work-time calculations, settings persistence, and build or
+  dependency changes should not share a commit unless they jointly implement one indivisible user-visible behavior.
+- Update version baselines atomically: changes to the required C++, Qt, CMake, or MSVC versions must include the root
+  `CMakeLists.txt`, this document, and affected build commands in one `[build]` or `[update]` commit.
+- Before committing, stage explicit files or hunks, inspect `git diff --cached`, and confirm no generated output,
+  machine-specific paths, user `QSettings` data, or unrelated working-tree changes are included. Do not leave `WIP` or
+  `fixup!` commits in the final branch history.
+
+Examples of appropriate separation are `[fix] unify light and dark theme colors` for the theme implementation, widget
+integration, CMake registration, and theme tests; followed by `[style] enforce LF line endings` for `.gitattributes` and
+the mechanical normalization only.
+
+Pull requests should explain behavior and validation, link related issues, and include before/after screenshots for
+visible UI changes. Keep generated build files, IDE metadata, and user-specific `QSettings` data out of commits.
