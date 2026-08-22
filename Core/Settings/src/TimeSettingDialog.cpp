@@ -85,7 +85,11 @@ void TimeSettingDialog::saveAndClose()
         return;
     }
 
-    saveRecord();
+    if (!saveRecord()) {
+        QMessageBox::warning(this, u"保存失败"_s, u"考勤记录无法保存，请检查设置存储权限。"_s);
+        return;
+    }
+
     accept();
 }
 
@@ -101,7 +105,11 @@ void TimeSettingDialog::deleteAndClose()
     }
 
     QSettings settings;
-    AttendanceSettings::removeRecord(settings, m_date);
+    if (!AttendanceSettings::removeRecord(settings, m_date)) {
+        QMessageBox::warning(this, u"删除失败"_s, u"考勤记录无法删除，请检查设置存储权限。"_s);
+        return;
+    }
+
     accept();
 }
 
@@ -182,8 +190,8 @@ void TimeSettingDialog::loadRecord()
     calculateWorkTime();
 }
 
-void TimeSettingDialog::saveRecord() const
+bool TimeSettingDialog::saveRecord() const
 {
     QSettings settings;
-    AttendanceSettings::saveRecord(settings, m_date, record());
+    return AttendanceSettings::saveRecord(settings, m_date, record());
 }

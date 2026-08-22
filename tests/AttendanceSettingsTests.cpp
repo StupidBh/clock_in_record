@@ -54,7 +54,7 @@ namespace {
         globalSettings.mealSubsidyEnabled = false;
         globalSettings.overtimeOffsetsMissingWork = true;
         globalSettings.targetOvertimeMinutes = 90;
-        AttendanceSettings::saveGlobalSettings(settings, globalSettings);
+        expectTrue("global settings save", AttendanceSettings::saveGlobalSettings(settings, globalSettings));
 
         const auto loadedGlobalSettings = AttendanceSettings::loadGlobalSettings(settings);
         expectTrue("global schedule round trip", loadedGlobalSettings.schedule.workStartTime == QTime(8, 30));
@@ -66,7 +66,8 @@ namespace {
         AttendanceRecord record = AttendanceSettings::createRecord(weekday, loadedGlobalSettings.schedule);
         record.arrivalTime = QTime(8, 15);
         record.departureTime = QTime(19, 30);
-        AttendanceSettings::saveRecord(settings, weekday, record);
+        expectTrue("record save", AttendanceSettings::saveRecord(settings, weekday, record));
+        expectTrue("record completion marker", settings.value(weekday.toString(Qt::ISODate) + u"/complete"_s).toBool());
 
         const auto loadedRecord = AttendanceSettings::loadRecord(settings, weekday, loadedGlobalSettings.schedule);
         expectTrue("record round trip exists", loadedRecord.has_value());
@@ -76,15 +77,57 @@ namespace {
             expectTrue("record schedule round trip", loadedRecord->workStartTime == record.workStartTime);
         }
 
-        AttendanceSettings::removeRecord(settings, weekday);
+        expectTrue("record removal", AttendanceSettings::removeRecord(settings, weekday));
         expectFalse("record removed", AttendanceSettings::hasRecord(settings, weekday));
 
         const QDate legacyDate(2026, 8, 11);
         const QString legacyGroup = legacyDate.toString(Qt::ISODate);
         settings.setValue(legacyGroup + u"/arrival"_s, u"09:00"_s);
         settings.setValue(legacyGroup + u"/departure"_s, u"18:00"_s);
-        AttendanceSettings::migrateLegacyRecords(settings, loadedGlobalSettings.schedule);
+        expectTrue("legacy migration",
+                   AttendanceSettings::migrateLegacyRecords(settings, loadedGlobalSettings.schedule));
         expectTrue("legacy schedule migrated", settings.contains(legacyGroup + u"/workStart"_s));
+
+        settings.clear();
+    }
+
+    void testIncompleteAndInvalidRecords()
+    {
+        QSettings settings;
+        settings.clear();
+
+        const QDate date(2026, 8, 12);
+        const QString group = date.toString(Qt::ISODate);
+        settings.setValue(group + u"/arrival"_s, u"09:00"_s);
+        expectFalse("partial record has no record", AttendanceSettings::hasRecord(settings, date));
+        expectFalse("partial record does not load",
+                    AttendanceSettings::loadRecord(settings, date, AttendanceRecord { }).has_value());
+
+        settings.setValue(group + u"/departure"_s, u"18:00"_s);
+        expectTrue("complete legacy record loads",
+                   AttendanceSettings::loadRecord(settings, date, AttendanceRecord { }).has_value());
+
+        settings.setValue(group + u"/complete"_s, false);
+        expectFalse("incomplete marker hides record", AttendanceSettings::hasRecord(settings, date));
+
+        AttendanceRecord invalidRecord;
+        invalidRecord.departureTime = invalidRecord.arrivalTime;
+        expectFalse("invalid record cannot save", AttendanceSettings::saveRecord(settings, date, invalidRecord));
+
+        AttendanceSettings::GlobalSettings incompleteGlobalSettings;
+        incompleteGlobalSettings.schedule.workEndTime = incompleteGlobalSettings.schedule.workStartTime;
+        expectFalse("invalid global settings cannot save",
+                    AttendanceSettings::saveGlobalSettings(settings, incompleteGlobalSettings));
+
+        settings.setValue(u"settings/complete"_s, false);
+        const AttendanceSettings::GlobalSettings loadedIncompleteGlobalSettings =
+            AttendanceSettings::loadGlobalSettings(settings);
+        expectTrue("incomplete global settings require repair", loadedIncompleteGlobalSettings.requiresRepair);
+
+        expectFalse("invalid date has no record", AttendanceSettings::hasRecord(settings, QDate()));
+        expectFalse("invalid date cannot save",
+                    AttendanceSettings::saveRecord(settings, QDate(), AttendanceRecord { }));
+        expectFalse("invalid date cannot remove", AttendanceSettings::removeRecord(settings, QDate()));
 
         settings.clear();
     }
@@ -97,19 +140,21 @@ namespace {
         AttendanceSettings::GlobalSettings globalSettings;
         globalSettings.overtimeOffsetsMissingWork = true;
         globalSettings.targetOvertimeMinutes = 0;
-        AttendanceSettings::saveGlobalSettings(settings, globalSettings);
+        expectTrue("monthly global settings save", AttendanceSettings::saveGlobalSettings(settings, globalSettings));
 
         const QDate firstDate(QDate::currentDate().year(), QDate::currentDate().month(), 1);
         AttendanceRecord missingWorkRecord = AttendanceSettings::createRecord(firstDate, globalSettings.schedule);
         missingWorkRecord.arrivalTime = QTime(10, 0);
         missingWorkRecord.departureTime = QTime(18, 0);
-        AttendanceSettings::saveRecord(settings, firstDate, missingWorkRecord);
+        expectTrue("monthly missing record save",
+                   AttendanceSettings::saveRecord(settings, firstDate, missingWorkRecord));
 
         const QDate secondDate = firstDate.addDays(1);
         AttendanceRecord overtimeRecord = AttendanceSettings::createRecord(secondDate, globalSettings.schedule);
         overtimeRecord.arrivalTime = QTime(9, 0);
         overtimeRecord.departureTime = QTime(23, 0);
-        AttendanceSettings::saveRecord(settings, secondDate, overtimeRecord);
+        expectTrue("monthly overtime record save",
+                   AttendanceSettings::saveRecord(settings, secondDate, overtimeRecord));
 
         AttendanceMainWindow window;
         auto* statisticsLabel = window.findChild<QLabel*>(u"monthlyStatisticsLabel"_s);
@@ -150,6 +195,7 @@ int main(int argc, char* argv[])
     QSettings::setPath(QSettings::IniFormat, QSettings::UserScope, settingsDirectory.path());
 
     testSettingsStorage();
+    testIncompleteAndInvalidRecords();
 
     {
         AttendanceMainWindow window;

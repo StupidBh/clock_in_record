@@ -36,8 +36,8 @@ private:
     void updateCalendarAppearance();
     void updateMonthlyStatistics();
     void loadGlobalSettings();
-    void saveGlobalSettings();
-    void migrateLegacyRecordsToCurrentSchedule();
+    [[nodiscard]] bool saveGlobalSettings();
+    [[nodiscard]] bool migrateLegacyRecordsToCurrentSchedule();
     [[nodiscard]] AttendanceRecord currentSchedule() const;
 
     CustomCalendarWidget* m_calendar = nullptr;

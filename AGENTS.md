@@ -54,6 +54,13 @@ persistence changes, verify launch, single-instance activation, date editing/del
 persistence. Calculation changes should exercise invalid ranges, break overlap, late arrival, early departure, and
 overtime; add a CTest-backed unit target for new automated coverage.
 
+## Documentation Guidelines
+
+`Readme.md` is the canonical project README. Keep its existing content promptly synchronized with the actual project
+whenever behavior, UI, persistence, toolchain requirements, build/test commands, or project structure changes. Preserve
+its UTF-8 encoding, use machine-independent examples, and do not introduce a lowercase `readme.md` or the misspelled
+`Readmd.md` as a second README.
+
 ## Commit & Pull Request Guidelines
 
 Recent commits use bracketed types such as `[feat]`, `[fix]`, `[refactor]`, `[style]`, and `[update]`; follow that

@@ -9,6 +9,8 @@
 using namespace Qt::StringLiterals;
 
 namespace {
+    constexpr auto CompletionField = "complete"_L1;
+
     struct ScheduleField
     {
         QLatin1StringView name;
@@ -36,6 +38,17 @@ namespace {
         key += u'/';
         key += name;
         return key;
+    }
+
+    QString completionKey(const QString& group)
+    {
+        return groupKey(group, CompletionField);
+    }
+
+    bool syncSuccessfully(QSettings& settings)
+    {
+        settings.sync();
+        return settings.status() == QSettings::NoError;
     }
 
     QTime parseTime(const QVariant& value)
@@ -90,18 +103,25 @@ namespace AttendanceSettings {
     GlobalSettings loadGlobalSettings(const QSettings& settings)
     {
         GlobalSettings globalSettings;
+        const QString settingsGroup = u"settings"_s;
+        if (settings.contains(completionKey(settingsGroup)) && !settings.value(completionKey(settingsGroup)).toBool()) {
+            globalSettings.requiresRepair = true;
+            return globalSettings;
+        }
+
         const AttendanceRecord defaults;
-        const AttendanceRecord rawSchedule = loadScheduleUnchecked(settings, u"settings"_s, defaults);
+        const AttendanceRecord rawSchedule = loadScheduleUnchecked(settings, settingsGroup, defaults);
         globalSettings.requiresRepair = !WorkTimeCalculator::hasValidSchedule(rawSchedule);
         globalSettings.schedule = globalSettings.requiresRepair ? defaults : rawSchedule;
 
-        globalSettings.mealSubsidyEnabled = settings.value(u"settings/mealSubsidyEnabled"_s, true).toBool();
+        globalSettings.mealSubsidyEnabled =
+            settings.value(groupKey(settingsGroup, "mealSubsidyEnabled"_L1), true).toBool();
         globalSettings.overtimeOffsetsMissingWork =
-            settings.value(u"settings/overtimeOffsetsMissingWork"_s, false).toBool();
+            settings.value(groupKey(settingsGroup, "overtimeOffsetsMissingWork"_L1), false).toBool();
 
         bool targetOk = false;
         globalSettings.targetOvertimeMinutes =
-            settings.value(u"settings/targetOvertimeMinutes"_s, 150).toInt(&targetOk);
+            settings.value(groupKey(settingsGroup, "targetOvertimeMinutes"_L1), 150).toInt(&targetOk);
         if (!targetOk || globalSettings.targetOvertimeMinutes < 0 || globalSettings.targetOvertimeMinutes > 24 * 60) {
             globalSettings.targetOvertimeMinutes = 150;
             globalSettings.requiresRepair = true;
@@ -110,17 +130,48 @@ namespace AttendanceSettings {
         return globalSettings;
     }
 
-    void saveGlobalSettings(QSettings& settings, const GlobalSettings& globalSettings)
+    bool saveGlobalSettings(QSettings& settings, const GlobalSettings& globalSettings)
     {
-        saveSchedule(settings, u"settings"_s, globalSettings.schedule);
-        settings.setValue(u"settings/mealSubsidyEnabled"_s, globalSettings.mealSubsidyEnabled);
-        settings.setValue(u"settings/overtimeOffsetsMissingWork"_s, globalSettings.overtimeOffsetsMissingWork);
-        settings.setValue(u"settings/targetOvertimeMinutes"_s, globalSettings.targetOvertimeMinutes);
+        if (!WorkTimeCalculator::hasValidSchedule(globalSettings.schedule) ||
+            globalSettings.targetOvertimeMinutes < 0 || globalSettings.targetOvertimeMinutes > 24 * 60) {
+            return false;
+        }
+
+        const QString settingsGroup = u"settings"_s;
+        settings.setValue(completionKey(settingsGroup), false);
+        saveSchedule(settings, settingsGroup, globalSettings.schedule);
+        settings.setValue(groupKey(settingsGroup, "mealSubsidyEnabled"_L1), globalSettings.mealSubsidyEnabled);
+        settings.setValue(groupKey(settingsGroup, "overtimeOffsetsMissingWork"_L1),
+                          globalSettings.overtimeOffsetsMissingWork);
+        settings.setValue(groupKey(settingsGroup, "targetOvertimeMinutes"_L1), globalSettings.targetOvertimeMinutes);
+        if (!syncSuccessfully(settings)) {
+            return false;
+        }
+
+        settings.setValue(completionKey(settingsGroup), true);
+        return syncSuccessfully(settings);
     }
 
     bool hasRecord(const QSettings& settings, const QDate& date)
     {
-        return settings.contains(groupKey(recordGroup(date), "arrival"_L1));
+        if (!date.isValid()) {
+            return false;
+        }
+
+        const QString group = recordGroup(date);
+        if (settings.contains(completionKey(group)) && !settings.value(completionKey(group)).toBool()) {
+            return false;
+        }
+
+        const QString arrivalKey = groupKey(group, "arrival"_L1);
+        const QString departureKey = groupKey(group, "departure"_L1);
+        if (!settings.contains(arrivalKey) || !settings.contains(departureKey)) {
+            return false;
+        }
+
+        const QTime arrival = parseTime(settings.value(arrivalKey));
+        const QTime departure = parseTime(settings.value(departureKey));
+        return arrival.isValid() && departure.isValid() && arrival < departure;
     }
 
     AttendanceRecord createRecord(const QDate& date, const AttendanceRecord& schedule)
@@ -136,7 +187,7 @@ namespace AttendanceSettings {
     std::optional<AttendanceRecord>
         loadRecord(const QSettings& settings, const QDate& date, const AttendanceRecord& scheduleFallback)
     {
-        if (!hasRecord(settings, date)) {
+        if (!date.isValid() || !hasRecord(settings, date)) {
             return std::nullopt;
         }
 
@@ -146,32 +197,72 @@ namespace AttendanceSettings {
         record.needAverageCal = settings.value(groupKey(group, "needAverageCal"_L1), defaults.needAverageCal).toBool();
         record.arrivalTime = parseTime(settings.value(groupKey(group, "arrival"_L1)));
         record.departureTime = parseTime(settings.value(groupKey(group, "departure"_L1)));
+        if (!WorkTimeCalculator::hasValidAttendanceRange(record) || !WorkTimeCalculator::hasValidSchedule(record)) {
+            return std::nullopt;
+        }
         return record;
     }
 
-    void saveRecord(QSettings& settings, const QDate& date, const AttendanceRecord& record)
+    bool saveRecord(QSettings& settings, const QDate& date, const AttendanceRecord& record)
     {
+        if (!date.isValid() || !WorkTimeCalculator::hasValidAttendanceRange(record) ||
+            !WorkTimeCalculator::hasValidSchedule(record)) {
+            return false;
+        }
+
         const QString group = recordGroup(date);
+        settings.setValue(completionKey(group), false);
         settings.setValue(groupKey(group, "needAverageCal"_L1), record.needAverageCal);
         writeTime(settings, groupKey(group, "arrival"_L1), record.arrivalTime);
         writeTime(settings, groupKey(group, "departure"_L1), record.departureTime);
         saveSchedule(settings, group, record);
+        if (!syncSuccessfully(settings)) {
+            return false;
+        }
+
+        settings.setValue(completionKey(group), true);
+        return syncSuccessfully(settings);
     }
 
-    void removeRecord(QSettings& settings, const QDate& date)
+    bool removeRecord(QSettings& settings, const QDate& date)
     {
+        if (!date.isValid()) {
+            return false;
+        }
+
         settings.remove(recordGroup(date));
+        return syncSuccessfully(settings);
     }
 
-    void migrateLegacyRecords(QSettings& settings, const AttendanceRecord& currentSchedule)
+    bool migrateLegacyRecords(QSettings& settings, const AttendanceRecord& currentSchedule)
     {
+        if (!WorkTimeCalculator::hasValidSchedule(currentSchedule)) {
+            return false;
+        }
+
+        bool success = true;
         for (const QString& group : settings.childGroups()) {
-            if (!QDate::fromString(group, Qt::ISODate).isValid() || !settings.contains(groupKey(group, "arrival"_L1))) {
+            const QDate date = QDate::fromString(group, Qt::ISODate);
+            if (!date.isValid() || !settings.contains(groupKey(group, "arrival"_L1)) ||
+                !settings.contains(groupKey(group, "departure"_L1))) {
                 continue;
             }
 
-            const AttendanceRecord storedSchedule = loadSchedule(settings, group, currentSchedule);
-            saveSchedule(settings, group, storedSchedule);
+            AttendanceRecord record = loadSchedule(settings, group, currentSchedule);
+            const AttendanceRecord defaults = createRecord(date, currentSchedule);
+            record.needAverageCal =
+                settings.value(groupKey(group, "needAverageCal"_L1), defaults.needAverageCal).toBool();
+            record.arrivalTime = parseTime(settings.value(groupKey(group, "arrival"_L1)));
+            record.departureTime = parseTime(settings.value(groupKey(group, "departure"_L1)));
+            if (!WorkTimeCalculator::hasValidAttendanceRange(record)) {
+                continue;
+            }
+
+            if (!saveRecord(settings, date, record)) {
+                success = false;
+            }
         }
+
+        return success;
     }
 } // namespace AttendanceSettings

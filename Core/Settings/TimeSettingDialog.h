@@ -25,7 +25,7 @@ private slots:
 private:
     void setupUi();
     void loadRecord();
-    void saveRecord() const;
+    [[nodiscard]] bool saveRecord() const;
 
     QDate m_date;
     QCheckBox* m_needAverageCalCheckBox = nullptr;

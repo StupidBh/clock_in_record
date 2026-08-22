@@ -252,7 +252,10 @@ void AttendanceMainWindow::setupUi()
     connect(m_calendar, &CustomCalendarWidget::deleteRequested, this, &AttendanceMainWindow::onDeleteRequested);
 
     loadGlobalSettings();
-    migrateLegacyRecordsToCurrentSchedule();
+    if (!migrateLegacyRecordsToCurrentSchedule()) {
+        m_globalSettingsErrorLabel->setVisible(true);
+        m_globalSettingsErrorLabel->setText(u"历史考勤记录无法完成迁移，请检查设置存储权限。"_s);
+    }
 
     const std::array timeEditors {
         m_globalWorkStartEdit,   m_globalWorkEndEdit,   m_globalLunchStartEdit,      m_globalLunchEndEdit,
@@ -279,7 +282,10 @@ void AttendanceMainWindow::setupUi()
 void AttendanceMainWindow::deleteAttendanceRecord(const QDate& date)
 {
     QSettings settings;
-    AttendanceSettings::removeRecord(settings, date);
+    if (!AttendanceSettings::removeRecord(settings, date)) {
+        QMessageBox::warning(this, u"删除失败"_s, u"考勤记录无法删除，请检查设置存储权限。"_s);
+        return;
+    }
 
     // The calendar view can include dates from adjacent months, which are outside the monthly refresh range.
     m_calendar->setDateTextFormat(date, QTextCharFormat());
@@ -308,14 +314,17 @@ void AttendanceMainWindow::loadGlobalSettings()
     m_targetOvertimeHoursSpinBox->setValue(globalSettings.targetOvertimeMinutes / 60.0);
 
     if (globalSettings.requiresRepair) {
-        saveGlobalSettings();
+        if (!saveGlobalSettings()) {
+            m_globalSettingsErrorLabel->setVisible(true);
+            m_globalSettingsErrorLabel->setText(u"全局设置无法保存，请检查设置存储权限。"_s);
+        }
     }
 }
 
-void AttendanceMainWindow::saveGlobalSettings()
+bool AttendanceMainWindow::saveGlobalSettings()
 {
     if (!WorkTimeCalculator::hasValidSchedule(currentSchedule())) {
-        return;
+        return false;
     }
 
     QSettings settings;
@@ -324,7 +333,7 @@ void AttendanceMainWindow::saveGlobalSettings()
     globalSettings.mealSubsidyEnabled = m_mealSubsidyEnabledCheckBox->isChecked();
     globalSettings.overtimeOffsetsMissingWork = m_overtimeOffsetsMissingWorkCheckBox->isChecked();
     globalSettings.targetOvertimeMinutes = qRound(m_targetOvertimeHoursSpinBox->value() * 60.0);
-    AttendanceSettings::saveGlobalSettings(settings, globalSettings);
+    return AttendanceSettings::saveGlobalSettings(settings, globalSettings);
 }
 
 void AttendanceMainWindow::onGlobalSettingsChanged()
@@ -337,7 +346,12 @@ void AttendanceMainWindow::onGlobalSettingsChanged()
     }
 
     m_globalSettingsErrorLabel->clear();
-    saveGlobalSettings();
+    if (!saveGlobalSettings()) {
+        m_globalSettingsErrorLabel->setVisible(true);
+        m_globalSettingsErrorLabel->setText(u"全局设置无法保存，请检查设置存储权限。"_s);
+        return;
+    }
+
     updateMonthlyStatistics();
 }
 
@@ -354,10 +368,10 @@ AttendanceRecord AttendanceMainWindow::currentSchedule() const
     return record;
 }
 
-void AttendanceMainWindow::migrateLegacyRecordsToCurrentSchedule()
+bool AttendanceMainWindow::migrateLegacyRecordsToCurrentSchedule()
 {
     QSettings settings;
-    AttendanceSettings::migrateLegacyRecords(settings, currentSchedule());
+    return AttendanceSettings::migrateLegacyRecords(settings, currentSchedule());
 }
 
 void AttendanceMainWindow::updateCalendarAppearance()
