@@ -12,6 +12,7 @@
 #include <QStyle>
 #include <QTableView>
 #include <QTextCharFormat>
+#include <QToolButton>
 
 #include <algorithm>
 #include <utility>
@@ -26,6 +27,19 @@ CustomCalendarWidget::CustomCalendarWidget(QWidget* parent) :
     m_tableView = findChild<QTableView*>();
     if (m_tableView && m_tableView->viewport()) {
         m_tableView->viewport()->installEventFilter(this);
+    }
+
+    if (auto* const previousButton = findChild<QToolButton*>(u"qt_calendar_prevmonth"_s)) {
+        previousButton->setIcon({ });
+        previousButton->setArrowType(Qt::NoArrow);
+        previousButton->setText(u"‹"_s);
+        previousButton->setToolButtonStyle(Qt::ToolButtonTextOnly);
+    }
+    if (auto* const nextButton = findChild<QToolButton*>(u"qt_calendar_nextmonth"_s)) {
+        nextButton->setIcon({ });
+        nextButton->setArrowType(Qt::NoArrow);
+        nextButton->setText(u"›"_s);
+        nextButton->setToolButtonStyle(Qt::ToolButtonTextOnly);
     }
     updateThemeFormats();
 
@@ -100,6 +114,19 @@ void CustomCalendarWidget::paintCell(QPainter* painter, const QRect& rect, const
         const QRect dayRect = cellRect.adjusted(5, 1, -5, 0);
         painter->drawText(dayRect, Qt::AlignLeft | Qt::AlignTop, QString::number(date.day()));
 
+        const CalendarAttendanceData& attendanceData = it.value();
+        if (attendanceData.excludedFromTarget) {
+            QFont statusFont = dayFont;
+            statusFont.setWeight(QFont::Normal);
+            if (statusFont.pointSizeF() > 0.0) {
+                statusFont.setPointSizeF(std::max(7.0, statusFont.pointSizeF() * 0.78));
+            }
+            painter->setFont(statusFont);
+            const QFontMetrics statusMetrics(statusFont);
+            const QString statusText = statusMetrics.elidedText(u"不计目标"_s, Qt::ElideRight, dayRect.width() / 2);
+            painter->drawText(dayRect, Qt::AlignRight | Qt::AlignTop, statusText);
+        }
+
         QFont timeFont = dayFont;
         timeFont.setWeight(QFont::Normal);
         if (timeFont.pointSizeF() > 0.0) {
@@ -110,13 +137,18 @@ void CustomCalendarWidget::paintCell(QPainter* painter, const QRect& rect, const
         }
         painter->setFont(timeFont);
 
-        const CalendarAttendanceData& attendanceData = it.value();
         const QRect timeRect = cellRect.adjusted(3, dayLineHeight, -3, -2);
-        const int halfHeight = timeRect.height() / 2;
-        const QRect arrivalRect(timeRect.left(), timeRect.top(), timeRect.width(), halfHeight);
-        const QRect departureRect(timeRect.left(), timeRect.top() + halfHeight, timeRect.width(), halfHeight);
-        painter->drawText(arrivalRect, Qt::AlignCenter, attendanceData.arrivalTime);
-        painter->drawText(departureRect, Qt::AlignCenter, attendanceData.departureTime);
+        const QString timeRange = u"%1 - %2"_s.arg(attendanceData.arrivalTime, attendanceData.departureTime);
+        if (QFontMetrics(timeFont).horizontalAdvance(timeRange) <= timeRect.width()) {
+            painter->drawText(timeRect, Qt::AlignCenter, timeRange);
+        }
+        else {
+            const int halfHeight = timeRect.height() / 2;
+            const QRect arrivalRect(timeRect.left(), timeRect.top(), timeRect.width(), halfHeight);
+            const QRect departureRect(timeRect.left(), timeRect.top() + halfHeight, timeRect.width(), halfHeight);
+            painter->drawText(arrivalRect, Qt::AlignCenter, attendanceData.arrivalTime);
+            painter->drawText(departureRect, Qt::AlignCenter, attendanceData.departureTime);
+        }
 
         if (date == QDate::currentDate() && !isSelected) {
             painter->setBrush(Qt::NoBrush);

@@ -41,7 +41,16 @@ private:
     [[nodiscard]] AttendanceRecord currentSchedule() const;
 
     CustomCalendarWidget* m_calendar = nullptr;
-    QLabel* m_statsLabel = nullptr;
+    QLabel* m_statsPeriodLabel = nullptr;
+    QLabel* m_statsWorkDaysValueLabel = nullptr;
+    QLabel* m_statsOvertimeLabel = nullptr;
+    QLabel* m_statsOvertimeValueLabel = nullptr;
+    QLabel* m_statsTargetLabel = nullptr;
+    QLabel* m_statsTargetValueLabel = nullptr;
+    QLabel* m_statsMissingWorkValueLabel = nullptr;
+    QLabel* m_statsMealLabel = nullptr;
+    QLabel* m_statsMealValueLabel = nullptr;
+    QLabel* m_globalSettingsStatusLabel = nullptr;
     QLabel* m_globalSettingsErrorLabel = nullptr;
     QTimeEdit* m_globalWorkStartEdit = nullptr;
     QTimeEdit* m_globalWorkEndEdit = nullptr;

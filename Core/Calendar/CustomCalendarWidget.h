@@ -13,6 +13,7 @@ struct CalendarAttendanceData
 {
     QString arrivalTime;
     QString departureTime;
+    bool excludedFromTarget = false;
 };
 
 // 自定义日历控件，支持右键菜单

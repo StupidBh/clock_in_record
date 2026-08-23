@@ -7,7 +7,15 @@ namespace AttendanceFormatter {
     {
         const int absoluteMinutes = minutes < 0 ? -minutes : minutes;
         const QString sign = minutes < 0 ? u"-"_s : QString();
-        return u"%1%2小时%3分钟"_s.arg(sign).arg(absoluteMinutes / 60).arg(absoluteMinutes % 60);
+        const int hours = absoluteMinutes / 60;
+        const int remainingMinutes = absoluteMinutes % 60;
+        if (hours == 0) {
+            return u"%1%2分钟"_s.arg(sign).arg(remainingMinutes);
+        }
+        if (remainingMinutes == 0) {
+            return u"%1%2小时"_s.arg(sign).arg(hours);
+        }
+        return u"%1%2小时%3分钟"_s.arg(sign).arg(hours).arg(remainingMinutes);
     }
 
     QString formatDailyResult(const WorkTimeResult& result)

@@ -22,6 +22,8 @@ namespace {
         QColor accentPressed;
         QColor accentText;
         QColor error;
+        QColor success;
+        QColor warning;
         QColor link;
     };
 
@@ -43,14 +45,16 @@ namespace {
             return {
                 QColor(u"#1b1d20"_s), QColor(u"#25282c"_s), QColor(u"#30343a"_s), QColor(u"#464b52"_s),
                 QColor(u"#f2f4f7"_s), QColor(u"#aeb4bc"_s), QColor(u"#176da8"_s), QColor(u"#2082c2"_s),
-                QColor(u"#11557f"_s), QColor(u"#ffffff"_s), QColor(u"#ff7b86"_s), QColor(u"#72bff0"_s),
+                QColor(u"#11557f"_s), QColor(u"#ffffff"_s), QColor(u"#ff7b86"_s), QColor(u"#72d6aa"_s),
+                QColor(u"#f2c66d"_s), QColor(u"#72bff0"_s),
             };
         }
 
         return {
             QColor(u"#f4f6f8"_s), QColor(u"#ffffff"_s), QColor(u"#e9eef2"_s), QColor(u"#c8d0d8"_s),
             QColor(u"#20242a"_s), QColor(u"#5f6872"_s), QColor(u"#0b639b"_s), QColor(u"#0e78b8"_s),
-            QColor(u"#084d79"_s), QColor(u"#ffffff"_s), QColor(u"#b4232d"_s), QColor(u"#075f96"_s),
+            QColor(u"#084d79"_s), QColor(u"#ffffff"_s), QColor(u"#b4232d"_s), QColor(u"#15724d"_s),
+            QColor(u"#875b08"_s), QColor(u"#075f96"_s),
         };
     }
 
@@ -102,24 +106,47 @@ QLabel#pageTitleLabel {
     font-weight: 600;
     padding: 0;
 }
-QLabel#calculationResultLabel {
-    background-color: @SURFACE@;
-    border: 1px solid @BORDER@;
-    border-radius: 4px;
-    padding: 10px;
-}
 QLabel#sectionTitleLabel {
     font-size: 14px;
     font-weight: 600;
 }
-QLabel#monthlyStatisticsLabel {
-    background-color: transparent;
-    border: none;
-    padding: 0 0 4px 0;
+QLabel#statisticsPeriodLabel,
+QLabel#dialogDateLabel,
+QLabel#calculationResultDetailLabel,
+QLabel#settingsStatusLabel,
+QLabel[statisticsRole="metric"],
+QLabel[resultRole="metric"] {
+    color: @MUTED_TEXT@;
+}
+QLabel[statisticsRole="value"],
+QLabel[resultRole="value"] {
+    font-weight: 600;
+}
+QLabel#statsTargetValueLabel[tone="warning"],
+QLabel#calculationResultLabel[tone="warning"] {
+    color: @WARNING@;
+}
+QLabel#statsTargetValueLabel[tone="positive"],
+QLabel#calculationResultLabel[tone="positive"] {
+    color: @SUCCESS@;
+}
+QLabel#calculationResultLabel {
+    font-size: 15px;
+    font-weight: 600;
+}
+QLabel#formSectionLabel {
+    color: @TEXT@;
+    font-weight: 600;
+    padding-top: 2px;
+}
+QWidget#calculationResultPanel {
+    background-color: @SURFACE@;
+    border: 1px solid @BORDER@;
+    border-radius: 4px;
 }
 QLabel#settingsErrorLabel {
     color: @ERROR@;
-    padding: 4px;
+    padding: 3px 0;
 }
 QGroupBox {
     color: @TEXT@;
@@ -134,7 +161,7 @@ QGroupBox::title {
     left: 8px;
     padding: 0 4px;
     color: @TEXT@;
-    background-color: @SURFACE@;
+    background-color: @WINDOW@;
 }
 QWidget#inspectorPanel {
     background-color: @SURFACE@;
@@ -151,7 +178,8 @@ QPushButton {
     background-color: @RAISED_SURFACE@;
     border: 1px solid @BORDER@;
     border-radius: 4px;
-    padding: 5px 10px;
+    min-height: 22px;
+    padding: 5px 11px;
 }
 QPushButton:hover {
     background-color: @SURFACE@;
@@ -177,6 +205,9 @@ QPushButton#deleteRecordButton {
     color: @ERROR@;
     background-color: transparent;
 }
+QPushButton#deleteRecordButton:hover {
+    border-color: @ERROR@;
+}
 QToolButton#collapsibleToggleButton {
     color: @TEXT@;
     background-color: transparent;
@@ -194,12 +225,16 @@ QTimeEdit, QDoubleSpinBox {
     background-color: @SURFACE@;
     border: 1px solid @BORDER@;
     border-radius: 3px;
-    padding: 4px 6px;
+    min-height: 24px;
+    padding: 3px 6px;
     selection-background-color: @ACCENT@;
     selection-color: @ACCENT_TEXT@;
 }
 QTimeEdit:focus, QDoubleSpinBox:focus {
     border-color: @ACCENT@;
+}
+QTimeEdit[validationError="true"] {
+    border-color: @ERROR@;
 }
 QMenu {
     color: @TEXT@;
@@ -221,10 +256,11 @@ QCalendarWidget {
     border: 1px solid @BORDER@;
 }
 QCalendarWidget QWidget#qt_calendar_navigationbar {
-    background-color: @ACCENT@;
+    background-color: @RAISED_SURFACE@;
+    border-bottom: 1px solid @BORDER@;
 }
 QCalendarWidget QToolButton {
-    color: @ACCENT_TEXT@;
+    color: @TEXT@;
     background-color: transparent;
     border: none;
     border-radius: 0;
@@ -232,10 +268,17 @@ QCalendarWidget QToolButton {
     padding: 6px;
 }
 QCalendarWidget QToolButton:hover {
-    background-color: @ACCENT_HOVER@;
+    background-color: @SURFACE@;
 }
 QCalendarWidget QToolButton:pressed {
-    background-color: @ACCENT_PRESSED@;
+    background-color: @BORDER@;
+}
+QCalendarWidget QToolButton#qt_calendar_prevmonth,
+QCalendarWidget QToolButton#qt_calendar_nextmonth {
+    min-width: 34px;
+    font-size: 18px;
+    font-weight: 400;
+    padding: 2px 6px;
 }
 QCalendarWidget QTableView {
     background-color: @SURFACE@;
@@ -271,6 +314,8 @@ QSplitter::handle {
             std::pair { u"@ACCENT_PRESSED@"_s, colors.accentPressed },
             std::pair { u"@ACCENT_TEXT@"_s, colors.accentText },
             std::pair { u"@ERROR@"_s, colors.error },
+            std::pair { u"@SUCCESS@"_s, colors.success },
+            std::pair { u"@WARNING@"_s, colors.warning },
         };
         for (const auto& [token, color] : replacements) {
             styleSheet.replace(token, color.name());
@@ -290,9 +335,9 @@ QColor AttendanceTheme::attendanceBackground(const QPalette& palette, const bool
 {
     const bool dark = palette.color(QPalette::Window).lightness() < 128;
     if (dark) {
-        return excludedFromAverage ? QColor(u"#214b48"_s) : QColor(u"#244d43"_s);
+        return excludedFromAverage ? QColor(u"#38424a"_s) : QColor(u"#244d43"_s);
     }
-    return excludedFromAverage ? QColor(u"#ddf4f0"_s) : QColor(u"#d9f2e7"_s);
+    return excludedFromAverage ? QColor(u"#e5eaef"_s) : QColor(u"#d9f2e7"_s);
 }
 
 QColor AttendanceTheme::attendanceForeground(const QPalette& palette)

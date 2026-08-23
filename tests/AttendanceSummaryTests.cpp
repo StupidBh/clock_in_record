@@ -62,11 +62,13 @@ namespace {
 
         expectEqual("positive minutes", AttendanceFormatter::formatMinutes(90), u"1小时30分钟"_s);
         expectEqual("negative minutes", AttendanceFormatter::formatMinutes(-90), u"-1小时30分钟"_s);
+        expectEqual("zero minutes", AttendanceFormatter::formatMinutes(0), u"0分钟"_s);
+        expectEqual("whole hours", AttendanceFormatter::formatMinutes(120), u"2小时"_s);
 
         const WorkTimeResult dailyResult = WorkTimeCalculator::calculateWorkTimeResult(AttendanceRecord { });
         expectEqual("daily result",
                     AttendanceFormatter::formatDailyResult(dailyResult),
-                    u"[标准工时] 8小时0分钟\n\n[实际工时] 8小时0分钟\n[休息时间] 1小时0分钟\n[今日无缺]"_s);
+                    u"[标准工时] 8小时\n\n[实际工时] 8小时\n[休息时间] 1小时\n[今日无缺]"_s);
 
         const WorkTimeResult exceptionalDailyResult {
             .actualWorkMinutes = 390,
@@ -80,7 +82,7 @@ namespace {
         expectEqual(
             "exceptional daily result",
             AttendanceFormatter::formatDailyResult(exceptionalDailyResult),
-            u"[迟到] 1小时0分钟\n[早退] 0小时30分钟\n[标准工时] 8小时0分钟\n\n[实际工时] 6小时30分钟\n[休息时间] 1小时0分钟\n[加班时间] 0小时30分钟\n[缺少标准工时] 1小时30分钟"_s);
+            u"[迟到] 1小时\n[早退] 30分钟\n[标准工时] 8小时\n\n[实际工时] 6小时30分钟\n[休息时间] 1小时\n[加班时间] 30分钟\n[缺少标准工时] 1小时30分钟"_s);
 
         const MonthlyStatistics statistics {
             .workDays = 2,
@@ -100,7 +102,7 @@ namespace {
         expectEqual(
             "monthly above target",
             AttendanceFormatter::formatMonthlySummary(QDate(2026, 8, 1), aboveTarget, 150, false),
-            u"统计月份: 2026年8月\n工作天数: 2天\n均加班时间: 2.583小时\n余加班时间: 0小时10分钟\n缺少标准工时: 0小时45分钟\n"_s);
+            u"统计月份: 2026年8月\n工作天数: 2天\n均加班时间: 2.583小时\n余加班时间: 10分钟\n缺少标准工时: 45分钟\n"_s);
 
         const MonthlyStatistics belowTarget {
             .workDays = 2,
@@ -108,7 +110,7 @@ namespace {
         };
         expectEqual("monthly below target",
                     AttendanceFormatter::formatMonthlySummary(QDate(2026, 8, 1), belowTarget, 150, false),
-                    u"统计月份: 2026年8月\n工作天数: 2天\n均加班时间: 2.417小时\n缺加班时间: 0小时10分钟\n"_s);
+                    u"统计月份: 2026年8月\n工作天数: 2天\n均加班时间: 2.417小时\n缺加班时间: 10分钟\n"_s);
     }
 } // namespace
 

@@ -32,6 +32,11 @@ private:
     QTimeEdit* m_arrivalTimeEdit = nullptr;
     QTimeEdit* m_departureTimeEdit = nullptr;
     QLabel* m_resultLabel = nullptr;
+    QLabel* m_resultDetailLabel = nullptr;
+    QLabel* m_actualWorkValueLabel = nullptr;
+    QLabel* m_standardWorkValueLabel = nullptr;
+    QLabel* m_breakValueLabel = nullptr;
+    QLabel* m_overtimeValueLabel = nullptr;
     QPushButton* m_deleteButton = nullptr;
     AttendanceRecord m_globalDefaults;
     bool m_overtimeOffsetsMissingWork = false;

@@ -14,17 +14,20 @@
 #include <QDoubleSpinBox>
 #include <QFrame>
 #include <QGridLayout>
-#include <QGroupBox>
+#include <QHBoxLayout>
 #include <QLabel>
 #include <QLocale>
 #include <QMessageBox>
+#include <QPushButton>
 #include <QScrollArea>
 #include <QSettings>
 #include <QSizePolicy>
 #include <QSplitter>
 #include <QStringView>
+#include <QStyle>
 #include <QTextCharFormat>
 #include <QTimeEdit>
+#include <QVariant>
 #include <QVBoxLayout>
 
 #include <array>
@@ -45,6 +48,45 @@ namespace {
         return { .first = first, .last = first.addMonths(1).addDays(-1) };
     }
 
+    struct StatisticRow
+    {
+        QLabel* label;
+        QLabel* value;
+    };
+
+    [[nodiscard]] StatisticRow addStatisticRow(QGridLayout& layout, const QStringView text, const int row)
+    {
+        auto* const label = new QLabel(text.toString());
+        label->setProperty("statisticsRole", u"metric"_s);
+        auto* const value = new QLabel();
+        value->setProperty("statisticsRole", u"value"_s);
+        value->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+        layout.addWidget(label, row, 0);
+        layout.addWidget(value, row, 1);
+        return { .label = label, .value = value };
+    }
+
+    struct SettingsSection
+    {
+        QWidget* widget;
+        QGridLayout* layout;
+    };
+
+    [[nodiscard]] SettingsSection createSettingsSection(const QStringView title)
+    {
+        auto* const widget = new QWidget();
+        auto* const layout = new QGridLayout(widget);
+        layout->setContentsMargins(0, 4, 0, 6);
+        layout->setHorizontalSpacing(10);
+        layout->setVerticalSpacing(8);
+        layout->setColumnStretch(1, 1);
+
+        auto* const titleLabel = new QLabel(title.toString());
+        titleLabel->setObjectName(u"formSectionLabel"_s);
+        layout->addWidget(titleLabel, 0, 0, 1, 2);
+        return { .widget = widget, .layout = layout };
+    }
+
     QTimeEdit* addTimeEditor(QGridLayout& layout, const QStringView label, const int row)
     {
         layout.addWidget(new QLabel(label.toString()), row, 0);
@@ -52,6 +94,18 @@ namespace {
         editor->setDisplayFormat(u"hh:mm"_s);
         layout.addWidget(editor, row, 1);
         return editor;
+    }
+
+    void setStyleProperty(QWidget& widget, const char* const name, const QVariant& value)
+    {
+        if (widget.property(name) == value) {
+            return;
+        }
+
+        widget.setProperty(name, value);
+        widget.style()->unpolish(&widget);
+        widget.style()->polish(&widget);
+        widget.update();
     }
 } // namespace
 
@@ -132,11 +186,19 @@ void AttendanceMainWindow::setupUi()
     mainLayout->setContentsMargins(16, 14, 16, 16);
     mainLayout->setSpacing(12);
 
+    auto* const titleLayout = new QHBoxLayout();
+    titleLayout->setContentsMargins(0, 0, 0, 0);
     auto* const titleLabel = new QLabel(u"考勤日历"_s);
     titleLabel->setObjectName(u"pageTitleLabel"_s);
     titleLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
     titleLabel->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
-    mainLayout->addWidget(titleLabel);
+    titleLayout->addWidget(titleLabel);
+    titleLayout->addStretch();
+    auto* const todayButton = new QPushButton(u"今天"_s);
+    todayButton->setObjectName(u"todayButton"_s);
+    todayButton->setToolTip(u"返回当前月份"_s);
+    titleLayout->addWidget(todayButton);
+    mainLayout->addLayout(titleLayout);
 
     auto* const splitter = new QSplitter(Qt::Horizontal);
     splitter->setChildrenCollapsible(false);
@@ -160,14 +222,42 @@ void AttendanceMainWindow::setupUi()
     rightLayout->setContentsMargins(16, 14, 16, 16);
     rightLayout->setSpacing(12);
 
+    auto* const statsHeaderLayout = new QHBoxLayout();
+    statsHeaderLayout->setContentsMargins(0, 0, 0, 0);
     auto* const statsTitleLabel = new QLabel(u"月度统计"_s);
     statsTitleLabel->setObjectName(u"sectionTitleLabel"_s);
-    rightLayout->addWidget(statsTitleLabel);
+    statsHeaderLayout->addWidget(statsTitleLabel);
+    statsHeaderLayout->addStretch();
+    m_statsPeriodLabel = new QLabel();
+    m_statsPeriodLabel->setObjectName(u"statisticsPeriodLabel"_s);
+    statsHeaderLayout->addWidget(m_statsPeriodLabel);
+    rightLayout->addLayout(statsHeaderLayout);
 
-    m_statsLabel = new QLabel(u"请选择月份查看统计"_s);
-    m_statsLabel->setObjectName(u"monthlyStatisticsLabel"_s);
-    m_statsLabel->setWordWrap(true);
-    rightLayout->addWidget(m_statsLabel);
+    auto* const statisticsWidget = new QWidget();
+    statisticsWidget->setObjectName(u"statisticsGrid"_s);
+    auto* const statisticsLayout = new QGridLayout(statisticsWidget);
+    statisticsLayout->setContentsMargins(0, 2, 0, 4);
+    statisticsLayout->setHorizontalSpacing(16);
+    statisticsLayout->setVerticalSpacing(8);
+    statisticsLayout->setColumnStretch(1, 1);
+
+    m_statsWorkDaysValueLabel = addStatisticRow(*statisticsLayout, u"工作日"_s, 0).value;
+    m_statsWorkDaysValueLabel->setObjectName(u"statsWorkDaysValueLabel"_s);
+    const StatisticRow overtimeRow = addStatisticRow(*statisticsLayout, u"日均加班"_s, 1);
+    m_statsOvertimeLabel = overtimeRow.label;
+    m_statsOvertimeValueLabel = overtimeRow.value;
+    m_statsOvertimeValueLabel->setObjectName(u"statsOvertimeValueLabel"_s);
+    const StatisticRow targetRow = addStatisticRow(*statisticsLayout, u"距目标"_s, 2);
+    m_statsTargetLabel = targetRow.label;
+    m_statsTargetValueLabel = targetRow.value;
+    m_statsTargetValueLabel->setObjectName(u"statsTargetValueLabel"_s);
+    m_statsMissingWorkValueLabel = addStatisticRow(*statisticsLayout, u"工时缺口"_s, 3).value;
+    m_statsMissingWorkValueLabel->setObjectName(u"statsMissingWorkValueLabel"_s);
+    const StatisticRow mealRow = addStatisticRow(*statisticsLayout, u"餐补"_s, 4);
+    m_statsMealLabel = mealRow.label;
+    m_statsMealValueLabel = mealRow.value;
+    m_statsMealValueLabel->setObjectName(u"statsMealValueLabel"_s);
+    rightLayout->addWidget(statisticsWidget);
 
     auto* const separator = new QFrame();
     separator->setObjectName(u"inspectorSeparator"_s);
@@ -179,48 +269,40 @@ void AttendanceMainWindow::setupUi()
     globalDetailsLayout->setContentsMargins(0, 0, 0, 0);
     globalDetailsLayout->setSpacing(10);
 
-    auto* const standardGroup = new QGroupBox(u"标准工时"_s);
-    auto* const standardLayout = new QGridLayout(standardGroup);
-    standardLayout->setColumnStretch(1, 1);
+    const SettingsSection standardSection = createSettingsSection(u"标准工时"_s);
+    m_globalWorkStartEdit = addTimeEditor(*standardSection.layout, u"上班时间"_s, 1);
+    m_globalWorkEndEdit = addTimeEditor(*standardSection.layout, u"下班时间"_s, 2);
+    globalDetailsLayout->addWidget(standardSection.widget);
 
-    m_globalWorkStartEdit = addTimeEditor(*standardLayout, u"上班时间：", 0);
-    m_globalWorkEndEdit = addTimeEditor(*standardLayout, u"下班时间：", 1);
+    const SettingsSection breakSection = createSettingsSection(u"休息时间"_s);
+    m_globalLunchStartEdit = addTimeEditor(*breakSection.layout, u"午餐开始"_s, 1);
+    m_globalLunchEndEdit = addTimeEditor(*breakSection.layout, u"午餐结束"_s, 2);
+    m_globalDinnerStartEdit = addTimeEditor(*breakSection.layout, u"晚餐开始"_s, 3);
+    m_globalDinnerEndEdit = addTimeEditor(*breakSection.layout, u"晚餐结束"_s, 4);
+    globalDetailsLayout->addWidget(breakSection.widget);
 
-    globalDetailsLayout->addWidget(standardGroup);
-
-    auto* const breakGroup = new QGroupBox(u"休息时间"_s);
-    auto* const breakLayout = new QGridLayout(breakGroup);
-    breakLayout->setColumnStretch(1, 1);
-
-    m_globalLunchStartEdit = addTimeEditor(*breakLayout, u"午餐开始：", 0);
-    m_globalLunchEndEdit = addTimeEditor(*breakLayout, u"午餐结束：", 1);
-    m_globalDinnerStartEdit = addTimeEditor(*breakLayout, u"晚餐开始：", 2);
-    m_globalDinnerEndEdit = addTimeEditor(*breakLayout, u"晚餐结束：", 3);
-
-    globalDetailsLayout->addWidget(breakGroup);
-
-    auto* const mealSubsidyGroup = new QGroupBox(u"餐补"_s);
-    auto* const mealSubsidyLayout = new QGridLayout(mealSubsidyGroup);
-    mealSubsidyLayout->setColumnStretch(1, 1);
+    const SettingsSection mealSubsidySection = createSettingsSection(u"餐补"_s);
     m_mealSubsidyEnabledCheckBox = new QCheckBox(u"启用餐补统计"_s);
-    mealSubsidyLayout->addWidget(m_mealSubsidyEnabledCheckBox, 0, 0, 1, 2);
-    m_globalMealSubsidyTimeEdit = addTimeEditor(*mealSubsidyLayout, u"起算时间：", 1);
-    globalDetailsLayout->addWidget(mealSubsidyGroup);
+    mealSubsidySection.layout->addWidget(m_mealSubsidyEnabledCheckBox, 1, 0, 1, 2);
+    m_globalMealSubsidyTimeEdit = addTimeEditor(*mealSubsidySection.layout, u"起算时间"_s, 2);
+    globalDetailsLayout->addWidget(mealSubsidySection.widget);
 
-    auto* const overtimeTargetGroup = new QGroupBox(u"加班"_s);
-    auto* const overtimeTargetLayout = new QGridLayout(overtimeTargetGroup);
-    overtimeTargetLayout->setColumnStretch(1, 1);
-    overtimeTargetLayout->addWidget(new QLabel(u"日均时长："_s), 0, 0);
+    const SettingsSection overtimeSection = createSettingsSection(u"加班"_s);
+    overtimeSection.layout->addWidget(new QLabel(u"日均目标"_s), 1, 0);
     m_targetOvertimeHoursSpinBox = new QDoubleSpinBox();
     m_targetOvertimeHoursSpinBox->setRange(0.0, 24.0);
     m_targetOvertimeHoursSpinBox->setDecimals(1);
     m_targetOvertimeHoursSpinBox->setSingleStep(0.5);
     m_targetOvertimeHoursSpinBox->setSuffix(u" 小时"_s);
-    overtimeTargetLayout->addWidget(m_targetOvertimeHoursSpinBox, 0, 1);
+    overtimeSection.layout->addWidget(m_targetOvertimeHoursSpinBox, 1, 1);
     m_overtimeOffsetsMissingWorkCheckBox = new QCheckBox(u"加班抵扣缺少的标准工时"_s);
     m_overtimeOffsetsMissingWorkCheckBox->setObjectName(u"overtimeOffsetsMissingWorkCheckBox"_s);
-    overtimeTargetLayout->addWidget(m_overtimeOffsetsMissingWorkCheckBox, 1, 0, 1, 2);
-    globalDetailsLayout->addWidget(overtimeTargetGroup);
+    overtimeSection.layout->addWidget(m_overtimeOffsetsMissingWorkCheckBox, 2, 0, 1, 2);
+    globalDetailsLayout->addWidget(overtimeSection.widget);
+
+    m_globalSettingsStatusLabel = new QLabel(u"更改仅影响新记录"_s);
+    m_globalSettingsStatusLabel->setObjectName(u"settingsStatusLabel"_s);
+    globalDetailsLayout->addWidget(m_globalSettingsStatusLabel);
 
     m_globalSettingsErrorLabel = new QLabel();
     m_globalSettingsErrorLabel->setObjectName(u"settingsErrorLabel"_s);
@@ -250,9 +332,15 @@ void AttendanceMainWindow::setupUi()
     connect(m_calendar, &QCalendarWidget::clicked, this, &AttendanceMainWindow::onDateClicked);
     connect(m_calendar, &QCalendarWidget::currentPageChanged, this, &AttendanceMainWindow::onMonthChanged);
     connect(m_calendar, &CustomCalendarWidget::deleteRequested, this, &AttendanceMainWindow::onDeleteRequested);
+    connect(todayButton, &QPushButton::clicked, this, [this]() {
+        const QDate today = QDate::currentDate();
+        m_calendar->setCurrentPage(today.year(), today.month());
+        m_calendar->clearDateSelection();
+    });
 
     loadGlobalSettings();
     if (!migrateLegacyRecordsToCurrentSchedule()) {
+        m_globalSettingsStatusLabel->setVisible(false);
         m_globalSettingsErrorLabel->setVisible(true);
         m_globalSettingsErrorLabel->setText(u"历史考勤记录无法完成迁移，请检查设置存储权限。"_s);
     }
@@ -315,6 +403,7 @@ void AttendanceMainWindow::loadGlobalSettings()
 
     if (globalSettings.requiresRepair) {
         if (!saveGlobalSettings()) {
+            m_globalSettingsStatusLabel->setVisible(false);
             m_globalSettingsErrorLabel->setVisible(true);
             m_globalSettingsErrorLabel->setText(u"全局设置无法保存，请检查设置存储权限。"_s);
         }
@@ -338,8 +427,26 @@ bool AttendanceMainWindow::saveGlobalSettings()
 
 void AttendanceMainWindow::onGlobalSettingsChanged()
 {
-    const bool isValid = WorkTimeCalculator::hasValidSchedule(currentSchedule());
+    const AttendanceRecord schedule = currentSchedule();
+    const auto isValidRange = [](const QTime& start, const QTime& end) {
+        return start.isValid() && end.isValid() && start < end;
+    };
+    const bool workRangeValid = isValidRange(schedule.workStartTime, schedule.workEndTime);
+    const bool lunchRangeValid = isValidRange(schedule.lunchBreakStart, schedule.lunchBreakEnd);
+    const bool dinnerRangeValid = isValidRange(schedule.dinnerBreakStart, schedule.dinnerBreakEnd);
+    const bool breaksOverlap =
+        schedule.lunchBreakStart < schedule.dinnerBreakEnd && schedule.dinnerBreakStart < schedule.lunchBreakEnd;
+
+    setStyleProperty(*m_globalWorkStartEdit, "validationError", !workRangeValid);
+    setStyleProperty(*m_globalWorkEndEdit, "validationError", !workRangeValid);
+    setStyleProperty(*m_globalLunchStartEdit, "validationError", !lunchRangeValid || breaksOverlap);
+    setStyleProperty(*m_globalLunchEndEdit, "validationError", !lunchRangeValid || breaksOverlap);
+    setStyleProperty(*m_globalDinnerStartEdit, "validationError", !dinnerRangeValid || breaksOverlap);
+    setStyleProperty(*m_globalDinnerEndEdit, "validationError", !dinnerRangeValid || breaksOverlap);
+
+    const bool isValid = WorkTimeCalculator::hasValidSchedule(schedule);
     m_globalSettingsErrorLabel->setVisible(!isValid);
+    m_globalSettingsStatusLabel->setVisible(isValid);
     if (!isValid) {
         m_globalSettingsErrorLabel->setText(u"结束时间必须晚于开始时间，且午餐与晚餐时间不能重叠。"_s);
         return;
@@ -347,11 +454,13 @@ void AttendanceMainWindow::onGlobalSettingsChanged()
 
     m_globalSettingsErrorLabel->clear();
     if (!saveGlobalSettings()) {
+        m_globalSettingsStatusLabel->setVisible(false);
         m_globalSettingsErrorLabel->setVisible(true);
         m_globalSettingsErrorLabel->setText(u"全局设置无法保存，请检查设置存储权限。"_s);
         return;
     }
 
+    m_globalSettingsStatusLabel->setText(u"已保存 · 仅影响新记录"_s);
     updateMonthlyStatistics();
 }
 
@@ -415,6 +524,7 @@ void AttendanceMainWindow::updateMonthlyStatistics()
                                           {
                                               .arrivalTime = record.arrivalTime.toString(u"hh:mm"_s),
                                               .departureTime = record.departureTime.toString(u"hh:mm"_s),
+                                              .excludedFromTarget = !record.needAverageCal,
                                           });
         }
     }
@@ -422,6 +532,44 @@ void AttendanceMainWindow::updateMonthlyStatistics()
     const int targetMinutesPerDay = qRound(m_targetOvertimeHoursSpinBox->value() * 60.0);
     const MonthlyStatistics statistics =
         MonthlyStatisticsCalculator::calculate(records, mealSubsidyEnabled, overtimeOffsetsMissingWork);
-    m_statsLabel->setText(
-        AttendanceFormatter::formatMonthlySummary(dates.first, statistics, targetMinutesPerDay, mealSubsidyEnabled));
+
+    m_statsPeriodLabel->setText(u"%1年%2月"_s.arg(dates.first.year()).arg(dates.first.month()));
+    m_statsWorkDaysValueLabel->setText(u"%1天"_s.arg(statistics.workDays));
+    m_statsMissingWorkValueLabel->setText(AttendanceFormatter::formatMinutes(statistics.missingWorkMinutes));
+
+    const bool hasOvertimeTarget = targetMinutesPerDay > 0;
+    m_statsTargetLabel->setVisible(hasOvertimeTarget);
+    m_statsTargetValueLabel->setVisible(hasOvertimeTarget);
+    if (hasOvertimeTarget) {
+        m_statsOvertimeLabel->setText(u"日均加班"_s);
+        const int averageOvertimeMinutes =
+            statistics.workDays > 0 ? qRound(statistics.overtimeMinutes / static_cast<double>(statistics.workDays)) : 0;
+        m_statsOvertimeValueLabel->setText(AttendanceFormatter::formatMinutes(averageOvertimeMinutes));
+
+        const int targetDifference = statistics.overtimeMinutes - targetMinutesPerDay * statistics.workDays;
+        if (statistics.workDays == 0) {
+            m_statsTargetValueLabel->setText(u"--"_s);
+            setStyleProperty(*m_statsTargetValueLabel, "tone", u"neutral"_s);
+        }
+        else if (targetDifference < 0) {
+            m_statsTargetValueLabel->setText(u"还差 %1"_s.arg(AttendanceFormatter::formatMinutes(-targetDifference)));
+            setStyleProperty(*m_statsTargetValueLabel, "tone", u"warning"_s);
+        }
+        else if (targetDifference > 0) {
+            m_statsTargetValueLabel->setText(u"超出 %1"_s.arg(AttendanceFormatter::formatMinutes(targetDifference)));
+            setStyleProperty(*m_statsTargetValueLabel, "tone", u"positive"_s);
+        }
+        else {
+            m_statsTargetValueLabel->setText(u"已达标"_s);
+            setStyleProperty(*m_statsTargetValueLabel, "tone", u"positive"_s);
+        }
+    }
+    else {
+        m_statsOvertimeLabel->setText(u"总加班"_s);
+        m_statsOvertimeValueLabel->setText(AttendanceFormatter::formatMinutes(statistics.overtimeMinutes));
+    }
+
+    m_statsMealLabel->setVisible(mealSubsidyEnabled);
+    m_statsMealValueLabel->setVisible(mealSubsidyEnabled);
+    m_statsMealValueLabel->setText(u"%1次"_s.arg(statistics.mealSubsidyCount));
 }

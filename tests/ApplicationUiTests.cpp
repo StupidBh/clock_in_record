@@ -46,6 +46,13 @@ namespace {
         if (calendar) {
             expectTrue("calendar week numbers hidden",
                        calendar->verticalHeaderFormat() == QCalendarWidget::NoVerticalHeader);
+
+            auto* const previousMonthButton = calendar->findChild<QToolButton*>(u"qt_calendar_prevmonth"_s);
+            auto* const nextMonthButton = calendar->findChild<QToolButton*>(u"qt_calendar_nextmonth"_s);
+            expectTrue("calendar previous month button uses clear text arrow",
+                       previousMonthButton && previousMonthButton->text() == u"‹"_s);
+            expectTrue("calendar next month button uses clear text arrow",
+                       nextMonthButton && nextMonthButton->text() == u"›"_s);
         }
 
         auto* const inspector = window.findChild<QScrollArea*>(u"inspectorScrollArea"_s);
@@ -56,12 +63,24 @@ namespace {
                        inspector->horizontalScrollBarPolicy() == Qt::ScrollBarAlwaysOff);
         }
 
-        auto* const statisticsLabel = window.findChild<QLabel*>(u"monthlyStatisticsLabel"_s);
-        expectTrue("statistics label exists", statisticsLabel != nullptr);
-        if (statisticsLabel) {
-            expectTrue("statistics avoids nested group box",
-                       qobject_cast<QGroupBox*>(statisticsLabel->parentWidget()) == nullptr);
+        auto* const statisticsValue = window.findChild<QLabel*>(u"statsWorkDaysValueLabel"_s);
+        expectTrue("structured statistics exist", statisticsValue != nullptr);
+        if (statisticsValue) {
+            expectTrue("statistics avoid nested group box",
+                       qobject_cast<QGroupBox*>(statisticsValue->parentWidget()) == nullptr);
         }
+
+        auto* const todayButton = window.findChild<QPushButton*>(u"todayButton"_s);
+        expectTrue("today button exists", todayButton != nullptr);
+        if (calendar && todayButton) {
+            calendar->setCurrentPage(2025, 1);
+            todayButton->click();
+            expectTrue("today button returns to current year", calendar->yearShown() == QDate::currentDate().year());
+            expectTrue("today button returns to current month", calendar->monthShown() == QDate::currentDate().month());
+        }
+
+        auto* const settingsStatus = window.findChild<QLabel*>(u"settingsStatusLabel"_s);
+        expectTrue("settings persistence status exists", settingsStatus != nullptr);
 
         auto* const settingsToggle = window.findChild<QToolButton*>(u"collapsibleToggleButton"_s);
         expectTrue("settings toggle exists", settingsToggle != nullptr);
@@ -88,6 +107,7 @@ namespace {
         auto* const saveButton = newRecordDialog.findChild<QPushButton*>(u"primaryButton"_s);
         expectTrue("save button exists", saveButton != nullptr);
         if (saveButton) {
+            expectTrue("save button avoids legacy icon", saveButton->icon().isNull());
             saveButton->click();
             expectTrue("dialog save stores record", AttendanceSettings::hasRecord(settings, date));
         }
@@ -97,17 +117,32 @@ namespace {
         expectTrue("existing record delete button exists", existingRecordDeleteButton != nullptr);
         if (existingRecordDeleteButton) {
             expectTrue("existing record delete button shown", !existingRecordDeleteButton->isHidden());
+            expectTrue("delete button avoids legacy icon", existingRecordDeleteButton->icon().isNull());
         }
 
         auto* const resultLabel = existingRecordDialog.findChild<QLabel*>(u"calculationResultLabel"_s);
         expectTrue("calculation result label exists", resultLabel != nullptr);
         if (resultLabel) {
-            expectTrue("calculation result can grow", resultLabel->maximumHeight() > resultLabel->minimumHeight());
+            expectFalse("calculation result avoids log syntax", resultLabel->text().contains(u"["_s));
+        }
+
+        expectTrue("structured actual work metric exists",
+                   existingRecordDialog.findChild<QLabel*>(u"actualWorkValueLabel"_s) != nullptr);
+
+        auto* const cancelButton = existingRecordDialog.findChild<QPushButton*>(u"cancelButton"_s);
+        auto* const existingSaveButton = existingRecordDialog.findChild<QPushButton*>(u"primaryButton"_s);
+        expectTrue("cancel button exists", cancelButton != nullptr);
+        if (cancelButton) {
+            expectTrue("cancel button avoids legacy icon", cancelButton->icon().isNull());
         }
 
         if (existingRecordDeleteButton) {
             existingRecordDialog.show();
             QApplication::processEvents();
+            if (cancelButton && existingSaveButton) {
+                expectTrue("delete action stays left of cancel", existingRecordDeleteButton->x() < cancelButton->x());
+                expectTrue("save action stays rightmost", cancelButton->x() < existingSaveButton->x());
+            }
             QTimer::singleShot(50, []() {
                 for (QWidget* const widget : QApplication::topLevelWidgets()) {
                     if (auto* const messageBox = qobject_cast<QMessageBox*>(widget)) {

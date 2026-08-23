@@ -157,24 +157,23 @@ namespace {
                    AttendanceSettings::saveRecord(settings, secondDate, overtimeRecord));
 
         AttendanceMainWindow window;
-        auto* statisticsLabel = window.findChild<QLabel*>(u"monthlyStatisticsLabel"_s);
+        auto* overtimeLabel = window.findChild<QLabel*>(u"statsOvertimeValueLabel"_s);
+        auto* missingWorkLabel = window.findChild<QLabel*>(u"statsMissingWorkValueLabel"_s);
         auto* checkBox = window.findChild<QCheckBox*>(u"overtimeOffsetsMissingWorkCheckBox"_s);
-        expectTrue("monthly statistics label exists", statisticsLabel != nullptr);
+        expectTrue("monthly overtime value exists", overtimeLabel != nullptr);
+        expectTrue("monthly missing work value exists", missingWorkLabel != nullptr);
         expectTrue("monthly offset checkbox exists", checkBox != nullptr);
-        if (!statisticsLabel || !checkBox) {
+        if (!overtimeLabel || !missingWorkLabel || !checkBox) {
             settings.clear();
             return;
         }
 
-        expectTrue("cross-date offset remaining overtime",
-                   statisticsLabel->text().contains(u"总加班时长: 3小时30分钟"_s));
-        expectFalse("cross-date offset clears missing work", statisticsLabel->text().contains(u"缺少标准工时"_s));
+        expectTrue("cross-date offset remaining overtime", overtimeLabel->text() == u"3小时30分钟"_s);
+        expectTrue("cross-date offset clears missing work", missingWorkLabel->text() == u"0分钟"_s);
 
         checkBox->setChecked(false);
-        expectTrue("disabled cross-date offset keeps overtime",
-                   statisticsLabel->text().contains(u"总加班时长: 4小时30分钟"_s));
-        expectTrue("disabled cross-date offset keeps missing work",
-                   statisticsLabel->text().contains(u"缺少标准工时: 1小时0分钟"_s));
+        expectTrue("disabled cross-date offset keeps overtime", overtimeLabel->text() == u"4小时30分钟"_s);
+        expectTrue("disabled cross-date offset keeps missing work", missingWorkLabel->text() == u"1小时"_s);
 
         settings.clear();
     }
