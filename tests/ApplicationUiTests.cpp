@@ -4,10 +4,13 @@
 #include "Settings/TimeSettingDialog.h"
 
 #include <QAbstractButton>
+#include <QAction>
 #include <QApplication>
 #include <QGroupBox>
 #include <QLabel>
 #include <QMessageBox>
+#include <QMenu>
+#include <QMouseEvent>
 #include <QPushButton>
 #include <QScrollArea>
 #include <QScrollBar>
@@ -23,6 +26,33 @@ using namespace Qt::StringLiterals;
 
 namespace {
     int failures = 0;
+
+    void clickMenuAction(QMenu& menu, QAction& action)
+    {
+        const QPoint localPosition = menu.actionGeometry(&action).center();
+        const QPoint globalPosition = menu.mapToGlobal(localPosition);
+        QMouseEvent moveEvent(QEvent::MouseMove,
+                              localPosition,
+                              globalPosition,
+                              Qt::NoButton,
+                              Qt::NoButton,
+                              Qt::NoModifier);
+        QApplication::sendEvent(&menu, &moveEvent);
+        QMouseEvent pressEvent(QEvent::MouseButtonPress,
+                               localPosition,
+                               globalPosition,
+                               Qt::LeftButton,
+                               Qt::LeftButton,
+                               Qt::NoModifier);
+        QApplication::sendEvent(&menu, &pressEvent);
+        QMouseEvent releaseEvent(QEvent::MouseButtonRelease,
+                                 localPosition,
+                                 globalPosition,
+                                 Qt::LeftButton,
+                                 Qt::NoButton,
+                                 Qt::NoModifier);
+        QApplication::sendEvent(&menu, &releaseEvent);
+    }
 
     void expectTrue(const char* name, const bool value)
     {
@@ -107,6 +137,81 @@ namespace {
             expectTrue("today button restores date selection",
                        calendar->selectionMode() == QCalendarWidget::SingleSelection);
             expectTrue("today button selects today", calendar->selectedDate() == today);
+
+            QApplication::processEvents();
+            auto* const monthButton = calendar->findChild<QToolButton*>(u"qt_calendar_monthbutton"_s);
+            auto* const statisticsPeriod = window.findChild<QLabel*>(u"statisticsPeriodLabel"_s);
+            expectTrue("calendar month menu exists", monthButton && monthButton->menu());
+            expectTrue("statistics period exists", statisticsPeriod != nullptr);
+            if (monthButton && monthButton->menu() && statisticsPeriod) {
+                const int targetMonth = today.addMonths(2).month();
+                const int previousMonthNumber = today.addMonths(-1).month();
+                QAction* originalMonthAction = nullptr;
+                QAction* previousMonthAction = nullptr;
+                QAction* targetMonthAction = nullptr;
+                for (QAction* const action : monthButton->menu()->actions()) {
+                    const int month = action->data().toInt();
+                    if (month == today.month()) {
+                        originalMonthAction = action;
+                    }
+                    else if (month == previousMonthNumber) {
+                        previousMonthAction = action;
+                    }
+                    else if (month == targetMonth) {
+                        targetMonthAction = action;
+                    }
+                }
+
+                expectTrue("original month action exists", originalMonthAction != nullptr);
+                expectTrue("previous month action exists", previousMonthAction != nullptr);
+                expectTrue("target month action exists", targetMonthAction != nullptr);
+                if (originalMonthAction && previousMonthAction && targetMonthAction) {
+                    window.show();
+                    QApplication::processEvents();
+                    const auto selectMonthFromMenu = [monthButton](QAction* const action) {
+                        QTimer::singleShot(0, monthButton->menu(), [menu = monthButton->menu(), action]() {
+                            clickMenuAction(*menu, *action);
+                        });
+                        monthButton->showMenu();
+                        QApplication::processEvents();
+                    };
+
+                    selectMonthFromMenu(targetMonthAction);
+                    expectTrue("month popup selects another month", calendar->monthShown() == targetMonth);
+                    expectTrue("month popup preserves date selection",
+                               calendar->selectionMode() == QCalendarWidget::SingleSelection);
+                    selectMonthFromMenu(previousMonthAction);
+                    expectTrue("month popup selects previous month", calendar->monthShown() == previousMonthNumber);
+                    expectTrue("reopened month popup preserves date selection",
+                               calendar->selectionMode() == QCalendarWidget::SingleSelection);
+                    selectMonthFromMenu(originalMonthAction);
+                    expectTrue("month popup returns to current month", calendar->monthShown() == today.month());
+                    expectTrue("current month popup preserves date selection",
+                               calendar->selectionMode() == QCalendarWidget::SingleSelection);
+
+                    const QString originalPeriod = statisticsPeriod->text();
+                    targetMonthAction->trigger();
+                    expectTrue("month menu changes page synchronously", calendar->monthShown() == targetMonth);
+                    expectTrue("month menu defers statistics refresh", statisticsPeriod->text() == originalPeriod);
+
+                    QApplication::processEvents();
+                    expectTrue("deferred month refresh uses selected year", calendar->yearShown() == today.year());
+                    expectTrue("deferred month refresh uses selected month", calendar->monthShown() == targetMonth);
+                    expectTrue("deferred month refresh updates statistics period",
+                               statisticsPeriod->text() == u"%1年%2月"_s.arg(today.year()).arg(targetMonth));
+
+                    for (int iteration = 0; iteration < 101; ++iteration) {
+                        (iteration % 2 == 0 ? originalMonthAction : targetMonthAction)->trigger();
+                    }
+                    expectTrue("rapid month menu changes end on latest page", calendar->monthShown() == today.month());
+                    expectTrue("rapid month menu changes keep refresh deferred",
+                               statisticsPeriod->text() == u"%1年%2月"_s.arg(today.year()).arg(targetMonth));
+
+                    QApplication::processEvents();
+                    expectTrue("coalesced month refresh uses latest page",
+                               statisticsPeriod->text() == u"%1年%2月"_s.arg(today.year()).arg(today.month()));
+                }
+            }
         }
 
         auto* const settingsStatus = window.findChild<QLabel*>(u"settingsStatusLabel"_s);

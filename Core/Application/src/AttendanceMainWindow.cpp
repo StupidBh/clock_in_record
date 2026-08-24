@@ -25,9 +25,11 @@
 #include <QStyle>
 #include <QTextCharFormat>
 #include <QTimeEdit>
+#include <QTimer>
 #include <QVariant>
 
 #include <array>
+#include <optional>
 #include <vector>
 
 using namespace Qt::StringLiterals;
@@ -39,10 +41,14 @@ namespace {
         QDate last;
     };
 
-    [[nodiscard]] MonthRange monthRange(const int year, const int month)
+    [[nodiscard]] std::optional<MonthRange> monthRange(const int year, const int month)
     {
         const QDate first(year, month, 1);
-        return { .first = first, .last = first.addMonths(1).addDays(-1) };
+        if (!first.isValid()) {
+            return std::nullopt;
+        }
+
+        return MonthRange { .first = first, .last = first.addDays(first.daysInMonth() - 1) };
     }
 
     struct StatisticRow
@@ -104,6 +110,17 @@ namespace {
         widget.style()->polish(&widget);
         widget.update();
     }
+
+    [[nodiscard]] bool isOwnedBy(const QObject* object, const QObject* owner)
+    {
+        for (const QObject* current = object; current; current = current->parent()) {
+            if (current == owner) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 } // namespace
 
 AttendanceMainWindow::AttendanceMainWindow(QWidget* parent) :
@@ -129,7 +146,7 @@ bool AttendanceMainWindow::eventFilter(QObject* watched, QEvent* event)
 {
     if (event->type() == QEvent::MouseButtonPress && m_calendar) {
         auto* clickedWidget = qobject_cast<QWidget*>(watched);
-        if (clickedWidget && clickedWidget != m_calendar && !m_calendar->isAncestorOf(clickedWidget)) {
+        if (clickedWidget && !isOwnedBy(clickedWidget, m_calendar)) {
             m_calendar->clearDateSelection();
         }
     }
@@ -156,8 +173,16 @@ void AttendanceMainWindow::onDateClicked(const QDate& date)
 
 void AttendanceMainWindow::onMonthChanged()
 {
-    updateCalendarAppearance();
-    updateMonthlyStatistics();
+    if (m_monthRefreshPending) {
+        return;
+    }
+
+    m_monthRefreshPending = true;
+    QTimer::singleShot(0, this, [this]() {
+        m_monthRefreshPending = false;
+        updateCalendarAppearance();
+        updateMonthlyStatistics();
+    });
 }
 
 void AttendanceMainWindow::onDeleteRequested(const QDate& date)
@@ -498,13 +523,16 @@ bool AttendanceMainWindow::migrateLegacyRecordsToCurrentSchedule()
 
 void AttendanceMainWindow::updateCalendarAppearance()
 {
-    const MonthRange dates = monthRange(m_calendar->yearShown(), m_calendar->monthShown());
+    const auto dates = monthRange(m_calendar->yearShown(), m_calendar->monthShown());
+    if (!dates) {
+        return;
+    }
 
     QSettings settings;
     const AttendanceRecord schedule = currentSchedule();
     const QPalette calendarPalette = m_calendar->palette();
 
-    for (QDate date = dates.first; date <= dates.last; date = date.addDays(1)) {
+    for (QDate date = dates->first; date <= dates->last; date = date.addDays(1)) {
         if (const auto record = AttendanceSettings::loadRecord(settings, date, schedule)) {
             QTextCharFormat format;
             format.setBackground(AttendanceTheme::attendanceBackground(calendarPalette, !record->needAverageCal));
@@ -520,7 +548,10 @@ void AttendanceMainWindow::updateCalendarAppearance()
 
 void AttendanceMainWindow::updateMonthlyStatistics()
 {
-    const MonthRange dates = monthRange(m_calendar->yearShown(), m_calendar->monthShown());
+    const auto dates = monthRange(m_calendar->yearShown(), m_calendar->monthShown());
+    if (!dates) {
+        return;
+    }
 
     QSettings settings;
     const AttendanceRecord scheduleFallback = currentSchedule();
@@ -528,8 +559,8 @@ void AttendanceMainWindow::updateMonthlyStatistics()
     const bool overtimeOffsetsMissingWork = m_overtimeOffsetsMissingWorkCheckBox->isChecked();
 
     std::vector<AttendanceRecord> records;
-    records.reserve(dates.last.day());
-    for (QDate date = dates.first; date <= dates.last; date = date.addDays(1)) {
+    records.reserve(dates->last.day());
+    for (QDate date = dates->first; date <= dates->last; date = date.addDays(1)) {
         if (const auto storedRecord = AttendanceSettings::loadRecord(settings, date, scheduleFallback)) {
             const AttendanceRecord& record = *storedRecord;
             records.push_back(record);
@@ -546,7 +577,7 @@ void AttendanceMainWindow::updateMonthlyStatistics()
     const MonthlyStatistics statistics =
         MonthlyStatisticsCalculator::calculate(records, mealSubsidyEnabled, overtimeOffsetsMissingWork);
 
-    m_statsPeriodLabel->setText(u"%1年%2月"_s.arg(dates.first.year()).arg(dates.first.month()));
+    m_statsPeriodLabel->setText(u"%1年%2月"_s.arg(dates->first.year()).arg(dates->first.month()));
     m_statsWorkDaysValueLabel->setText(u"%1天"_s.arg(statistics.workDays));
     m_statsMissingWorkValueLabel->setText(AttendanceFormatter::formatMinutes(statistics.missingWorkMinutes));
 

@@ -61,4 +61,5 @@ private:
     QTimeEdit* m_globalMealSubsidyTimeEdit = nullptr;
     QCheckBox* m_overtimeOffsetsMissingWorkCheckBox = nullptr;
     QDoubleSpinBox* m_targetOvertimeHoursSpinBox = nullptr;
+    bool m_monthRefreshPending = false;
 };
