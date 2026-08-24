@@ -1,5 +1,4 @@
 #pragma once
-
 #include "Attendance/AttendanceTypes.h"
 
 #include <QMainWindow>

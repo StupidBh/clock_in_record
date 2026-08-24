@@ -1,5 +1,4 @@
 #include "Application/AttendanceMainWindow.h"
-
 #include "Application/Theme.h"
 #include "Attendance/AttendanceFormatter.h"
 #include "Attendance/MonthlyStatisticsCalculator.h"
@@ -12,7 +11,6 @@
 #include <QApplication>
 #include <QCheckBox>
 #include <QDoubleSpinBox>
-#include <QFrame>
 #include <QGridLayout>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -28,7 +26,6 @@
 #include <QTextCharFormat>
 #include <QTimeEdit>
 #include <QVariant>
-#include <QVBoxLayout>
 
 #include <array>
 #include <vector>

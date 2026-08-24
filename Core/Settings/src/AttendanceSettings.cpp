@@ -1,5 +1,4 @@
 #include "Settings/AttendanceSettings.h"
-
 #include "Attendance/WorkTimeCalculator.h"
 
 #include <QLatin1StringView>

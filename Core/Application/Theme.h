@@ -1,5 +1,4 @@
 #pragma once
-
 #include <QColor>
 #include <Qt>
 

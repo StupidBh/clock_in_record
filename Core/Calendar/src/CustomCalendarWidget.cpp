@@ -2,14 +2,11 @@
 #include "Application/Theme.h"
 #include "Settings/AttendanceSettings.h"
 
-#include <QContextMenuEvent>
 #include <QFontMetrics>
 #include <QMenu>
 #include <QMouseEvent>
-#include <QPainter>
 #include <QPainterStateGuard>
 #include <QSettings>
-#include <QStyle>
 #include <QTableView>
 #include <QTextCharFormat>
 #include <QToolButton>

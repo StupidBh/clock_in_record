@@ -1,5 +1,4 @@
 #include "Settings/TimeSettingDialog.h"
-
 #include "Attendance/AttendanceFormatter.h"
 #include "Attendance/WorkTimeCalculator.h"
 #include "Settings/AttendanceSettings.h"
@@ -19,7 +18,6 @@
 #include <QStyle>
 #include <QTimeEdit>
 #include <QVariant>
-#include <QVBoxLayout>
 
 #include <array>
 

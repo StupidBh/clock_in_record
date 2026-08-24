@@ -1,5 +1,4 @@
 #pragma once
-
 #include <QCalendarWidget>
 #include <QDate>
 #include <QMap>

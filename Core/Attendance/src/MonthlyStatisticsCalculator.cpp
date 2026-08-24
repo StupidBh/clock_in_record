@@ -1,5 +1,4 @@
 #include "Attendance/MonthlyStatisticsCalculator.h"
-
 #include "Attendance/WorkTimeCalculator.h"
 
 namespace MonthlyStatisticsCalculator {
