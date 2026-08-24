@@ -11,12 +11,12 @@ and `bin/<Debug|Release>/` and must remain untracked.
 
 ## Language and Dependency Baseline
 
-The supported project baseline is C++23, Qt 6.11.1, CMake 4.3 or newer, and MSVC 18 (Visual Studio 2026) targeting
-x64. Treat these versions as repository requirements, not machine-specific suggestions. All C++ targets must continue
-to require `cxx_std_23` with compiler extensions disabled. The required Qt components are Core, Widgets, and Network;
-use an MSVC-compatible Qt build when compiling with MSVC. Workstations may use different Qt installation paths, but
-must provide the path locally through `Qt6_DIR`. Any baseline version change must update this section, the root
-`CMakeLists.txt`, and the build commands together.
+The supported project baseline is C++23, Qt 6.11.1, CMake 4.3 or newer, and Visual Studio 2026 (generator version 18)
+with MSVC 19.50 or newer targeting x64. Treat these versions as repository requirements, not machine-specific
+suggestions. All C++ targets must continue to require `cxx_std_23` with compiler extensions disabled. The required Qt
+components are Core, Widgets, and Network; use an MSVC-compatible Qt build when compiling with MSVC. Workstations may
+use different Qt installation paths, but must provide the path locally through `Qt6_DIR`. Any baseline version change
+must update this section, the root `CMakeLists.txt`, and the build commands together.
 
 ## Build, Test, and Development Commands
 
@@ -41,9 +41,9 @@ Qt runtime files next to `AttendanceApp.exe`; this project intentionally has no 
 ## Coding Style & Naming Conventions
 
 Use the repository `.clang-format`: WebKit-derived style, four spaces, no tabs, a 120-column limit, and left-aligned
-pointers. Format touched files with `clang-format -i Core/Application/src/main.cpp`. Follow existing Qt/C++ conventions:
-PascalCase classes (`WorkTimeCalculator`), camelCase functions and locals (`calculateWorkTimeResult`), `m_` prefixes for
-members, and matching `.h`/`.cpp` filenames. Include project headers from the `Core/` root, for example
+pointers. Format touched files with `clang-format -i Core/Application/src/Main.cpp`. Follow existing Qt/C++ conventions:
+PascalCase classes (`AttendanceMainWindow`), camelCase functions and locals (`calculateWorkTimeResult`), `m_` prefixes
+for members, and matching `.h`/`.cpp` filenames. Include project headers from the `Core/` root, for example
 `#include "Attendance/WorkTimeCalculator.h"`. Keep `Q_OBJECT` classes in headers so CMake AUTOMOC can process them.
 
 ## Testing Guidelines
@@ -59,7 +59,10 @@ overtime; add a CTest-backed unit target for new automated coverage.
 `Readme.md` is the canonical project README. Keep its existing content promptly synchronized with the actual project
 whenever behavior, UI, persistence, toolchain requirements, build/test commands, or project structure changes. Preserve
 its UTF-8 encoding, use machine-independent examples, and do not introduce a lowercase `readme.md` or the misspelled
-`Readmd.md` as a second README.
+`Readmd.md` as a second README. Every statement in `Readme.md` must describe the behavior implemented by the current
+source, CMake configuration, and tests rather than intended, planned, or assumed behavior. Before completing a change,
+explicitly verify affected README claims against those sources; distinguish per-record snapshots from current global
+rules when documenting persistence and calculations.
 
 ## Commit & Pull Request Guidelines
 
