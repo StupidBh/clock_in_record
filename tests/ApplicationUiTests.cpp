@@ -10,7 +10,9 @@
 #include <QMessageBox>
 #include <QPushButton>
 #include <QScrollArea>
+#include <QScrollBar>
 #include <QSettings>
+#include <QSizePolicy>
 #include <QTemporaryDir>
 #include <QTimer>
 #include <QToolButton>
@@ -61,6 +63,28 @@ namespace {
             expectTrue("inspector resizes content", inspector->widgetResizable());
             expectTrue("inspector avoids horizontal scrolling",
                        inspector->horizontalScrollBarPolicy() == Qt::ScrollBarAlwaysOff);
+            expectTrue("inspector scrolls vertically only as a fallback",
+                       inspector->verticalScrollBarPolicy() == Qt::ScrollBarAsNeeded);
+        }
+
+        auto* const settingsScrollArea = window.findChild<QScrollArea*>(u"globalSettingsScrollArea"_s);
+        expectTrue("global settings scroll area exists", settingsScrollArea != nullptr);
+        if (settingsScrollArea) {
+            expectTrue("global settings resizes content", settingsScrollArea->widgetResizable());
+            expectTrue("global settings avoids horizontal scrolling",
+                       settingsScrollArea->horizontalScrollBarPolicy() == Qt::ScrollBarAlwaysOff);
+            expectTrue("global settings scrolls vertically as needed",
+                       settingsScrollArea->verticalScrollBarPolicy() == Qt::ScrollBarAsNeeded);
+        }
+
+        auto* const globalSettingsGroup = window.findChild<QWidget*>(u"globalSettingsGroup"_s);
+        auto* const inspectorSeparator = window.findChild<QWidget*>(u"inspectorSeparator"_s);
+        expectTrue("global settings group exists", globalSettingsGroup != nullptr);
+        if (globalSettingsGroup && settingsScrollArea) {
+            expectTrue("settings scroll area stays inside global settings",
+                       globalSettingsGroup->isAncestorOf(settingsScrollArea));
+            expectTrue("collapsed settings use fixed height",
+                       globalSettingsGroup->sizePolicy().verticalPolicy() == QSizePolicy::Fixed);
         }
 
         auto* const statisticsValue = window.findChild<QLabel*>(u"statsWorkDaysValueLabel"_s);
@@ -92,8 +116,34 @@ namespace {
         expectTrue("settings toggle exists", settingsToggle != nullptr);
         if (settingsToggle) {
             expectTrue("settings initially collapsed", settingsToggle->arrowType() == Qt::RightArrow);
+            window.resize(window.minimumSize());
+            window.show();
+            QApplication::processEvents();
+            if (globalSettingsGroup && inspectorSeparator) {
+                const int distanceFromSeparator = globalSettingsGroup->y() - inspectorSeparator->geometry().bottom();
+                expectTrue("collapsed settings stay directly below statistics",
+                           distanceFromSeparator > 0 && distanceFromSeparator <= 24);
+            }
+            const int collapsedToggleY = settingsToggle->mapTo(&window, QPoint()).y();
             settingsToggle->setChecked(true);
+            QApplication::processEvents();
             expectTrue("settings expands with standard arrow", settingsToggle->arrowType() == Qt::DownArrow);
+            expectTrue("expanded settings use remaining height",
+                       globalSettingsGroup &&
+                           globalSettingsGroup->sizePolicy().verticalPolicy() == QSizePolicy::Expanding);
+            expectTrue("settings header stays in place when expanded",
+                       settingsToggle->mapTo(&window, QPoint()).y() == collapsedToggleY);
+            if (inspector && settingsScrollArea) {
+                expectTrue("normal window keeps inspector fixed", inspector->verticalScrollBar()->maximum() == 0);
+                expectTrue("expanded settings scroll internally",
+                           settingsScrollArea->verticalScrollBar()->maximum() > 0);
+
+                window.setMinimumSize(300, 300);
+                window.resize(720, 300);
+                QApplication::processEvents();
+                expectTrue("short window enables inspector fallback scrolling",
+                           inspector->verticalScrollBar()->maximum() > 0);
+            }
         }
     }
 

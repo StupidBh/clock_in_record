@@ -265,7 +265,10 @@ void AttendanceMainWindow::setupUi()
     rightLayout->addWidget(separator);
 
     auto* const globalSettingsGroup = new CollapsibleGroupBox(u"全局工作时间设置"_s);
-    auto* const globalDetailsLayout = new QVBoxLayout();
+    globalSettingsGroup->setObjectName(u"globalSettingsGroup"_s);
+
+    auto* const globalDetailsWidget = new QWidget();
+    auto* const globalDetailsLayout = new QVBoxLayout(globalDetailsWidget);
     globalDetailsLayout->setContentsMargins(0, 0, 0, 0);
     globalDetailsLayout->setSpacing(10);
 
@@ -310,15 +313,29 @@ void AttendanceMainWindow::setupUi()
     m_globalSettingsErrorLabel->setVisible(false);
     globalDetailsLayout->addWidget(m_globalSettingsErrorLabel);
 
-    globalSettingsGroup->setContentLayout(globalDetailsLayout);
-    rightLayout->addWidget(globalSettingsGroup);
-    rightLayout->addStretch();
+    auto* const globalSettingsScrollArea = new QScrollArea();
+    globalSettingsScrollArea->setObjectName(u"globalSettingsScrollArea"_s);
+    globalSettingsScrollArea->setWidgetResizable(true);
+    globalSettingsScrollArea->setFrameShape(QFrame::NoFrame);
+    globalSettingsScrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    globalSettingsScrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    globalSettingsScrollArea->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Ignored);
+    globalSettingsScrollArea->setMinimumHeight(120);
+    globalSettingsScrollArea->setWidget(globalDetailsWidget);
+
+    auto* const globalSettingsContentLayout = new QVBoxLayout();
+    globalSettingsContentLayout->setContentsMargins(0, 0, 0, 0);
+    globalSettingsContentLayout->addWidget(globalSettingsScrollArea);
+    globalSettingsGroup->setContentLayout(globalSettingsContentLayout);
+    rightLayout->addWidget(globalSettingsGroup, 1);
+    rightLayout->setAlignment(globalSettingsGroup, Qt::AlignTop);
 
     auto* const inspectorScrollArea = new QScrollArea();
     inspectorScrollArea->setObjectName(u"inspectorScrollArea"_s);
     inspectorScrollArea->setWidgetResizable(true);
     inspectorScrollArea->setFrameShape(QFrame::NoFrame);
     inspectorScrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    inspectorScrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
     inspectorScrollArea->setMinimumWidth(280);
     inspectorScrollArea->setMaximumWidth(380);
     inspectorScrollArea->setWidget(rightWidget);
