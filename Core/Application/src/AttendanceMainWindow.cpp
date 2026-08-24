@@ -15,6 +15,7 @@
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QLocale>
+#include <QMap>
 #include <QMessageBox>
 #include <QPushButton>
 #include <QScrollArea>
@@ -30,6 +31,7 @@
 
 #include <array>
 #include <optional>
+#include <utility>
 #include <vector>
 
 using namespace Qt::StringLiterals;
@@ -49,6 +51,38 @@ namespace {
         }
 
         return MonthRange { .first = first, .last = first.addDays(first.daysInMonth() - 1) };
+    }
+
+    [[nodiscard]] std::optional<MonthRange>
+        calendarDisplayRange(const int year, const int month, const Qt::DayOfWeek firstDayOfWeek)
+    {
+        const auto monthDates = monthRange(year, month);
+        if (!monthDates) {
+            return std::nullopt;
+        }
+
+        const int leadingDays = (monthDates->first.dayOfWeek() - static_cast<int>(firstDayOfWeek) + 7) % 7;
+        const QDate first = monthDates->first.addDays(-leadingDays);
+        return MonthRange { .first = first, .last = first.addDays(41) };
+    }
+
+    [[nodiscard]] std::optional<QDate>
+        boundedMonth(const int year, const int month, const QDate& minimumDate, const QDate& maximumDate)
+    {
+        const QDate minimumMonth(minimumDate.year(), minimumDate.month(), 1);
+        const QDate maximumMonth(maximumDate.year(), maximumDate.month(), 1);
+        if (year < minimumMonth.year() || (year == minimumMonth.year() && month < minimumMonth.month())) {
+            return minimumMonth;
+        }
+        if (year > maximumMonth.year() || (year == maximumMonth.year() && month > maximumMonth.month())) {
+            return maximumMonth;
+        }
+
+        const QDate requestedMonth(year, month, 1);
+        if (!requestedMonth.isValid()) {
+            return std::nullopt;
+        }
+        return requestedMonth;
     }
 
     struct StatisticRow
@@ -171,8 +205,16 @@ void AttendanceMainWindow::onDateClicked(const QDate& date)
     }
 }
 
-void AttendanceMainWindow::onMonthChanged()
+void AttendanceMainWindow::onMonthChanged(const int year, const int month)
 {
+    const auto normalizedMonth = boundedMonth(year, month, m_calendar->minimumDate(), m_calendar->maximumDate());
+    if (!normalizedMonth) {
+        return;
+    }
+    if (normalizedMonth->year() != year || normalizedMonth->month() != month) {
+        m_calendar->setCurrentPage(normalizedMonth->year(), normalizedMonth->month());
+    }
+
     if (m_monthRefreshPending) {
         return;
     }
@@ -413,10 +455,6 @@ void AttendanceMainWindow::deleteAttendanceRecord(const QDate& date)
         return;
     }
 
-    // The calendar view can include dates from adjacent months, which are outside the monthly refresh range.
-    m_calendar->setDateTextFormat(date, QTextCharFormat());
-    m_calendar->removeAttendanceData(date);
-
     updateCalendarAppearance();
     updateMonthlyStatistics();
 }
@@ -523,7 +561,8 @@ bool AttendanceMainWindow::migrateLegacyRecordsToCurrentSchedule()
 
 void AttendanceMainWindow::updateCalendarAppearance()
 {
-    const auto dates = monthRange(m_calendar->yearShown(), m_calendar->monthShown());
+    const auto dates =
+        calendarDisplayRange(m_calendar->yearShown(), m_calendar->monthShown(), m_calendar->firstDayOfWeek());
     if (!dates) {
         return;
     }
@@ -531,6 +570,9 @@ void AttendanceMainWindow::updateCalendarAppearance()
     QSettings settings;
     const AttendanceRecord schedule = currentSchedule();
     const QPalette calendarPalette = m_calendar->palette();
+    QMap<QDate, CalendarAttendanceData> attendanceData;
+
+    m_calendar->setDateTextFormat(QDate(), QTextCharFormat());
 
     for (QDate date = dates->first; date <= dates->last; date = date.addDays(1)) {
         if (const auto record = AttendanceSettings::loadRecord(settings, date, schedule)) {
@@ -538,12 +580,16 @@ void AttendanceMainWindow::updateCalendarAppearance()
             format.setBackground(AttendanceTheme::attendanceBackground(calendarPalette, !record->needAverageCal));
             format.setForeground(AttendanceTheme::attendanceForeground(calendarPalette));
             m_calendar->setDateTextFormat(date, format);
-        }
-        else {
-            m_calendar->setDateTextFormat(date, QTextCharFormat());
-            m_calendar->removeAttendanceData(date);
+            attendanceData.insert(date,
+                                  {
+                                      .arrivalTime = record->arrivalTime.toString(u"hh:mm"_s),
+                                      .departureTime = record->departureTime.toString(u"hh:mm"_s),
+                                      .excludedFromTarget = !record->needAverageCal,
+                                  });
         }
     }
+
+    m_calendar->replaceAttendanceData(std::move(attendanceData));
 }
 
 void AttendanceMainWindow::updateMonthlyStatistics()
@@ -564,12 +610,6 @@ void AttendanceMainWindow::updateMonthlyStatistics()
         if (const auto storedRecord = AttendanceSettings::loadRecord(settings, date, scheduleFallback)) {
             const AttendanceRecord& record = *storedRecord;
             records.push_back(record);
-            m_calendar->setAttendanceData(date,
-                                          {
-                                              .arrivalTime = record.arrivalTime.toString(u"hh:mm"_s),
-                                              .departureTime = record.departureTime.toString(u"hh:mm"_s),
-                                              .excludedFromTarget = !record.needAverageCal,
-                                          });
         }
     }
 

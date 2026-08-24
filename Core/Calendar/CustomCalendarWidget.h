@@ -22,8 +22,7 @@ class CustomCalendarWidget final : public QCalendarWidget {
 public:
     explicit CustomCalendarWidget(QWidget* parent = nullptr);
 
-    void setAttendanceData(const QDate& date, CalendarAttendanceData attendanceData);
-    void removeAttendanceData(const QDate& date);
+    void replaceAttendanceData(QMap<QDate, CalendarAttendanceData> attendanceData);
     void clearDateSelection();
 
 protected:

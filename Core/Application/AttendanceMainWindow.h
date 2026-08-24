@@ -24,7 +24,7 @@ protected:
 
 private slots:
     void onDateClicked(const QDate& date);
-    void onMonthChanged();
+    void onMonthChanged(int year, int month);
     void onDeleteRequested(const QDate& date);
     void onGlobalSettingsChanged();
 

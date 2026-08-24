@@ -180,16 +180,10 @@ void CustomCalendarWidget::paintCell(QPainter* painter, const QRect& rect, const
     }
 }
 
-void CustomCalendarWidget::setAttendanceData(const QDate& date, CalendarAttendanceData attendanceData)
+void CustomCalendarWidget::replaceAttendanceData(QMap<QDate, CalendarAttendanceData> attendanceData)
 {
-    m_attendanceData.insert(date, std::move(attendanceData));
-    updateCell(date);
-}
-
-void CustomCalendarWidget::removeAttendanceData(const QDate& date)
-{
-    m_attendanceData.remove(date);
-    updateCell(date);
+    m_attendanceData = std::move(attendanceData);
+    updateCells();
 }
 
 void CustomCalendarWidget::clearDateSelection()

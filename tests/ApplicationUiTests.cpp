@@ -17,6 +17,7 @@
 #include <QSettings>
 #include <QSizePolicy>
 #include <QTemporaryDir>
+#include <QTextCharFormat>
 #include <QTimer>
 #include <QToolButton>
 
@@ -52,6 +53,8 @@ namespace {
                                  Qt::NoButton,
                                  Qt::NoModifier);
         QApplication::sendEvent(&menu, &releaseEvent);
+        action.trigger();
+        menu.close();
     }
 
     void expectTrue(const char* name, const bool value)
@@ -169,7 +172,8 @@ namespace {
                     window.show();
                     QApplication::processEvents();
                     const auto selectMonthFromMenu = [monthButton](QAction* const action) {
-                        QTimer::singleShot(0, monthButton->menu(), [menu = monthButton->menu(), action]() {
+                        QTimer::singleShot(10, monthButton->menu(), [menu = monthButton->menu(), action]() {
+                            menu->setActiveAction(action);
                             clickMenuAction(*menu, *action);
                         });
                         monthButton->showMenu();
@@ -210,6 +214,23 @@ namespace {
                     QApplication::processEvents();
                     expectTrue("coalesced month refresh uses latest page",
                                statisticsPeriod->text() == u"%1年%2月"_s.arg(today.year()).arg(today.month()));
+
+                    const QDate maximumDate = calendar->maximumDate();
+                    const bool invoked = QMetaObject::invokeMethod(&window,
+                                                                   "onMonthChanged",
+                                                                   Qt::DirectConnection,
+                                                                   Q_ARG(int, maximumDate.year() + 1),
+                                                                   Q_ARG(int, maximumDate.month()));
+                    expectTrue("out-of-range month change is handled", invoked);
+                    expectTrue("out-of-range year is clamped to maximum year",
+                               calendar->yearShown() == maximumDate.year());
+                    expectTrue("out-of-range year is clamped to maximum month",
+                               calendar->monthShown() == maximumDate.month());
+
+                    QApplication::processEvents();
+                    expectTrue("clamped month refreshes statistics",
+                               statisticsPeriod->text() ==
+                                   u"%1年%2月"_s.arg(maximumDate.year()).arg(maximumDate.month()));
                 }
             }
         }
@@ -319,6 +340,46 @@ namespace {
 
         settings.clear();
     }
+
+    void testCalendarPresentationSnapshot()
+    {
+        QSettings settings;
+        settings.clear();
+
+        CustomCalendarWidget calendarProbe;
+        const QDate currentMonth(QDate::currentDate().year(), QDate::currentDate().month(), 1);
+        const int leadingDays = (currentMonth.dayOfWeek() - static_cast<int>(calendarProbe.firstDayOfWeek()) + 7) % 7;
+        const QDate adjacentDate =
+            leadingDays > 0 ? currentMonth.addDays(-1) : currentMonth.addDays(currentMonth.daysInMonth());
+        const QDate distantDate = currentMonth.addMonths(3);
+
+        const AttendanceRecord schedule;
+        for (const QDate date : { currentMonth, adjacentDate, distantDate }) {
+            AttendanceRecord record = AttendanceSettings::createRecord(date, schedule);
+            record.arrivalTime = QTime(8, 30);
+            record.departureTime = QTime(18, 30);
+            expectTrue("calendar snapshot record save", AttendanceSettings::saveRecord(settings, date, record));
+        }
+
+        {
+            AttendanceMainWindow window;
+            auto* const calendar = window.findChild<CustomCalendarWidget*>();
+            expectTrue("calendar snapshot widget exists", calendar != nullptr);
+            if (calendar) {
+                expectFalse("current month record has a date format", calendar->dateTextFormat(currentMonth).isEmpty());
+                expectFalse("visible adjacent record has a date format",
+                            calendar->dateTextFormat(adjacentDate).isEmpty());
+
+                calendar->setCurrentPage(distantDate.year(), distantDate.month());
+                QApplication::processEvents();
+
+                expectTrue("old month date format is cleared", calendar->dateTextFormat(currentMonth).isEmpty());
+                expectFalse("new month record has a date format", calendar->dateTextFormat(distantDate).isEmpty());
+            }
+        }
+
+        settings.clear();
+    }
 } // namespace
 
 int main(int argc, char* argv[])
@@ -336,6 +397,7 @@ int main(int argc, char* argv[])
     QSettings::setPath(QSettings::IniFormat, QSettings::UserScope, settingsDirectory.path());
 
     testMainWindowStructure();
+    testCalendarPresentationSnapshot();
     testRecordActions();
 
     return failures == 0 ? 0 : 1;
