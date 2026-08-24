@@ -1,5 +1,9 @@
 <RCC>
     <qresource prefix="/">
         <file>Icons/logo.ico</file>
+        <file>Icons/spin-arrow-down-dark.svg</file>
+        <file>Icons/spin-arrow-down-light.svg</file>
+        <file>Icons/spin-arrow-up-dark.svg</file>
+        <file>Icons/spin-arrow-up-light.svg</file>
     </qresource>
 </RCC>

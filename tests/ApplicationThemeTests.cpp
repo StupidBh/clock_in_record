@@ -17,6 +17,16 @@ using namespace Qt::StringLiterals;
 namespace {
     int failures = 0;
 
+    void expectTrue(const char* name, const bool value)
+    {
+        if (value) {
+            return;
+        }
+
+        std::cerr << name << ": expected true\n";
+        failures++;
+    }
+
     [[nodiscard]] double linearChannel(const int channel)
     {
         const double value = channel / 255.0;
@@ -64,6 +74,12 @@ namespace {
     {
         AttendanceTheme::apply(application, colorScheme);
         const QPalette palette = application.palette();
+        const QString arrowVariant = colorScheme == Qt::ColorScheme::Dark ? u"dark"_s : u"light"_s;
+
+        expectTrue("theme selects matching spin up arrow",
+                   application.styleSheet().contains(u"spin-arrow-up-%1.svg"_s.arg(arrowVariant)));
+        expectTrue("theme selects matching spin down arrow",
+                   application.styleSheet().contains(u"spin-arrow-down-%1.svg"_s.arg(arrowVariant)));
 
         expectContrast("window text", palette.color(QPalette::WindowText), palette.color(QPalette::Window));
         expectContrast("surface text", palette.color(QPalette::Text), palette.color(QPalette::Base));

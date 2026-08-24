@@ -170,6 +170,10 @@ QScrollArea#inspectorScrollArea {
     background-color: @SURFACE@;
     border-left: 1px solid @BORDER@;
 }
+QScrollArea#globalSettingsScrollArea,
+QScrollArea#globalSettingsScrollArea > QWidget > QWidget {
+    background-color: transparent;
+}
 QFrame#inspectorSeparator {
     color: @BORDER@;
 }
@@ -235,6 +239,41 @@ QTimeEdit:focus, QDoubleSpinBox:focus {
 }
 QTimeEdit[validationError="true"] {
     border-color: @ERROR@;
+}
+QTimeEdit::up-button, QDoubleSpinBox::up-button {
+    subcontrol-origin: border;
+    subcontrol-position: top right;
+    width: 18px;
+    background-color: @RAISED_SURFACE@;
+    border-left: 1px solid @BORDER@;
+    border-bottom: 1px solid @BORDER@;
+    border-top-right-radius: 3px;
+}
+QTimeEdit::down-button, QDoubleSpinBox::down-button {
+    subcontrol-origin: border;
+    subcontrol-position: bottom right;
+    width: 18px;
+    background-color: @RAISED_SURFACE@;
+    border-left: 1px solid @BORDER@;
+    border-bottom-right-radius: 3px;
+}
+QTimeEdit::up-button:hover, QTimeEdit::down-button:hover,
+QDoubleSpinBox::up-button:hover, QDoubleSpinBox::down-button:hover {
+    background-color: @BORDER@;
+}
+QTimeEdit::up-button:pressed, QTimeEdit::down-button:pressed,
+QDoubleSpinBox::up-button:pressed, QDoubleSpinBox::down-button:pressed {
+    background-color: @SURFACE@;
+}
+QTimeEdit::up-arrow, QDoubleSpinBox::up-arrow {
+    image: url(@SPIN_UP_ARROW@);
+    width: 8px;
+    height: 5px;
+}
+QTimeEdit::down-arrow, QDoubleSpinBox::down-arrow {
+    image: url(@SPIN_DOWN_ARROW@);
+    width: 8px;
+    height: 5px;
 }
 QMenu {
     color: @TEXT@;
@@ -320,6 +359,11 @@ QSplitter::handle {
         for (const auto& [token, color] : replacements) {
             styleSheet.replace(token, color.name());
         }
+        const bool dark = colors.window.lightness() < 128;
+        styleSheet.replace(u"@SPIN_UP_ARROW@"_s,
+                           dark ? u":/Icons/spin-arrow-up-dark.svg"_s : u":/Icons/spin-arrow-up-light.svg"_s);
+        styleSheet.replace(u"@SPIN_DOWN_ARROW@"_s,
+                           dark ? u":/Icons/spin-arrow-down-dark.svg"_s : u":/Icons/spin-arrow-down-light.svg"_s);
         return styleSheet;
     }
 } // namespace
