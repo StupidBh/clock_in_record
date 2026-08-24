@@ -63,7 +63,8 @@ namespace {
 namespace WorkTimeCalculator {
     bool hasValidAttendanceRange(const AttendanceRecord& record)
     {
-        return record.arrivalTime.isValid() && record.departureTime.isValid() && record.arrivalTime < record.departureTime;
+        return record.arrivalTime.isValid() && record.departureTime.isValid() &&
+               record.arrivalTime < record.departureTime;
     }
 
     bool hasValidSchedule(const AttendanceRecord& record)
@@ -72,7 +73,8 @@ namespace WorkTimeCalculator {
             return start.isValid() && end.isValid() && start < end;
         };
 
-        if (!isValidRange(record.workStartTime, record.workEndTime) || !isValidRange(record.lunchBreakStart, record.lunchBreakEnd) ||
+        if (!isValidRange(record.workStartTime, record.workEndTime) ||
+            !isValidRange(record.lunchBreakStart, record.lunchBreakEnd) ||
             !isValidRange(record.dinnerBreakStart, record.dinnerBreakEnd)) {
             return false;
         }
@@ -102,17 +104,20 @@ namespace WorkTimeCalculator {
         const TimeRange attendanceRange { .start = record.arrivalTime, .end = record.departureTime };
         result.totalBreakMinutes = calculateBreakMinutes(record, attendanceRange);
         result.actualWorkMinutes = calculateWorkingMinutes(record, attendanceRange);
-        result.standardWorkMinutes = calculateWorkingMinutes(record, { .start = record.workStartTime, .end = record.workEndTime });
+        result.standardWorkMinutes =
+            calculateWorkingMinutes(record, { .start = record.workStartTime, .end = record.workEndTime });
 
         const QTime standardAttendanceStart = laterTime(record.arrivalTime, record.workStartTime);
         const QTime standardAttendanceEnd = earlierTime(record.departureTime, record.workEndTime);
-        const int standardAttendanceMinutes = calculateWorkingMinutes(record, { .start = standardAttendanceStart, .end = standardAttendanceEnd });
+        const int standardAttendanceMinutes =
+            calculateWorkingMinutes(record, { .start = standardAttendanceStart, .end = standardAttendanceEnd });
         result.missingWorkMinutes = result.standardWorkMinutes - standardAttendanceMinutes;
 
         const QTime earlyOvertimeEnd = earlierTime(record.departureTime, record.workStartTime);
         const QTime lateOvertimeStart = laterTime(record.arrivalTime, record.workEndTime);
-        result.overtimeMinutes = calculateWorkingMinutes(record, { .start = record.arrivalTime, .end = earlyOvertimeEnd }) +
-                                 calculateWorkingMinutes(record, { .start = lateOvertimeStart, .end = record.departureTime });
+        result.overtimeMinutes =
+            calculateWorkingMinutes(record, { .start = record.arrivalTime, .end = earlyOvertimeEnd }) +
+            calculateWorkingMinutes(record, { .start = lateOvertimeStart, .end = record.departureTime });
 
         return result;
     }
