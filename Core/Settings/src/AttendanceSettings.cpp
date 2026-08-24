@@ -4,6 +4,7 @@
 #include <QLatin1StringView>
 
 #include <array>
+#include <vector>
 
 using namespace Qt::StringLiterals;
 
@@ -95,6 +96,33 @@ namespace {
         for (const auto& [name, value] : ScheduleFields) {
             writeTime(settings, groupKey(group, name), schedule.*value);
         }
+    }
+
+    bool hasCompleteScheduleSnapshot(const QSettings& settings, const QString& group)
+    {
+        AttendanceRecord schedule;
+        for (const auto& [name, value] : ScheduleFields) {
+            const QString key = groupKey(group, name);
+            if (!settings.contains(key)) {
+                return false;
+            }
+
+            const QTime storedValue = parseTime(settings.value(key));
+            if (!storedValue.isValid()) {
+                return false;
+            }
+            schedule.*value = storedValue;
+        }
+
+        return WorkTimeCalculator::hasValidSchedule(schedule);
+    }
+
+    void writeRecordValues(QSettings& settings, const QString& group, const AttendanceRecord& record)
+    {
+        settings.setValue(groupKey(group, "needAverageCal"_L1), record.needAverageCal);
+        writeTime(settings, groupKey(group, "arrival"_L1), record.arrivalTime);
+        writeTime(settings, groupKey(group, "departure"_L1), record.departureTime);
+        saveSchedule(settings, group, record);
     }
 } // namespace
 
@@ -211,10 +239,7 @@ namespace AttendanceSettings {
 
         const QString group = recordGroup(date);
         settings.setValue(completionKey(group), false);
-        settings.setValue(groupKey(group, "needAverageCal"_L1), record.needAverageCal);
-        writeTime(settings, groupKey(group, "arrival"_L1), record.arrivalTime);
-        writeTime(settings, groupKey(group, "departure"_L1), record.departureTime);
-        saveSchedule(settings, group, record);
+        writeRecordValues(settings, group, record);
         if (!syncSuccessfully(settings)) {
             return false;
         }
@@ -239,11 +264,23 @@ namespace AttendanceSettings {
             return false;
         }
 
-        bool success = true;
+        struct PendingMigration
+        {
+            QString group;
+            AttendanceRecord record;
+        };
+
+        std::vector<PendingMigration> pendingMigrations;
+
         for (const QString& group : settings.childGroups()) {
             const QDate date = QDate::fromString(group, Qt::ISODate);
             if (!date.isValid() || !settings.contains(groupKey(group, "arrival"_L1)) ||
                 !settings.contains(groupKey(group, "departure"_L1))) {
+                continue;
+            }
+            if (settings.value(completionKey(group), false).toBool() &&
+                settings.contains(groupKey(group, "needAverageCal"_L1)) &&
+                hasCompleteScheduleSnapshot(settings, group)) {
                 continue;
             }
 
@@ -257,11 +294,24 @@ namespace AttendanceSettings {
                 continue;
             }
 
-            if (!saveRecord(settings, date, record)) {
-                success = false;
-            }
+            pendingMigrations.push_back({ .group = group, .record = record });
         }
 
-        return success;
+        if (pendingMigrations.empty()) {
+            return true;
+        }
+
+        for (const auto& migration : pendingMigrations) {
+            settings.setValue(completionKey(migration.group), false);
+            writeRecordValues(settings, migration.group, migration.record);
+        }
+        if (!syncSuccessfully(settings)) {
+            return false;
+        }
+
+        for (const auto& migration : pendingMigrations) {
+            settings.setValue(completionKey(migration.group), true);
+        }
+        return syncSuccessfully(settings);
     }
 } // namespace AttendanceSettings

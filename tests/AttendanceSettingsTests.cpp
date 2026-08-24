@@ -87,6 +87,36 @@ namespace {
         expectTrue("legacy migration",
                    AttendanceSettings::migrateLegacyRecords(settings, loadedGlobalSettings.schedule));
         expectTrue("legacy schedule migrated", settings.contains(legacyGroup + u"/workStart"_s));
+        expectTrue("legacy migration completion marker", settings.value(legacyGroup + u"/complete"_s).toBool());
+
+        const QDate interruptedDate(2026, 8, 12);
+        const QString interruptedGroup = interruptedDate.toString(Qt::ISODate);
+        settings.setValue(interruptedGroup + u"/arrival"_s, u"09:30"_s);
+        settings.setValue(interruptedGroup + u"/departure"_s, u"18:30"_s);
+        settings.setValue(interruptedGroup + u"/complete"_s, false);
+        settings.setValue(interruptedGroup + u"/workStart"_s, u"23:00"_s);
+        settings.setValue(interruptedGroup + u"/workEnd"_s, u"08:00"_s);
+
+        expectTrue("interrupted record migration",
+                   AttendanceSettings::migrateLegacyRecords(settings, loadedGlobalSettings.schedule));
+        expectTrue("interrupted record completion marker", settings.value(interruptedGroup + u"/complete"_s).toBool());
+        const auto migratedInterruptedRecord =
+            AttendanceSettings::loadRecord(settings, interruptedDate, loadedGlobalSettings.schedule);
+        expectTrue("interrupted record loads after migration", migratedInterruptedRecord.has_value());
+        if (migratedInterruptedRecord) {
+            expectTrue("interrupted record uses fallback schedule",
+                       migratedInterruptedRecord->workStartTime == loadedGlobalSettings.schedule.workStartTime);
+        }
+
+        AttendanceRecord changedSchedule = loadedGlobalSettings.schedule;
+        changedSchedule.workStartTime = QTime(7, 45);
+        expectTrue("repeat migration succeeds", AttendanceSettings::migrateLegacyRecords(settings, changedSchedule));
+        const auto migratedLegacyRecord = AttendanceSettings::loadRecord(settings, legacyDate, changedSchedule);
+        expectTrue("migrated legacy record still loads", migratedLegacyRecord.has_value());
+        if (migratedLegacyRecord) {
+            expectTrue("repeat migration preserves schedule snapshot",
+                       migratedLegacyRecord->workStartTime == loadedGlobalSettings.schedule.workStartTime);
+        }
 
         settings.clear();
     }
