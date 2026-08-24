@@ -73,10 +73,16 @@ namespace {
         auto* const todayButton = window.findChild<QPushButton*>(u"todayButton"_s);
         expectTrue("today button exists", todayButton != nullptr);
         if (calendar && todayButton) {
-            calendar->setCurrentPage(2025, 1);
+            const QDate today = QDate::currentDate();
+            const QDate previousMonth = today.addMonths(-1);
+            calendar->setCurrentPage(previousMonth.year(), previousMonth.month());
+            calendar->clearDateSelection();
             todayButton->click();
-            expectTrue("today button returns to current year", calendar->yearShown() == QDate::currentDate().year());
-            expectTrue("today button returns to current month", calendar->monthShown() == QDate::currentDate().month());
+            expectTrue("today button returns to current year", calendar->yearShown() == today.year());
+            expectTrue("today button returns to current month", calendar->monthShown() == today.month());
+            expectTrue("today button restores date selection",
+                       calendar->selectionMode() == QCalendarWidget::SingleSelection);
+            expectTrue("today button selects today", calendar->selectedDate() == today);
         }
 
         auto* const settingsStatus = window.findChild<QLabel*>(u"settingsStatusLabel"_s);

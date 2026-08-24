@@ -196,7 +196,7 @@ void AttendanceMainWindow::setupUi()
     titleLayout->addStretch();
     auto* const todayButton = new QPushButton(u"今天"_s);
     todayButton->setObjectName(u"todayButton"_s);
-    todayButton->setToolTip(u"返回当前月份"_s);
+    todayButton->setToolTip(u"返回并选中今天"_s);
     titleLayout->addWidget(todayButton);
     mainLayout->addLayout(titleLayout);
 
@@ -333,9 +333,8 @@ void AttendanceMainWindow::setupUi()
     connect(m_calendar, &QCalendarWidget::currentPageChanged, this, &AttendanceMainWindow::onMonthChanged);
     connect(m_calendar, &CustomCalendarWidget::deleteRequested, this, &AttendanceMainWindow::onDeleteRequested);
     connect(todayButton, &QPushButton::clicked, this, [this]() {
-        const QDate today = QDate::currentDate();
-        m_calendar->setCurrentPage(today.year(), today.month());
-        m_calendar->clearDateSelection();
+        m_calendar->setSelectionMode(QCalendarWidget::SingleSelection);
+        m_calendar->setSelectedDate(QDate::currentDate());
     });
 
     loadGlobalSettings();
