@@ -6,6 +6,7 @@
 #include <QAbstractButton>
 #include <QAction>
 #include <QApplication>
+#include <QDoubleSpinBox>
 #include <QGroupBox>
 #include <QLabel>
 #include <QMessageBox>
@@ -18,8 +19,10 @@
 #include <QSizePolicy>
 #include <QTemporaryDir>
 #include <QTextCharFormat>
+#include <QTimeEdit>
 #include <QTimer>
 #include <QToolButton>
+#include <QWheelEvent>
 
 #include <iostream>
 
@@ -55,6 +58,20 @@ namespace {
         QApplication::sendEvent(&menu, &releaseEvent);
         action.trigger();
         menu.close();
+    }
+
+    void sendWheelEvent(QWidget& widget, const int angleDeltaY)
+    {
+        const QPointF localPosition = widget.rect().center();
+        QWheelEvent event(localPosition,
+                          widget.mapToGlobal(localPosition.toPoint()),
+                          QPoint(),
+                          QPoint(0, angleDeltaY),
+                          Qt::NoButton,
+                          Qt::NoModifier,
+                          Qt::NoScrollPhase,
+                          false);
+        QApplication::sendEvent(&widget, &event);
     }
 
     bool clickWithoutUnexpectedMessageBox(QAbstractButton& button)
@@ -283,6 +300,37 @@ namespace {
                 expectTrue("normal window keeps inspector fixed", inspector->verticalScrollBar()->maximum() == 0);
                 expectTrue("expanded settings scroll internally",
                            settingsScrollArea->verticalScrollBar()->maximum() > 0);
+
+                auto* const workStartEdit = window.findChild<QTimeEdit*>(u"globalWorkStartEdit"_s);
+                auto* const overtimeTarget = window.findChild<QDoubleSpinBox*>(u"targetOvertimeHoursSpinBox"_s);
+                expectTrue("global time editor exists", workStartEdit != nullptr);
+                expectTrue("overtime target editor exists", overtimeTarget != nullptr);
+                if (workStartEdit && overtimeTarget) {
+                    expectTrue("time editor cannot gain focus from wheel",
+                               workStartEdit->focusPolicy() == Qt::StrongFocus);
+                    expectTrue("overtime editor cannot gain focus from wheel",
+                               overtimeTarget->focusPolicy() == Qt::StrongFocus);
+                    const QTime originalWorkStart = workStartEdit->time();
+                    const double originalOvertimeTarget = overtimeTarget->value();
+                    workStartEdit->clearFocus();
+                    overtimeTarget->clearFocus();
+                    settingsScrollArea->verticalScrollBar()->setValue(0);
+
+                    sendWheelEvent(*workStartEdit, -120);
+                    expectTrue("unfocused time editor ignores wheel", workStartEdit->time() == originalWorkStart);
+                    expectTrue("unfocused editor passes wheel to settings scroll area",
+                               settingsScrollArea->verticalScrollBar()->value() > 0);
+
+                    sendWheelEvent(*overtimeTarget, 120);
+                    expectTrue("unfocused overtime editor ignores wheel",
+                               overtimeTarget->value() == originalOvertimeTarget);
+
+                    workStartEdit->setFocus();
+                    workStartEdit->setCurrentSection(QDateTimeEdit::MinuteSection);
+                    sendWheelEvent(*workStartEdit, 120);
+                    expectTrue("focused time editor accepts wheel", workStartEdit->time() != originalWorkStart);
+                    workStartEdit->setTime(originalWorkStart);
+                }
 
                 window.setMinimumSize(300, 300);
                 window.resize(720, 300);

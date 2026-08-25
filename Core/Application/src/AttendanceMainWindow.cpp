@@ -28,6 +28,7 @@
 #include <QTimeEdit>
 #include <QTimer>
 #include <QVariant>
+#include <QWheelEvent>
 
 #include <array>
 #include <optional>
@@ -37,6 +38,58 @@
 using namespace Qt::StringLiterals;
 
 namespace {
+    void forwardWheelToScrollArea(QWidget& source, QWheelEvent& event)
+    {
+        for (QWidget* parent = source.parentWidget(); parent; parent = parent->parentWidget()) {
+            auto* const scrollArea = qobject_cast<QScrollArea*>(parent);
+            if (!scrollArea) {
+                continue;
+            }
+
+            QWidget* const viewport = scrollArea->viewport();
+            const QPointF viewportPosition = viewport->mapFromGlobal(event.globalPosition().toPoint());
+            QWheelEvent forwardedEvent(viewportPosition,
+                                       event.globalPosition(),
+                                       event.pixelDelta(),
+                                       event.angleDelta(),
+                                       event.buttons(),
+                                       event.modifiers(),
+                                       event.phase(),
+                                       event.inverted(),
+                                       event.source(),
+                                       event.pointingDevice());
+            QApplication::sendEvent(viewport, &forwardedEvent);
+            event.accept();
+            return;
+        }
+
+        event.ignore();
+    }
+
+    template<typename Editor>
+    class FocusWheelEditor final : public Editor {
+    public:
+        explicit FocusWheelEditor(QWidget* parent = nullptr) :
+            Editor(parent)
+        {
+            this->setFocusPolicy(Qt::StrongFocus);
+        }
+
+    protected:
+        void wheelEvent(QWheelEvent* event) override
+        {
+            if (this->hasFocus()) {
+                Editor::wheelEvent(event);
+                return;
+            }
+
+            forwardWheelToScrollArea(*this, *event);
+        }
+    };
+
+    using FocusWheelTimeEdit = FocusWheelEditor<QTimeEdit>;
+    using FocusWheelDoubleSpinBox = FocusWheelEditor<QDoubleSpinBox>;
+
     struct MonthRange
     {
         QDate first;
@@ -136,7 +189,7 @@ namespace {
     QTimeEdit* addTimeEditor(QGridLayout& layout, const QStringView label, const int row)
     {
         layout.addWidget(new QLabel(label.toString()), row, 0);
-        auto* const editor = new QTimeEdit();
+        auto* const editor = new FocusWheelTimeEdit();
         editor->setDisplayFormat(u"hh:mm"_s);
         layout.addWidget(editor, row, 1);
         return editor;
@@ -351,6 +404,7 @@ void AttendanceMainWindow::setupUi()
 
     const SettingsSection standardSection = createSettingsSection(u"标准工时"_s);
     m_globalWorkStartEdit = addTimeEditor(*standardSection.layout, u"上班时间"_s, 1);
+    m_globalWorkStartEdit->setObjectName(u"globalWorkStartEdit"_s);
     m_globalWorkEndEdit = addTimeEditor(*standardSection.layout, u"下班时间"_s, 2);
     globalDetailsLayout->addWidget(standardSection.widget);
 
@@ -369,7 +423,8 @@ void AttendanceMainWindow::setupUi()
 
     const SettingsSection overtimeSection = createSettingsSection(u"加班"_s);
     overtimeSection.layout->addWidget(new QLabel(u"日均目标"_s), 1, 0);
-    m_targetOvertimeHoursSpinBox = new QDoubleSpinBox();
+    m_targetOvertimeHoursSpinBox = new FocusWheelDoubleSpinBox();
+    m_targetOvertimeHoursSpinBox->setObjectName(u"targetOvertimeHoursSpinBox"_s);
     m_targetOvertimeHoursSpinBox->setRange(0.0, 24.0);
     m_targetOvertimeHoursSpinBox->setDecimals(1);
     m_targetOvertimeHoursSpinBox->setSingleStep(0.5);
