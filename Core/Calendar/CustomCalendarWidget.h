@@ -4,6 +4,7 @@
 #include <QMap>
 #include <QRect>
 #include <QString>
+#include <QTextCharFormat>
 
 class QPainter;
 class QTableView;
@@ -13,6 +14,8 @@ struct CalendarAttendanceData
     QString arrivalTime;
     QString departureTime;
     bool excludedFromTarget = false;
+
+    bool operator==(const CalendarAttendanceData&) const = default;
 };
 
 // 自定义日历控件，支持右键菜单
@@ -22,7 +25,8 @@ class CustomCalendarWidget final : public QCalendarWidget {
 public:
     explicit CustomCalendarWidget(QWidget* parent = nullptr);
 
-    void replaceAttendanceData(QMap<QDate, CalendarAttendanceData> attendanceData);
+    void replaceAttendanceData(QMap<QDate, CalendarAttendanceData> attendanceData,
+                               const QMap<QDate, QTextCharFormat>& dateFormats);
     void clearDateSelection();
 
 protected:

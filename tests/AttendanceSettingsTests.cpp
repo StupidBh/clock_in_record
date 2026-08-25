@@ -3,9 +3,11 @@
 
 #include <QApplication>
 #include <QCheckBox>
+#include <QEventLoop>
 #include <QLabel>
 #include <QSettings>
 #include <QTemporaryDir>
+#include <QTimer>
 
 #include <iostream>
 
@@ -105,12 +107,6 @@ namespace {
         const QString legacyGroup = legacyDate.toString(Qt::ISODate);
         settings.setValue(legacyGroup + u"/arrival"_s, u"09:00"_s);
         settings.setValue(legacyGroup + u"/departure"_s, u"18:00"_s);
-        expectTrue("legacy migration",
-                   AttendanceSettings::migrateLegacyRecords(settings, loadedGlobalSettings.schedule));
-        expectTrue("legacy schedule migrated",
-                   settings.contains(activeSlotGroup(settings, legacyGroup) + u"/workStart"_s));
-        expectTrue("legacy migration completion marker",
-                   settings.value(activeSlotGroup(settings, legacyGroup) + u"/complete"_s).toBool());
 
         const QDate interruptedDate(2026, 8, 12);
         const QString interruptedGroup = interruptedDate.toString(Qt::ISODate);
@@ -120,10 +116,15 @@ namespace {
         settings.setValue(interruptedGroup + u"/workStart"_s, u"23:00"_s);
         settings.setValue(interruptedGroup + u"/workEnd"_s, u"08:00"_s);
 
-        expectTrue("interrupted record migration",
+        expectTrue("legacy records migrate as one batch",
                    AttendanceSettings::migrateLegacyRecords(settings, loadedGlobalSettings.schedule));
+        expectTrue("legacy schedule migrated",
+                   settings.contains(activeSlotGroup(settings, legacyGroup) + u"/workStart"_s));
+        expectTrue("legacy migration completion marker",
+                   settings.value(activeSlotGroup(settings, legacyGroup) + u"/complete"_s).toBool());
         expectTrue("interrupted record completion marker",
                    settings.value(activeSlotGroup(settings, interruptedGroup) + u"/complete"_s).toBool());
+        expectEqual("record storage version", settings.value(u"metadata/storageVersion"_s).toInt(), 1);
         const auto migratedInterruptedRecord =
             AttendanceSettings::loadRecord(settings, interruptedDate, loadedGlobalSettings.schedule);
         expectTrue("interrupted record loads after migration", migratedInterruptedRecord.has_value());
@@ -212,6 +213,7 @@ namespace {
                     AttendanceSettings::loadRecord(settings, corruptLegacyDate, AttendanceRecord { }).has_value());
         expectFalse("corrupt committed legacy record is not silently migrated",
                     AttendanceSettings::migrateLegacyRecords(settings, AttendanceRecord { }));
+        expectFalse("failed migration has no storage version", settings.contains(u"metadata/storageVersion"_s));
         expectFalse("corrupt committed legacy record has no active slot",
                     settings.contains(corruptLegacyGroup + u"/activeSlot"_s));
         expectTrue("corrupt committed legacy value is preserved",
@@ -285,24 +287,24 @@ namespace {
         expectTrue("monthly overtime record save",
                    AttendanceSettings::saveRecord(settings, secondDate, overtimeRecord));
 
-        AttendanceMainWindow window;
-        auto* overtimeLabel = window.findChild<QLabel*>(u"statsOvertimeValueLabel"_s);
-        auto* missingWorkLabel = window.findChild<QLabel*>(u"statsMissingWorkValueLabel"_s);
-        auto* checkBox = window.findChild<QCheckBox*>(u"overtimeOffsetsMissingWorkCheckBox"_s);
-        expectTrue("monthly overtime value exists", overtimeLabel != nullptr);
-        expectTrue("monthly missing work value exists", missingWorkLabel != nullptr);
-        expectTrue("monthly offset checkbox exists", checkBox != nullptr);
-        if (!overtimeLabel || !missingWorkLabel || !checkBox) {
-            settings.clear();
-            return;
+        {
+            AttendanceMainWindow window;
+            auto* overtimeLabel = window.findChild<QLabel*>(u"statsOvertimeValueLabel"_s);
+            auto* missingWorkLabel = window.findChild<QLabel*>(u"statsMissingWorkValueLabel"_s);
+            auto* checkBox = window.findChild<QCheckBox*>(u"overtimeOffsetsMissingWorkCheckBox"_s);
+            expectTrue("monthly overtime value exists", overtimeLabel != nullptr);
+            expectTrue("monthly missing work value exists", missingWorkLabel != nullptr);
+            expectTrue("monthly offset checkbox exists", checkBox != nullptr);
+            if (overtimeLabel && missingWorkLabel && checkBox) {
+                expectTrue("cross-date offset remaining overtime", overtimeLabel->text() == u"3小时30分钟"_s);
+                expectTrue("cross-date offset clears missing work", missingWorkLabel->text() == u"0分钟"_s);
+
+                checkBox->setChecked(false);
+                QApplication::processEvents();
+                expectTrue("disabled cross-date offset keeps overtime", overtimeLabel->text() == u"4小时30分钟"_s);
+                expectTrue("disabled cross-date offset keeps missing work", missingWorkLabel->text() == u"1小时"_s);
+            }
         }
-
-        expectTrue("cross-date offset remaining overtime", overtimeLabel->text() == u"3小时30分钟"_s);
-        expectTrue("cross-date offset clears missing work", missingWorkLabel->text() == u"0分钟"_s);
-
-        checkBox->setChecked(false);
-        expectTrue("disabled cross-date offset keeps overtime", overtimeLabel->text() == u"4小时30分钟"_s);
-        expectTrue("disabled cross-date offset keeps missing work", missingWorkLabel->text() == u"1小时"_s);
 
         settings.clear();
     }
@@ -363,23 +365,41 @@ int main(int argc, char* argv[])
     {
         AttendanceMainWindow window;
         auto* checkBox = window.findChild<QCheckBox*>(u"overtimeOffsetsMissingWorkCheckBox"_s);
+        auto* saveTimer = window.findChild<QTimer*>(u"globalSettingsSaveTimer"_s);
         expectTrue("offset checkbox exists", checkBox != nullptr);
+        expectTrue("global settings save timer exists", saveTimer != nullptr);
         if (checkBox) {
             expectFalse("offset default", checkBox->isChecked());
             checkBox->setChecked(true);
+            expectTrue("global settings save is deferred", saveTimer && saveTimer->isActive());
+
+            QSettings immediateSettings;
+            expectFalse("deferred setting is not persisted immediately",
+                        AttendanceSettings::loadGlobalSettings(immediateSettings).overtimeOffsetsMissingWork);
+
+            QEventLoop saveWait;
+            QTimer::singleShot(400, &saveWait, &QEventLoop::quit);
+            saveWait.exec();
+            QSettings savedSettings;
+            expectTrue("debounced setting is persisted after timeout",
+                       AttendanceSettings::loadGlobalSettings(savedSettings).overtimeOffsetsMissingWork);
+
+            checkBox->setChecked(false);
+            expectTrue("second global settings save is deferred", saveTimer && saveTimer->isActive());
         }
     }
 
     QSettings settings;
     settings.sync();
-    expectTrue("offset setting persisted", AttendanceSettings::loadGlobalSettings(settings).overtimeOffsetsMissingWork);
+    expectFalse("pending setting is persisted on window destruction",
+                AttendanceSettings::loadGlobalSettings(settings).overtimeOffsetsMissingWork);
 
     {
         AttendanceMainWindow window;
         auto* checkBox = window.findChild<QCheckBox*>(u"overtimeOffsetsMissingWorkCheckBox"_s);
         expectTrue("persisted offset checkbox exists", checkBox != nullptr);
         if (checkBox) {
-            expectTrue("persisted offset value", checkBox->isChecked());
+            expectFalse("persisted offset value", checkBox->isChecked());
         }
     }
 

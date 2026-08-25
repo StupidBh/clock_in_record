@@ -1,12 +1,14 @@
 #pragma once
 #include "Attendance/AttendanceTypes.h"
 
+#include <QDate>
 #include <QMainWindow>
+#include <QMap>
 
 class QCheckBox;
-class QDate;
 class QDoubleSpinBox;
 class QLabel;
+class QTimer;
 class QTimeEdit;
 class CustomCalendarWidget;
 
@@ -16,6 +18,8 @@ class AttendanceMainWindow final : public QMainWindow {
 
 public:
     explicit AttendanceMainWindow(QWidget* parent = nullptr);
+    ~AttendanceMainWindow() override;
+
     void raiseAndActivate();
 
 protected:
@@ -32,9 +36,13 @@ private:
     void setupUi();
 
     void deleteAttendanceRecord(const QDate& date);
+    void reloadMonthData();
     void updateCalendarAppearance();
     void updateMonthlyStatistics();
+    void scheduleMonthlyStatisticsUpdate();
     void loadGlobalSettings();
+    void persistGlobalSettings();
+    void flushPendingGlobalSettings();
     [[nodiscard]] bool saveGlobalSettings();
     [[nodiscard]] bool migrateLegacyRecordsToCurrentSchedule();
     [[nodiscard]] AttendanceRecord currentSchedule() const;
@@ -61,5 +69,8 @@ private:
     QTimeEdit* m_globalMealSubsidyTimeEdit = nullptr;
     QCheckBox* m_overtimeOffsetsMissingWorkCheckBox = nullptr;
     QDoubleSpinBox* m_targetOvertimeHoursSpinBox = nullptr;
+    QTimer* m_globalSettingsSaveTimer = nullptr;
+    QMap<QDate, AttendanceRecord> m_visibleRecords;
     bool m_monthRefreshPending = false;
+    bool m_statisticsRefreshPending = false;
 };

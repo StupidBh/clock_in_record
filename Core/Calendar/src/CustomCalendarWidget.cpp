@@ -180,10 +180,27 @@ void CustomCalendarWidget::paintCell(QPainter* painter, const QRect& rect, const
     }
 }
 
-void CustomCalendarWidget::replaceAttendanceData(QMap<QDate, CalendarAttendanceData> attendanceData)
+void CustomCalendarWidget::replaceAttendanceData(QMap<QDate, CalendarAttendanceData> attendanceData,
+                                                 const QMap<QDate, QTextCharFormat>& dateFormats)
 {
+    if (m_attendanceData == attendanceData && dateTextFormat() == dateFormats) {
+        return;
+    }
+
+    const bool updatesWereEnabled = updatesEnabled();
+    if (updatesWereEnabled) {
+        setUpdatesEnabled(false);
+    }
+
+    setDateTextFormat(QDate(), QTextCharFormat());
+    for (auto it = dateFormats.constBegin(); it != dateFormats.constEnd(); ++it) {
+        setDateTextFormat(it.key(), it.value());
+    }
     m_attendanceData = std::move(attendanceData);
-    updateCells();
+
+    if (updatesWereEnabled) {
+        setUpdatesEnabled(true);
+    }
 }
 
 void CustomCalendarWidget::clearDateSelection()

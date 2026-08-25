@@ -4,6 +4,7 @@
 #include <QLatin1StringView>
 
 #include <array>
+#include <vector>
 
 using namespace Qt::StringLiterals;
 
@@ -11,7 +12,9 @@ namespace {
     constexpr auto ActiveSlotField = "activeSlot"_L1;
     constexpr auto CompletionField = "complete"_L1;
     constexpr auto SlotsGroup = "slots"_L1;
+    constexpr auto StorageVersionKey = "metadata/storageVersion"_L1;
     constexpr int SlotCount = 2;
+    constexpr int CurrentStorageVersion = 1;
 
     struct ScheduleField
     {
@@ -175,6 +178,24 @@ namespace {
         return std::nullopt;
     }
 
+    std::optional<int> findReadableRecordSlot(const QSettings& settings, const QString& group)
+    {
+        const std::optional<int> activeSlot = readActiveSlot(settings, group);
+        if (activeSlot && loadRecordSlot(settings, group, *activeSlot)) {
+            return activeSlot;
+        }
+
+        for (int slot = 0; slot < SlotCount; ++slot) {
+            if (activeSlot && slot == *activeSlot) {
+                continue;
+            }
+            if (loadRecordSlot(settings, group, slot)) {
+                return slot;
+            }
+        }
+        return std::nullopt;
+    }
+
     std::optional<AttendanceSettings::GlobalSettings>
         loadGlobalSlot(const QSettings& settings, const QString& group, const int slot)
     {
@@ -225,6 +246,16 @@ namespace {
     int inactiveSlot(const std::optional<int> activeSlot)
     {
         return activeSlot && *activeSlot == 0 ? 1 : 0;
+    }
+
+    int stageRecord(QSettings& settings, const QString& group, const AttendanceRecord& record)
+    {
+        const int targetSlot = inactiveSlot(findReadableRecordSlot(settings, group));
+        const QString targetGroup = slotGroup(group, targetSlot);
+        settings.remove(targetGroup);
+        writeRecordValues(settings, targetGroup, record);
+        settings.setValue(completionKey(targetGroup), true);
+        return targetSlot;
     }
 } // namespace
 
@@ -412,25 +443,7 @@ namespace AttendanceSettings {
         }
 
         const QString group = recordGroup(date);
-        std::optional<int> readableSlot;
-        const std::optional<int> activeSlot = readActiveSlot(settings, group);
-        if (activeSlot && loadRecordSlot(settings, group, *activeSlot)) {
-            readableSlot = activeSlot;
-        }
-        else {
-            for (int slot = 0; slot < SlotCount; ++slot) {
-                if (loadRecordSlot(settings, group, slot)) {
-                    readableSlot = slot;
-                    break;
-                }
-            }
-        }
-
-        const int targetSlot = inactiveSlot(readableSlot);
-        const QString targetGroup = slotGroup(group, targetSlot);
-        settings.remove(targetGroup);
-        writeRecordValues(settings, targetGroup, record);
-        settings.setValue(completionKey(targetGroup), true);
+        const int targetSlot = stageRecord(settings, group, record);
         if (!syncSuccessfully(settings) || !loadRecordSlot(settings, group, targetSlot)) {
             return false;
         }
@@ -455,7 +468,20 @@ namespace AttendanceSettings {
             return false;
         }
 
+        bool versionOk = false;
+        const int storedVersion = settings.value(StorageVersionKey).toInt(&versionOk);
+        if (versionOk && storedVersion >= CurrentStorageVersion) {
+            return true;
+        }
+
+        struct StagedRecord
+        {
+            QString group;
+            int slot;
+        };
+
         bool success = true;
+        std::vector<StagedRecord> stagedRecords;
         for (const QString& group : settings.childGroups()) {
             const QDate date = QDate::fromString(group, Qt::ISODate);
             if (!date.isValid() || settings.contains(activeSlotKey(group)) ||
@@ -490,10 +516,43 @@ namespace AttendanceSettings {
                 continue;
             }
 
-            if (!saveRecord(settings, date, record)) {
+            if (!WorkTimeCalculator::hasValidSchedule(record)) {
                 success = false;
+                continue;
+            }
+
+            stagedRecords.push_back({ .group = group, .slot = stageRecord(settings, group, record) });
+        }
+
+        if (!stagedRecords.empty()) {
+            if (!syncSuccessfully(settings)) {
+                return false;
+            }
+
+            std::vector<StagedRecord> verifiedRecords;
+            verifiedRecords.reserve(stagedRecords.size());
+            for (const StagedRecord& stagedRecord : stagedRecords) {
+                if (loadRecordSlot(settings, stagedRecord.group, stagedRecord.slot)) {
+                    verifiedRecords.push_back(stagedRecord);
+                }
+                else {
+                    success = false;
+                }
+            }
+
+            for (const StagedRecord& verifiedRecord : verifiedRecords) {
+                settings.setValue(activeSlotKey(verifiedRecord.group), verifiedRecord.slot);
+            }
+            if (!verifiedRecords.empty() && !syncSuccessfully(settings)) {
+                return false;
             }
         }
-        return success;
+
+        if (!success) {
+            return false;
+        }
+
+        settings.setValue(StorageVersionKey, CurrentStorageVersion);
+        return syncSuccessfully(settings);
     }
 } // namespace AttendanceSettings

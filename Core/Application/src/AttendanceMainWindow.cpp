@@ -177,6 +177,11 @@ AttendanceMainWindow::AttendanceMainWindow(QWidget* parent) :
     qApp->installEventFilter(this);
 }
 
+AttendanceMainWindow::~AttendanceMainWindow()
+{
+    flushPendingGlobalSettings();
+}
+
 void AttendanceMainWindow::raiseAndActivate()
 {
     show();
@@ -209,8 +214,7 @@ void AttendanceMainWindow::onDateClicked(const QDate& date)
 {
     TimeSettingDialog dialog(date, this);
     if (dialog.exec() == QDialog::Accepted) {
-        updateCalendarAppearance();
-        updateMonthlyStatistics();
+        reloadMonthData();
     }
 }
 
@@ -231,8 +235,7 @@ void AttendanceMainWindow::onMonthChanged(const int year, const int month)
     m_monthRefreshPending = true;
     QTimer::singleShot(0, this, [this]() {
         m_monthRefreshPending = false;
-        updateCalendarAppearance();
-        updateMonthlyStatistics();
+        reloadMonthData();
     });
 }
 
@@ -428,6 +431,12 @@ void AttendanceMainWindow::setupUi()
         m_calendar->setSelectedDate(QDate::currentDate());
     });
 
+    m_globalSettingsSaveTimer = new QTimer(this);
+    m_globalSettingsSaveTimer->setObjectName(u"globalSettingsSaveTimer"_s);
+    m_globalSettingsSaveTimer->setInterval(300);
+    m_globalSettingsSaveTimer->setSingleShot(true);
+    connect(m_globalSettingsSaveTimer, &QTimer::timeout, this, &AttendanceMainWindow::persistGlobalSettings);
+
     loadGlobalSettings();
     if (!migrateLegacyRecordsToCurrentSchedule()) {
         m_globalSettingsStatusLabel->setVisible(false);
@@ -453,8 +462,7 @@ void AttendanceMainWindow::setupUi()
             this,
             &AttendanceMainWindow::onGlobalSettingsChanged);
 
-    updateCalendarAppearance();
-    updateMonthlyStatistics();
+    reloadMonthData();
 }
 
 void AttendanceMainWindow::deleteAttendanceRecord(const QDate& date)
@@ -465,8 +473,7 @@ void AttendanceMainWindow::deleteAttendanceRecord(const QDate& date)
         return;
     }
 
-    updateCalendarAppearance();
-    updateMonthlyStatistics();
+    reloadMonthData();
 }
 
 void AttendanceMainWindow::loadGlobalSettings()
@@ -534,11 +541,19 @@ void AttendanceMainWindow::onGlobalSettingsChanged()
     m_globalSettingsErrorLabel->setVisible(!isValid);
     m_globalSettingsStatusLabel->setVisible(isValid);
     if (!isValid) {
+        m_globalSettingsSaveTimer->stop();
         m_globalSettingsErrorLabel->setText(u"结束时间必须晚于开始时间，且午餐与晚餐时间不能重叠。"_s);
         return;
     }
 
     m_globalSettingsErrorLabel->clear();
+    m_globalSettingsStatusLabel->setText(u"等待保存 · 仅影响新记录"_s);
+    m_globalSettingsSaveTimer->start();
+    scheduleMonthlyStatisticsUpdate();
+}
+
+void AttendanceMainWindow::persistGlobalSettings()
+{
     if (!saveGlobalSettings()) {
         m_globalSettingsStatusLabel->setVisible(false);
         m_globalSettingsErrorLabel->setVisible(true);
@@ -547,7 +562,16 @@ void AttendanceMainWindow::onGlobalSettingsChanged()
     }
 
     m_globalSettingsStatusLabel->setText(u"已保存 · 仅影响新记录"_s);
-    updateMonthlyStatistics();
+}
+
+void AttendanceMainWindow::flushPendingGlobalSettings()
+{
+    if (!m_globalSettingsSaveTimer || !m_globalSettingsSaveTimer->isActive()) {
+        return;
+    }
+
+    m_globalSettingsSaveTimer->stop();
+    persistGlobalSettings();
 }
 
 AttendanceRecord AttendanceMainWindow::currentSchedule() const
@@ -569,7 +593,7 @@ bool AttendanceMainWindow::migrateLegacyRecordsToCurrentSchedule()
     return AttendanceSettings::migrateLegacyRecords(settings, currentSchedule());
 }
 
-void AttendanceMainWindow::updateCalendarAppearance()
+void AttendanceMainWindow::reloadMonthData()
 {
     const auto dates = calendarDisplayRange(m_calendar->yearShown(),
                                             m_calendar->monthShown(),
@@ -582,27 +606,40 @@ void AttendanceMainWindow::updateCalendarAppearance()
 
     QSettings settings;
     const AttendanceRecord schedule = currentSchedule();
-    const QPalette calendarPalette = m_calendar->palette();
-    QMap<QDate, CalendarAttendanceData> attendanceData;
-
-    m_calendar->setDateTextFormat(QDate(), QTextCharFormat());
-
+    QMap<QDate, AttendanceRecord> visibleRecords;
     for (QDate date = dates->first; date <= dates->last; date = date.addDays(1)) {
         if (const auto record = AttendanceSettings::loadRecord(settings, date, schedule)) {
-            QTextCharFormat format;
-            format.setBackground(AttendanceTheme::attendanceBackground(calendarPalette, !record->needAverageCal));
-            format.setForeground(AttendanceTheme::attendanceForeground(calendarPalette));
-            m_calendar->setDateTextFormat(date, format);
-            attendanceData.insert(date,
-                                  {
-                                      .arrivalTime = record->arrivalTime.toString(u"hh:mm"_s),
-                                      .departureTime = record->departureTime.toString(u"hh:mm"_s),
-                                      .excludedFromTarget = !record->needAverageCal,
-                                  });
+            visibleRecords.insert(date, *record);
         }
     }
 
-    m_calendar->replaceAttendanceData(std::move(attendanceData));
+    m_visibleRecords = std::move(visibleRecords);
+    m_statisticsRefreshPending = false;
+    updateCalendarAppearance();
+    updateMonthlyStatistics();
+}
+
+void AttendanceMainWindow::updateCalendarAppearance()
+{
+    const QPalette calendarPalette = m_calendar->palette();
+    QMap<QDate, CalendarAttendanceData> attendanceData;
+    QMap<QDate, QTextCharFormat> dateFormats;
+
+    for (auto it = m_visibleRecords.constBegin(); it != m_visibleRecords.constEnd(); ++it) {
+        const AttendanceRecord& record = it.value();
+        QTextCharFormat format;
+        format.setBackground(AttendanceTheme::attendanceBackground(calendarPalette, !record.needAverageCal));
+        format.setForeground(AttendanceTheme::attendanceForeground(calendarPalette));
+        dateFormats.insert(it.key(), format);
+        attendanceData.insert(it.key(),
+                              {
+                                  .arrivalTime = record.arrivalTime.toString(u"hh:mm"_s),
+                                  .departureTime = record.departureTime.toString(u"hh:mm"_s),
+                                  .excludedFromTarget = !record.needAverageCal,
+                              });
+    }
+
+    m_calendar->replaceAttendanceData(std::move(attendanceData), dateFormats);
 }
 
 void AttendanceMainWindow::updateMonthlyStatistics()
@@ -612,17 +649,14 @@ void AttendanceMainWindow::updateMonthlyStatistics()
         return;
     }
 
-    QSettings settings;
-    const AttendanceRecord scheduleFallback = currentSchedule();
     const bool mealSubsidyEnabled = m_mealSubsidyEnabledCheckBox->isChecked();
     const bool overtimeOffsetsMissingWork = m_overtimeOffsetsMissingWorkCheckBox->isChecked();
 
     std::vector<AttendanceRecord> records;
     records.reserve(dates->last.day());
     for (QDate date = dates->first; date <= dates->last; date = date.addDays(1)) {
-        if (const auto storedRecord = AttendanceSettings::loadRecord(settings, date, scheduleFallback)) {
-            const AttendanceRecord& record = *storedRecord;
-            records.push_back(record);
+        if (const auto it = m_visibleRecords.constFind(date); it != m_visibleRecords.constEnd()) {
+            records.push_back(it.value());
         }
     }
 
@@ -669,4 +703,21 @@ void AttendanceMainWindow::updateMonthlyStatistics()
     m_statsMealLabel->setVisible(mealSubsidyEnabled);
     m_statsMealValueLabel->setVisible(mealSubsidyEnabled);
     m_statsMealValueLabel->setText(u"%1次"_s.arg(statistics.mealSubsidyCount));
+}
+
+void AttendanceMainWindow::scheduleMonthlyStatisticsUpdate()
+{
+    if (m_statisticsRefreshPending) {
+        return;
+    }
+
+    m_statisticsRefreshPending = true;
+    QTimer::singleShot(0, this, [this]() {
+        if (!m_statisticsRefreshPending) {
+            return;
+        }
+
+        m_statisticsRefreshPending = false;
+        updateMonthlyStatistics();
+    });
 }
