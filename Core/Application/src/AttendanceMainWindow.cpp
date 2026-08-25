@@ -53,8 +53,11 @@ namespace {
         return MonthRange { .first = first, .last = first.addDays(first.daysInMonth() - 1) };
     }
 
-    [[nodiscard]] std::optional<MonthRange>
-        calendarDisplayRange(const int year, const int month, const Qt::DayOfWeek firstDayOfWeek)
+    [[nodiscard]] std::optional<MonthRange> calendarDisplayRange(const int year,
+                                                                 const int month,
+                                                                 const Qt::DayOfWeek firstDayOfWeek,
+                                                                 const QDate& minimumDate,
+                                                                 const QDate& maximumDate)
     {
         const auto monthDates = monthRange(year, month);
         if (!monthDates) {
@@ -62,8 +65,14 @@ namespace {
         }
 
         const int leadingDays = (monthDates->first.dayOfWeek() - static_cast<int>(firstDayOfWeek) + 7) % 7;
-        const QDate first = monthDates->first.addDays(-leadingDays);
-        return MonthRange { .first = first, .last = first.addDays(41) };
+        const QDate displayFirst = monthDates->first.addDays(-leadingDays);
+        const QDate first = displayFirst < minimumDate ? minimumDate : displayFirst;
+        if (first > maximumDate) {
+            return std::nullopt;
+        }
+
+        const QDate last = first.daysTo(maximumDate) >= 41 ? first.addDays(41) : maximumDate;
+        return MonthRange { .first = first, .last = last };
     }
 
     [[nodiscard]] std::optional<QDate>
@@ -562,8 +571,11 @@ bool AttendanceMainWindow::migrateLegacyRecordsToCurrentSchedule()
 
 void AttendanceMainWindow::updateCalendarAppearance()
 {
-    const auto dates =
-        calendarDisplayRange(m_calendar->yearShown(), m_calendar->monthShown(), m_calendar->firstDayOfWeek());
+    const auto dates = calendarDisplayRange(m_calendar->yearShown(),
+                                            m_calendar->monthShown(),
+                                            m_calendar->firstDayOfWeek(),
+                                            m_calendar->minimumDate(),
+                                            m_calendar->maximumDate());
     if (!dates) {
         return;
     }

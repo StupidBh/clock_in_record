@@ -352,9 +352,10 @@ namespace {
         const QDate adjacentDate =
             leadingDays > 0 ? currentMonth.addDays(-1) : currentMonth.addDays(currentMonth.daysInMonth());
         const QDate distantDate = currentMonth.addMonths(3);
+        const QDate maximumDate = calendarProbe.maximumDate();
 
         const AttendanceRecord schedule;
-        for (const QDate date : { currentMonth, adjacentDate, distantDate }) {
+        for (const QDate date : { currentMonth, adjacentDate, distantDate, maximumDate }) {
             AttendanceRecord record = AttendanceSettings::createRecord(date, schedule);
             record.arrivalTime = QTime(8, 30);
             record.departureTime = QTime(18, 30);
@@ -375,6 +376,12 @@ namespace {
 
                 expectTrue("old month date format is cleared", calendar->dateTextFormat(currentMonth).isEmpty());
                 expectFalse("new month record has a date format", calendar->dateTextFormat(distantDate).isEmpty());
+
+                calendar->setCurrentPage(maximumDate.year(), maximumDate.month());
+                QApplication::processEvents();
+
+                expectTrue("previous month date format is cleared", calendar->dateTextFormat(distantDate).isEmpty());
+                expectFalse("maximum date record has a date format", calendar->dateTextFormat(maximumDate).isEmpty());
             }
         }
 
