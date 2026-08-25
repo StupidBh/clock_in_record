@@ -57,6 +57,26 @@ namespace {
         menu.close();
     }
 
+    bool clickWithoutUnexpectedMessageBox(QAbstractButton& button)
+    {
+        bool messageBoxShown = false;
+        QTimer messageBoxGuard;
+        messageBoxGuard.setSingleShot(true);
+        QObject::connect(&messageBoxGuard, &QTimer::timeout, &button, [&messageBoxShown]() {
+            for (QWidget* const widget : QApplication::topLevelWidgets()) {
+                if (auto* const messageBox = qobject_cast<QMessageBox*>(widget)) {
+                    messageBoxShown = true;
+                    messageBox->reject();
+                }
+            }
+        });
+
+        messageBoxGuard.start(100);
+        button.click();
+        messageBoxGuard.stop();
+        return !messageBoxShown;
+    }
+
     void expectTrue(const char* name, const bool value)
     {
         if (value) {
@@ -290,7 +310,7 @@ namespace {
         expectTrue("save button exists", saveButton != nullptr);
         if (saveButton) {
             expectTrue("save button avoids legacy icon", saveButton->icon().isNull());
-            saveButton->click();
+            expectTrue("dialog save avoids unexpected message box", clickWithoutUnexpectedMessageBox(*saveButton));
             expectTrue("dialog save stores record", AttendanceSettings::hasRecord(settings, date));
         }
 
@@ -325,16 +345,28 @@ namespace {
                 expectTrue("delete action stays left of cancel", existingRecordDeleteButton->x() < cancelButton->x());
                 expectTrue("save action stays rightmost", cancelButton->x() < existingSaveButton->x());
             }
-            QTimer::singleShot(50, []() {
-                for (QWidget* const widget : QApplication::topLevelWidgets()) {
-                    if (auto* const messageBox = qobject_cast<QMessageBox*>(widget)) {
-                        if (QAbstractButton* const yesButton = messageBox->button(QMessageBox::Yes)) {
-                            yesButton->click();
-                        }
-                    }
-                }
-            });
+            bool unexpectedDeleteMessage = false;
+            QTimer deleteMessageGuard;
+            QObject::connect(&deleteMessageGuard,
+                             &QTimer::timeout,
+                             existingRecordDeleteButton,
+                             [&unexpectedDeleteMessage]() {
+                                 for (QWidget* const widget : QApplication::topLevelWidgets()) {
+                                     if (auto* const messageBox = qobject_cast<QMessageBox*>(widget)) {
+                                         if (QAbstractButton* const yesButton = messageBox->button(QMessageBox::Yes)) {
+                                             yesButton->click();
+                                         }
+                                         else {
+                                             unexpectedDeleteMessage = true;
+                                             messageBox->reject();
+                                         }
+                                     }
+                                 }
+                             });
+            deleteMessageGuard.start(50);
             existingRecordDeleteButton->click();
+            deleteMessageGuard.stop();
+            expectFalse("dialog delete avoids unexpected message box", unexpectedDeleteMessage);
             expectFalse("dialog delete removes record", AttendanceSettings::hasRecord(settings, date));
         }
 
