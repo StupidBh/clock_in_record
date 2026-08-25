@@ -72,7 +72,7 @@ Windows 构建在 Qt 包提供 `windeployqt` 时，会在构建后自动把运�
 
 ```text
 Core/
-├─ Application/   # 程序入口、主窗口和主题
+├─ Application/   # 程序入口、主窗口、单实例和主题
 ├─ Attendance/    # 考勤数据结构、工时计算和格式化
 ├─ Calendar/      # 月历控件及日期操作
 ├─ Settings/      # 全局设置和日期记录对话框
