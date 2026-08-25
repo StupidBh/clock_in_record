@@ -309,6 +309,7 @@ void AttendanceMainWindow::setupUi()
     m_statsWorkDaysValueLabel->setObjectName(u"statsWorkDaysValueLabel"_s);
     const StatisticRow overtimeRow = addStatisticRow(*statisticsLayout, u"日均加班"_s, 1);
     m_statsOvertimeLabel = overtimeRow.label;
+    m_statsOvertimeLabel->setObjectName(u"statsOvertimeLabel"_s);
     m_statsOvertimeValueLabel = overtimeRow.value;
     m_statsOvertimeValueLabel->setObjectName(u"statsOvertimeValueLabel"_s);
     const StatisticRow targetRow = addStatisticRow(*statisticsLayout, u"距目标"_s, 2);
@@ -624,18 +625,14 @@ void AttendanceMainWindow::updateMonthlyStatistics()
     const bool hasOvertimeTarget = targetMinutesPerDay > 0;
     m_statsTargetLabel->setVisible(hasOvertimeTarget);
     m_statsTargetValueLabel->setVisible(hasOvertimeTarget);
-    if (hasOvertimeTarget) {
+    if (hasOvertimeTarget && statistics.workDays > 0) {
         m_statsOvertimeLabel->setText(u"日均加班"_s);
         const int averageOvertimeMinutes =
-            statistics.workDays > 0 ? qRound(statistics.overtimeMinutes / static_cast<double>(statistics.workDays)) : 0;
+            qRound(statistics.overtimeMinutes / static_cast<double>(statistics.workDays));
         m_statsOvertimeValueLabel->setText(AttendanceFormatter::formatMinutes(averageOvertimeMinutes));
 
         const int targetDifference = statistics.overtimeMinutes - targetMinutesPerDay * statistics.workDays;
-        if (statistics.workDays == 0) {
-            m_statsTargetValueLabel->setText(u"--"_s);
-            setStyleProperty(*m_statsTargetValueLabel, "tone", u"neutral"_s);
-        }
-        else if (targetDifference < 0) {
+        if (targetDifference < 0) {
             m_statsTargetValueLabel->setText(u"还差 %1"_s.arg(AttendanceFormatter::formatMinutes(-targetDifference)));
             setStyleProperty(*m_statsTargetValueLabel, "tone", u"warning"_s);
         }
@@ -651,6 +648,10 @@ void AttendanceMainWindow::updateMonthlyStatistics()
     else {
         m_statsOvertimeLabel->setText(u"总加班"_s);
         m_statsOvertimeValueLabel->setText(AttendanceFormatter::formatMinutes(statistics.overtimeMinutes));
+        if (hasOvertimeTarget) {
+            m_statsTargetValueLabel->setText(u"--"_s);
+            setStyleProperty(*m_statsTargetValueLabel, "tone", u"neutral"_s);
+        }
     }
 
     m_statsMealLabel->setVisible(mealSubsidyEnabled);

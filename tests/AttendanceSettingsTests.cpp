@@ -306,6 +306,40 @@ namespace {
 
         settings.clear();
     }
+
+    void testMonthlyOvertimeWithoutTargetWorkDays()
+    {
+        QSettings settings;
+        settings.clear();
+
+        AttendanceSettings::GlobalSettings globalSettings;
+        expectTrue("zero target workdays global settings save",
+                   AttendanceSettings::saveGlobalSettings(settings, globalSettings));
+
+        const QDate date(QDate::currentDate().year(), QDate::currentDate().month(), 1);
+        AttendanceRecord record = AttendanceSettings::createRecord(date, globalSettings.schedule);
+        record.needAverageCal = false;
+        record.departureTime = QTime(23, 0);
+        expectTrue("excluded overtime record save", AttendanceSettings::saveRecord(settings, date, record));
+
+        AttendanceMainWindow window;
+        auto* const workDaysValue = window.findChild<QLabel*>(u"statsWorkDaysValueLabel"_s);
+        auto* const overtimeLabel = window.findChild<QLabel*>(u"statsOvertimeLabel"_s);
+        auto* const overtimeValue = window.findChild<QLabel*>(u"statsOvertimeValueLabel"_s);
+        auto* const targetValue = window.findChild<QLabel*>(u"statsTargetValueLabel"_s);
+        expectTrue("zero target workdays value exists", workDaysValue != nullptr);
+        expectTrue("zero target workdays overtime label exists", overtimeLabel != nullptr);
+        expectTrue("zero target workdays overtime value exists", overtimeValue != nullptr);
+        expectTrue("zero target workdays target value exists", targetValue != nullptr);
+        if (workDaysValue && overtimeLabel && overtimeValue && targetValue) {
+            expectTrue("zero target workdays count", workDaysValue->text() == u"0天"_s);
+            expectTrue("zero target workdays shows total label", overtimeLabel->text() == u"总加班"_s);
+            expectTrue("zero target workdays preserves total overtime", overtimeValue->text() == u"4小时30分钟"_s);
+            expectTrue("zero target workdays has no target difference", targetValue->text() == u"--"_s);
+        }
+
+        settings.clear();
+    }
 } // namespace
 
 int main(int argc, char* argv[])
@@ -350,6 +384,7 @@ int main(int argc, char* argv[])
     }
 
     testMonthlyOffsetAcrossDates();
+    testMonthlyOvertimeWithoutTargetWorkDays();
 
     return failures == 0 ? 0 : 1;
 }
