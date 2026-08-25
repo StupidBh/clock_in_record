@@ -14,6 +14,24 @@ using namespace Qt::StringLiterals;
 namespace {
     int failures = 0;
 
+    QString activeSlotGroup(const QSettings& settings, const QString& group)
+    {
+        bool ok = false;
+        const int slot = settings.value(group + u"/activeSlot"_s).toInt(&ok);
+        return ok ? u"%1/slots/%2"_s.arg(group).arg(slot) : QString();
+    }
+
+    void writeLegacySchedule(QSettings& settings, const QString& group, const AttendanceRecord& schedule)
+    {
+        settings.setValue(group + u"/workStart"_s, schedule.workStartTime.toString(u"hh:mm"_s));
+        settings.setValue(group + u"/workEnd"_s, schedule.workEndTime.toString(u"hh:mm"_s));
+        settings.setValue(group + u"/lunchStart"_s, schedule.lunchBreakStart.toString(u"hh:mm"_s));
+        settings.setValue(group + u"/lunchEnd"_s, schedule.lunchBreakEnd.toString(u"hh:mm"_s));
+        settings.setValue(group + u"/dinnerStart"_s, schedule.dinnerBreakStart.toString(u"hh:mm"_s));
+        settings.setValue(group + u"/dinnerEnd"_s, schedule.dinnerBreakEnd.toString(u"hh:mm"_s));
+        settings.setValue(group + u"/mealSubsidy"_s, schedule.mealSubsidyTime.toString(u"hh:mm"_s));
+    }
+
     void expectTrue(const char* name, bool value)
     {
         if (value) {
@@ -67,7 +85,10 @@ namespace {
         record.arrivalTime = QTime(8, 15);
         record.departureTime = QTime(19, 30);
         expectTrue("record save", AttendanceSettings::saveRecord(settings, weekday, record));
-        expectTrue("record completion marker", settings.value(weekday.toString(Qt::ISODate) + u"/complete"_s).toBool());
+        const QString weekdayGroup = weekday.toString(Qt::ISODate);
+        expectTrue("record active slot", !activeSlotGroup(settings, weekdayGroup).isEmpty());
+        expectTrue("record completion marker",
+                   settings.value(activeSlotGroup(settings, weekdayGroup) + u"/complete"_s).toBool());
 
         const auto loadedRecord = AttendanceSettings::loadRecord(settings, weekday, loadedGlobalSettings.schedule);
         expectTrue("record round trip exists", loadedRecord.has_value());
@@ -86,8 +107,10 @@ namespace {
         settings.setValue(legacyGroup + u"/departure"_s, u"18:00"_s);
         expectTrue("legacy migration",
                    AttendanceSettings::migrateLegacyRecords(settings, loadedGlobalSettings.schedule));
-        expectTrue("legacy schedule migrated", settings.contains(legacyGroup + u"/workStart"_s));
-        expectTrue("legacy migration completion marker", settings.value(legacyGroup + u"/complete"_s).toBool());
+        expectTrue("legacy schedule migrated",
+                   settings.contains(activeSlotGroup(settings, legacyGroup) + u"/workStart"_s));
+        expectTrue("legacy migration completion marker",
+                   settings.value(activeSlotGroup(settings, legacyGroup) + u"/complete"_s).toBool());
 
         const QDate interruptedDate(2026, 8, 12);
         const QString interruptedGroup = interruptedDate.toString(Qt::ISODate);
@@ -99,7 +122,8 @@ namespace {
 
         expectTrue("interrupted record migration",
                    AttendanceSettings::migrateLegacyRecords(settings, loadedGlobalSettings.schedule));
-        expectTrue("interrupted record completion marker", settings.value(interruptedGroup + u"/complete"_s).toBool());
+        expectTrue("interrupted record completion marker",
+                   settings.value(activeSlotGroup(settings, interruptedGroup) + u"/complete"_s).toBool());
         const auto migratedInterruptedRecord =
             AttendanceSettings::loadRecord(settings, interruptedDate, loadedGlobalSettings.schedule);
         expectTrue("interrupted record loads after migration", migratedInterruptedRecord.has_value());
@@ -117,6 +141,81 @@ namespace {
             expectTrue("repeat migration preserves schedule snapshot",
                        migratedLegacyRecord->workStartTime == loadedGlobalSettings.schedule.workStartTime);
         }
+
+        settings.clear();
+    }
+
+    void testVersionedRecoveryAndStrictSnapshots()
+    {
+        QSettings settings;
+        settings.clear();
+
+        AttendanceSettings::GlobalSettings firstGlobalSettings;
+        firstGlobalSettings.schedule.workStartTime = QTime(8, 30);
+        expectTrue("first versioned global save",
+                   AttendanceSettings::saveGlobalSettings(settings, firstGlobalSettings));
+
+        AttendanceSettings::GlobalSettings secondGlobalSettings = firstGlobalSettings;
+        secondGlobalSettings.schedule.workStartTime = QTime(8, 0);
+        expectTrue("second versioned global save",
+                   AttendanceSettings::saveGlobalSettings(settings, secondGlobalSettings));
+
+        const QString activeGlobalGroup = activeSlotGroup(settings, u"settings"_s);
+        settings.setValue(activeGlobalGroup + u"/workStart"_s, u"invalid"_s);
+        settings.sync();
+
+        const AttendanceSettings::GlobalSettings recoveredGlobalSettings =
+            AttendanceSettings::loadGlobalSettings(settings);
+        expectTrue("corrupt global slot requires repair", recoveredGlobalSettings.requiresRepair);
+        expectTrue("corrupt global slot recovers previous schedule",
+                   recoveredGlobalSettings.schedule.workStartTime == firstGlobalSettings.schedule.workStartTime);
+
+        const QDate recordDate(2026, 8, 17);
+        AttendanceRecord firstRecord = AttendanceSettings::createRecord(recordDate, firstGlobalSettings.schedule);
+        firstRecord.arrivalTime = QTime(8, 0);
+        expectTrue("first versioned record save", AttendanceSettings::saveRecord(settings, recordDate, firstRecord));
+
+        AttendanceRecord secondRecord = firstRecord;
+        secondRecord.arrivalTime = QTime(8, 15);
+        expectTrue("second versioned record save", AttendanceSettings::saveRecord(settings, recordDate, secondRecord));
+
+        const QString recordGroup = recordDate.toString(Qt::ISODate);
+        settings.setValue(activeSlotGroup(settings, recordGroup) + u"/workStart"_s, u"invalid"_s);
+        settings.sync();
+
+        AttendanceRecord unrelatedFallback;
+        unrelatedFallback.workStartTime = QTime(7, 0);
+        const auto recoveredRecord = AttendanceSettings::loadRecord(settings, recordDate, unrelatedFallback);
+        expectTrue("corrupt record slot recovers previous record", recoveredRecord.has_value());
+        if (recoveredRecord) {
+            expectTrue("record recovery preserves previous arrival",
+                       recoveredRecord->arrivalTime == firstRecord.arrivalTime);
+            expectTrue("record recovery avoids current fallback",
+                       recoveredRecord->workStartTime == firstRecord.workStartTime);
+        }
+
+        AttendanceRecord invalidMealSubsidyRecord;
+        invalidMealSubsidyRecord.mealSubsidyTime = QTime();
+        expectFalse("invalid meal subsidy time cannot save",
+                    AttendanceSettings::saveRecord(settings, QDate(2026, 8, 18), invalidMealSubsidyRecord));
+
+        const QDate corruptLegacyDate(2026, 8, 19);
+        const QString corruptLegacyGroup = corruptLegacyDate.toString(Qt::ISODate);
+        settings.setValue(corruptLegacyGroup + u"/arrival"_s, u"09:00"_s);
+        settings.setValue(corruptLegacyGroup + u"/departure"_s, u"18:00"_s);
+        settings.setValue(corruptLegacyGroup + u"/needAverageCal"_s, true);
+        settings.setValue(corruptLegacyGroup + u"/complete"_s, true);
+        writeLegacySchedule(settings, corruptLegacyGroup, AttendanceRecord { });
+        settings.setValue(corruptLegacyGroup + u"/workStart"_s, u"invalid"_s);
+
+        expectFalse("corrupt committed legacy record does not load",
+                    AttendanceSettings::loadRecord(settings, corruptLegacyDate, AttendanceRecord { }).has_value());
+        expectFalse("corrupt committed legacy record is not silently migrated",
+                    AttendanceSettings::migrateLegacyRecords(settings, AttendanceRecord { }));
+        expectFalse("corrupt committed legacy record has no active slot",
+                    settings.contains(corruptLegacyGroup + u"/activeSlot"_s));
+        expectTrue("corrupt committed legacy value is preserved",
+                   settings.value(corruptLegacyGroup + u"/workStart"_s).toString() == u"invalid"_s);
 
         settings.clear();
     }
@@ -224,6 +323,7 @@ int main(int argc, char* argv[])
     QSettings::setPath(QSettings::IniFormat, QSettings::UserScope, settingsDirectory.path());
 
     testSettingsStorage();
+    testVersionedRecoveryAndStrictSnapshots();
     testIncompleteAndInvalidRecords();
 
     {
@@ -238,7 +338,7 @@ int main(int argc, char* argv[])
 
     QSettings settings;
     settings.sync();
-    expectTrue("offset setting persisted", settings.value(u"settings/overtimeOffsetsMissingWork"_s, false).toBool());
+    expectTrue("offset setting persisted", AttendanceSettings::loadGlobalSettings(settings).overtimeOffsetsMissingWork);
 
     {
         AttendanceMainWindow window;

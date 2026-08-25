@@ -73,7 +73,7 @@ namespace WorkTimeCalculator {
             return start.isValid() && end.isValid() && start < end;
         };
 
-        if (!isValidRange(record.workStartTime, record.workEndTime) ||
+        if (!record.mealSubsidyTime.isValid() || !isValidRange(record.workStartTime, record.workEndTime) ||
             !isValidRange(record.lunchBreakStart, record.lunchBreakEnd) ||
             !isValidRange(record.dinnerBreakStart, record.dinnerBreakEnd)) {
             return false;
