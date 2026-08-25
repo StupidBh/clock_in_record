@@ -4,6 +4,7 @@ add_library(Attendance::Core ALIAS attendance_core)
 target_sources(attendance_core
         PRIVATE
         Application/src/AttendanceMainWindow.cpp
+        Application/src/SingleInstance.cpp
         Application/src/Theme.cpp
         Attendance/src/AttendanceFormatter.cpp
         Attendance/src/MonthlyStatisticsCalculator.cpp
@@ -18,6 +19,7 @@ target_sources(attendance_core
         BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}"
         FILES
         Application/AttendanceMainWindow.h
+        Application/SingleInstance.h
         Application/Theme.h
         Attendance/AttendanceFormatter.h
         Attendance/AttendanceTypes.h
@@ -31,6 +33,7 @@ target_sources(attendance_core
 
 target_link_libraries(attendance_core PUBLIC
         attendance_project_options
+        Qt6::Network
         Qt6::Widgets
 )
 

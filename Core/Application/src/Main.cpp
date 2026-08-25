@@ -1,33 +1,15 @@
 #include "Application/AttendanceMainWindow.h"
+#include "Application/SingleInstance.h"
 #include "Application/Theme.h"
 
 #include <QApplication>
-#include <QByteArray>
 #include <QFont>
 #include <QIcon>
 #include <QLocalServer>
-#include <QLocalSocket>
 #include <QStyleFactory>
 #include <QStyleHints>
 
 using namespace Qt::StringLiterals;
-
-namespace {
-    constexpr int ConnectionTimeoutMilliseconds = 500;
-
-    [[nodiscard]] bool notifyRunningInstance(const QString& serverName)
-    {
-        QLocalSocket socket;
-        socket.connectToServer(serverName);
-        if (!socket.waitForConnected(ConnectionTimeoutMilliseconds)) {
-            return false;
-        }
-
-        socket.write(QByteArrayLiteral("activate"));
-        socket.waitForBytesWritten(ConnectionTimeoutMilliseconds);
-        return true;
-    }
-} // namespace
 
 int main(int argc, char* argv[])
 {
@@ -50,21 +32,21 @@ int main(int argc, char* argv[])
                      &app,
                      [&app](const Qt::ColorScheme colorScheme) { AttendanceTheme::apply(app, colorScheme); });
 
-    const QString serverName = u"AttendanceApp-SingleInstance"_s;
+    const QString serverName = AttendanceSingleInstance::serverName();
 
-    if (notifyRunningInstance(serverName)) {
+    if (AttendanceSingleInstance::notifyRunningInstance(serverName)) {
         return 0;
     }
 
     QLocalServer localServer;
-    if (!localServer.listen(serverName)) {
+    if (!AttendanceSingleInstance::listen(localServer, serverName)) {
         // Another instance can win the race between the initial connection attempt and listen().
-        if (notifyRunningInstance(serverName)) {
+        if (AttendanceSingleInstance::notifyRunningInstance(serverName)) {
             return 0;
         }
 
         QLocalServer::removeServer(serverName);
-        if (!localServer.listen(serverName)) {
+        if (!AttendanceSingleInstance::listen(localServer, serverName)) {
             qFatal("Failed to start single-instance server");
         }
     }
@@ -72,11 +54,7 @@ int main(int argc, char* argv[])
     AttendanceMainWindow window;
 
     QObject::connect(&localServer, &QLocalServer::newConnection, &window, [&window, &localServer]() {
-        while (auto* const client = localServer.nextPendingConnection()) {
-            client->disconnectFromServer();
-            client->deleteLater();
-        }
-        window.raiseAndActivate();
+        AttendanceSingleInstance::acceptPendingConnections(localServer, [&window]() { window.raiseAndActivate(); });
     });
 
     window.show();
