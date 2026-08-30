@@ -3,10 +3,6 @@ project(AttendanceApp VERSION 1.0.0 LANGUAGES CXX)
 
 include(CTest)
 
-if (NOT MSVC OR MSVC_VERSION LESS 1950)
-    message(FATAL_ERROR "AttendanceApp requires MSVC 19.50 (Visual Studio 2026) or newer.")
-endif ()
-
 if (NOT CMAKE_SIZEOF_VOID_P EQUAL 8)
     message(FATAL_ERROR "AttendanceApp requires an x64 toolchain.")
 endif ()

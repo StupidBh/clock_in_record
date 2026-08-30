@@ -12,18 +12,21 @@ tests. Generated output belongs in `build/` and `bin/<Debug|Release>/` and must 
 
 ## Language and Dependency Baseline
 
-The only supported project toolchain is C++23, exactly Qt 6.11.1, CMake 4.3 or newer, and Visual Studio 2026 (generator
-version 18) with MSVC 19.50 or newer targeting x64. Treat these versions as repository requirements, not
-machine-specific suggestions. All C++ targets must continue to require `cxx_std_23` with compiler extensions disabled.
-The required Qt components are Core, Widgets, and Network; use an MSVC-compatible Qt build. Workstations may use
-different Qt installation paths, but must provide the path locally through `Qt6_DIR`. Any baseline version change must
-update this section, the root `CMakeLists.txt`, and the build commands together.
+The project baseline is Windows x64, C++23, exactly Qt 6.11.1, and CMake 4.3 or newer. The root CMake project
+rejects non-x64 toolchains but does not reject a particular C++ compiler. The documented Windows workflow uses Visual
+Studio 2026 (generator version 18) with MSVC 19.50 or newer and an MSVC-compatible Qt build; another x64 toolchain must
+use a compatible Qt package and pass the same build and test suite before it is treated as supported. All C++ targets
+must continue to require `cxx_std_23` with compiler extensions disabled. The required Qt components are Core, Widgets,
+and Network. Workstations may use different Qt installation paths, but must provide the path locally through `Qt6_DIR`.
+Any baseline or supported-toolchain change must update this section, the root `CMakeLists.txt` when enforcement changes,
+`Readme.md`, and the affected build commands together.
 
 ## Build, Test, and Development Commands
 
-The Windows build expects CMake 4.3+, Visual Studio 2026, and Qt 6.11.1. Select the Visual Studio/MSVC toolchain in
-the IDE and configure `Qt6_DIR` locally to point to that workstation's `lib/cmake/Qt6` directory. Do not commit
-machine-specific Qt paths.
+The reference Windows build uses CMake 4.3+, Visual Studio 2026, MSVC 19.50+, and Qt 6.11.1. Select the Visual
+Studio/MSVC toolchain in the IDE and configure `Qt6_DIR` locally to point to that workstation's `lib/cmake/Qt6`
+directory. An alternative x64 compiler requires a compiler-compatible Qt package and equivalent configure/build
+commands. Do not commit machine-specific Qt paths.
 
 ```powershell
 cmake -S . -B build -G "Visual Studio 18 2026" -A x64 `
@@ -102,8 +105,9 @@ more precisely.
   diffs safely.
 - Keep unrelated feature areas separate. Calendar UI, work-time calculations, settings persistence, and build or
   dependency changes should not share a commit unless they jointly implement one indivisible user-visible behavior.
-- Update version baselines atomically: changes to the required C++, Qt, CMake, or MSVC versions must include the root
-  `CMakeLists.txt`, this document, and affected build commands in one `[build]` or `[update]` commit.
+- Update toolchain expectations atomically: changes to required C++, Qt, CMake, Windows/x64 constraints, or the documented
+  Visual Studio/MSVC workflow must include the root `CMakeLists.txt` when enforcement changes, this document,
+  `Readme.md`, and affected build commands in one `[build]` or `[update]` commit.
 - Before committing, stage explicit files or hunks, inspect `git diff --cached`, and confirm no generated output,
   machine-specific paths, user `QSettings` data, or unrelated working-tree changes are included. Do not leave `WIP` or
   `fixup!` commits in the final branch history.

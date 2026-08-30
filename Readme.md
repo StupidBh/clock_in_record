@@ -33,10 +33,12 @@ AttendanceApp 是一个基于 Qt 6 的 Windows 桌面考勤记录工具。应用
 
 - Windows x64
 - CMake 4.3 或更高版本
-- Visual Studio 2026（生成器版本 18，MSVC 19.50）或更新版本
-- Qt 6.11.1，必须包含 `Core`、`Widgets` 和 `Network` 模块，并使用与 MSVC 兼容的构建
+- 支持 C++23 的 x64 工具链；仓库现有的参考工作流使用 Visual Studio 2026（生成器版本 18）和 MSVC 19.50
+- Qt 6.11.1，必须包含 `Core`、`Widgets` 和 `Network` 模块，并使用与所选编译器兼容的构建
 
-项目要求通过 `Qt6_DIR` 指定 Qt 的 CMake 配置目录。不要把本机 Qt 路径提交到仓库。例如：
+根 CMake 配置会拒绝非 x64 工具链，但不会限定具体 C++ 编译器。项目要求通过 `Qt6_DIR` 指定 Qt 的 CMake
+配置目录；使用参考工作流以外的 x64 编译器时，需要提供与该编译器兼容的 Qt 包及等价构建命令。不要把本机
+Qt 路径提交到仓库。例如：
 
 ```powershell
 -DQt6_DIR=D:/path/to/Qt/6.11.1/msvc2022_64/lib/cmake/Qt6
@@ -46,7 +48,7 @@ AttendanceApp 是一个基于 Qt 6 的 Windows 桌面考勤记录工具。应用
 
 ## 构建、运行与测试
 
-在 PowerShell 中配置 Visual Studio 多配置构建目录：
+参考工作流在 PowerShell 中配置 Visual Studio 多配置构建目录：
 
 ```powershell
 cmake -S . -B build -G "Visual Studio 18 2026" -A x64 `
