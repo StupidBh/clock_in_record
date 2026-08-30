@@ -12,21 +12,22 @@ tests. Generated output belongs in `build/` and `bin/<Debug|Release>/` and must 
 
 ## Language and Dependency Baseline
 
-The project baseline is Windows x64, C++23, exactly Qt 6.11.1, and CMake 4.3 or newer. The root CMake project
-rejects non-x64 toolchains but does not reject a particular C++ compiler. The documented Windows workflow uses Visual
-Studio 2026 (generator version 18) with MSVC 19.50 or newer and an MSVC-compatible Qt build; another x64 toolchain must
-use a compatible Qt package and pass the same build and test suite before it is treated as supported. All C++ targets
-must continue to require `cxx_std_23` with compiler extensions disabled. The required Qt components are Core, Widgets,
-and Network. Workstations may use different Qt installation paths, but must provide the path locally through `Qt6_DIR`.
-Any baseline or supported-toolchain change must update this section, the root `CMakeLists.txt` when enforcement changes,
-`Readme.md`, and the affected build commands together.
+The project baseline is Windows x64, C++23, exactly Qt 6.11.1, and CMake 4.3 or newer. The root CMake project rejects
+non-x64 toolchains but does not reject a particular C++ compiler. The documented and validated Windows workflow uses
+Visual Studio 2026 (generator version 18) with MSVC 19.50 or newer and an MSVC-compatible Qt build. Other x64 toolchains
+may configure with a compatible Qt package, but they are not validated reference environments merely because they
+build; do not broaden the supported baseline without equivalent build and test evidence. All C++ targets must continue
+to require `cxx_std_23` with compiler extensions disabled. The required Qt components are Core, Widgets, and Network.
+Workstations may use different Qt installation paths, but must provide the path locally through `Qt6_DIR`. Any baseline
+or supported-toolchain change must update this section, the root `CMakeLists.txt` when enforcement changes, `Readme.md`,
+and the affected build commands together.
 
 ## Build, Test, and Development Commands
 
-The reference Windows build uses CMake 4.3+, Visual Studio 2026, MSVC 19.50+, and Qt 6.11.1. Select the Visual
-Studio/MSVC toolchain in the IDE and configure `Qt6_DIR` locally to point to that workstation's `lib/cmake/Qt6`
-directory. An alternative x64 compiler requires a compiler-compatible Qt package and equivalent configure/build
-commands. Do not commit machine-specific Qt paths.
+The reference Windows build uses CMake 4.3+, Visual Studio 2026, MSVC 19.50+, and Qt 6.11.1. Select that toolchain in the
+IDE and configure `Qt6_DIR` locally to point to the workstation's `lib/cmake/Qt6` directory. An alternative x64 compiler
+requires a compiler-compatible Qt package and equivalent commands but remains outside the validated reference workflow.
+Do not commit machine-specific Qt paths.
 
 ```powershell
 cmake -S . -B build -G "Visual Studio 18 2026" -A x64 `
@@ -37,10 +38,9 @@ ctest --test-dir build -C Debug --output-on-failure
 cmake --build build --config Release
 ```
 
-The first command configures a local multi-configuration build tree, the second builds Debug, and the third launches the
-application. In CLion, place the same `-DQt6_DIR=...` value in the CMake profile's options instead. CTest runs the
-regression executables. Debug and Release application builds invoke `windeployqt` when available, placing the required
-Qt runtime files next to `AttendanceApp.exe`; this project intentionally has no CMake install step.
+In CLion, place the same `-DQt6_DIR=...` value in the CMake profile. CTest runs the registered regression executables.
+When Qt provides `windeployqt`, application builds deploy the required Qt runtime files next to `AttendanceApp.exe`.
+There is no CMake install step.
 
 ## Coding Style & Naming Conventions
 
@@ -93,8 +93,9 @@ more precisely.
 - Keep every commit buildable. It must pass the focused tests for its scope and must not rely on a later commit to add a
   missing source file, CMake registration, Qt resource entry, migration, or required test fixture.
 - Commit implementation and its direct regression tests together. In particular, attendance calculation changes belong
-  with their `tests/` cases, new Qt classes belong with their `Core/CMakeLists.txt` registration, and new assets belong
-  with the corresponding `resources/resources.qrc` entry.
+  with their `tests/` cases, and new Qt classes belong with their `Core/CMakeLists.txt` registration. Commit runtime Qt
+  assets with their `resources/resources.qrc` entry, native Windows resources with their `.rc`/CMake registration, and
+  test fixtures with their owning tests.
 - Keep persistence changes atomic: a `QSettings` key or record-format change, backward-compatible read or migration
   logic, and restart-persistence coverage belong in the same commit.
 - Separate behavior-preserving refactors from behavior changes when the refactor is independently reviewable. Land the
