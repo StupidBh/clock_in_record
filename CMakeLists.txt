@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 4.3)
-project(AttendanceApp VERSION 1.0.0 LANGUAGES CXX)
+project(AttendanceApp LANGUAGES CXX)
 
 include(CTest)
 
