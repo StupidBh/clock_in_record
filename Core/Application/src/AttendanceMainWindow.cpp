@@ -484,6 +484,7 @@ void AttendanceMainWindow::setupUi()
     connect(todayButton, &QPushButton::clicked, this, [this]() {
         m_calendar->setSelectionMode(QCalendarWidget::SingleSelection);
         m_calendar->setSelectedDate(QDate::currentDate());
+        m_calendar->showSelectedDate();
     });
 
     m_globalSettingsSaveTimer = new QTimer(this);

@@ -341,6 +341,48 @@ namespace {
         }
     }
 
+    void testTodayNavigation()
+    {
+        AttendanceMainWindow window;
+        auto* const calendar = window.findChild<CustomCalendarWidget*>();
+        auto* const todayButton = window.findChild<QPushButton*>(u"todayButton"_s);
+        auto* const statisticsPeriod = window.findChild<QLabel*>(u"statisticsPeriodLabel"_s);
+        expectTrue("today navigation widgets exist", calendar && todayButton && statisticsPeriod);
+        if (!calendar || !todayButton || !statisticsPeriod) {
+            return;
+        }
+
+        window.show();
+        QApplication::processEvents();
+        const QDate today = QDate::currentDate();
+        const auto verifyToday = [&](const char* const name) {
+            todayButton->click();
+            expectTrue(name,
+                       calendar->selectedDate() == today && calendar->yearShown() == today.year() &&
+                           calendar->monthShown() == today.month() &&
+                           calendar->selectionMode() == QCalendarWidget::SingleSelection);
+            QApplication::processEvents();
+            expectTrue("today navigation refreshes statistics period",
+                       statisticsPeriod->text() == u"%1年%2月"_s.arg(today.year()).arg(today.month()));
+        };
+
+        calendar->setSelectedDate(today);
+        calendar->showPreviousMonth();
+        verifyToday("today returns from previous month with unchanged selection");
+
+        calendar->showNextMonth();
+        calendar->clearDateSelection();
+        verifyToday("today returns from next month with cleared selection");
+
+        calendar->setSelectedDate(today.addDays(-1));
+        calendar->showNextYear();
+        verifyToday("today returns from another year with another selected date");
+
+        calendar->showPreviousYear();
+        verifyToday("today returns from another year with unchanged selection");
+        verifyToday("repeated today clicks preserve the current page and selection");
+    }
+
     void testRecordActions()
     {
         QSettings settings;
@@ -484,6 +526,7 @@ int main(int argc, char* argv[])
     QSettings::setPath(QSettings::IniFormat, QSettings::UserScope, settingsDirectory.path());
 
     testMainWindowStructure();
+    testTodayNavigation();
     testCalendarPresentationSnapshot();
     testRecordActions();
 

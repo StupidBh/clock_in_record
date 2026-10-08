@@ -59,7 +59,7 @@ cmake --build build --config Release
 
 配置阶段默认启用 CTest。当前回归目标包括：
 
-- `ApplicationUiTests`：主窗口结构、日期记录保存和删除
+- `ApplicationUiTests`：主窗口结构、今天导航、日期记录保存和删除
 - `ApplicationThemeTests`：浅色/深色主题及控件对比度
 - `AttendanceSettingsTests`：全局设置、记录持久化、旧格式迁移和月度抵扣
 - `AttendanceSummaryTests`：月度汇总和文本格式化
