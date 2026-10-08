@@ -117,14 +117,17 @@ namespace {
             return std::nullopt;
         }
 
-        const int leadingDays = (monthDates->first.dayOfWeek() - static_cast<int>(firstDayOfWeek) + 7) % 7;
+        const int offset = (monthDates->first.dayOfWeek() - static_cast<int>(firstDayOfWeek) + 7) % 7;
+        // Qt displays the previous week when the month begins on the first day of the week.
+        const int leadingDays = offset == 0 ? 7 : offset;
         const QDate displayFirst = monthDates->first.addDays(-leadingDays);
+        const QDate displayLast = displayFirst.addDays(41);
         const QDate first = displayFirst < minimumDate ? minimumDate : displayFirst;
-        if (first > maximumDate) {
+        const QDate last = displayLast > maximumDate ? maximumDate : displayLast;
+        if (first > last) {
             return std::nullopt;
         }
 
-        const QDate last = first.daysTo(maximumDate) >= 41 ? first.addDays(41) : maximumDate;
         return MonthRange { .first = first, .last = last };
     }
 

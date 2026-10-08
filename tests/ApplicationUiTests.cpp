@@ -24,6 +24,7 @@
 #include <QToolButton>
 #include <QWheelEvent>
 
+#include <array>
 #include <iostream>
 
 using namespace Qt::StringLiterals;
@@ -383,6 +384,105 @@ namespace {
         verifyToday("repeated today clicks preserve the current page and selection");
     }
 
+    void verifyCalendarDisplayRange(const char* const name,
+                                    const QDate& month,
+                                    const Qt::DayOfWeek firstDayOfWeek,
+                                    const QDate& firstVisible,
+                                    const QDate& lastVisible,
+                                    const QDate& minimumDate = { },
+                                    const QDate& maximumDate = { })
+    {
+        QSettings settings;
+        settings.clear();
+        const AttendanceRecord schedule;
+        const std::array dates {
+            firstVisible.addDays(-1),
+            firstVisible,
+            month.addDays(-1),
+            month,
+            month.addDays(month.daysInMonth() - 1),
+            lastVisible,
+            lastVisible.addDays(1),
+        };
+        for (const QDate& date : dates) {
+            AttendanceRecord record = AttendanceSettings::createRecord(date, schedule);
+            record.needAverageCal = true;
+            expectTrue("display range fixture saves record", AttendanceSettings::saveRecord(settings, date, record));
+        }
+
+        {
+            AttendanceMainWindow window;
+            auto* const calendar = window.findChild<CustomCalendarWidget*>();
+            auto* const workDays = window.findChild<QLabel*>(u"statsWorkDaysValueLabel"_s);
+            expectTrue("display range widgets exist", calendar && workDays);
+            if (!calendar || !workDays) {
+                return;
+            }
+
+            calendar->setFirstDayOfWeek(firstDayOfWeek);
+            if (minimumDate.isValid()) {
+                calendar->setMinimumDate(minimumDate);
+            }
+            if (maximumDate.isValid()) {
+                calendar->setMaximumDate(maximumDate);
+            }
+            calendar->setSelectedDate(month.addMonths(-1));
+            calendar->setCurrentPage(month.year(), month.month());
+            window.show();
+            QApplication::processEvents();
+
+            for (const QDate& date : dates) {
+                const bool shouldBeVisible = date >= firstVisible && date <= lastVisible;
+                const bool hasFormat = !calendar->dateTextFormat(date).isEmpty();
+                const QByteArray message =
+                    u"%1: record visibility on %2"_s.arg(QString::fromLatin1(name), date.toString(Qt::ISODate))
+                        .toUtf8();
+                expectTrue(message.constData(), hasFormat == shouldBeVisible);
+            }
+            expectTrue("adjacent month records do not count toward current month statistics",
+                       workDays->text() == u"2天"_s);
+        }
+
+        settings.clear();
+    }
+
+    void testCalendarDisplayRanges()
+    {
+        verifyCalendarDisplayRange("Monday month start",
+                                   QDate(2026, 6, 1),
+                                   Qt::Monday,
+                                   QDate(2026, 5, 25),
+                                   QDate(2026, 7, 5));
+        verifyCalendarDisplayRange("ordinary month start",
+                                   QDate(2026, 7, 1),
+                                   Qt::Monday,
+                                   QDate(2026, 6, 29),
+                                   QDate(2026, 8, 9));
+        verifyCalendarDisplayRange("cross-year grid",
+                                   QDate(2026, 1, 1),
+                                   Qt::Monday,
+                                   QDate(2025, 12, 29),
+                                   QDate(2026, 2, 8));
+        verifyCalendarDisplayRange("Sunday month start",
+                                   QDate(2026, 3, 1),
+                                   Qt::Sunday,
+                                   QDate(2026, 2, 22),
+                                   QDate(2026, 4, 4));
+        verifyCalendarDisplayRange("minimum date clips without extending grid",
+                                   QDate(2026, 6, 1),
+                                   Qt::Monday,
+                                   QDate(2026, 5, 28),
+                                   QDate(2026, 7, 5),
+                                   QDate(2026, 5, 28));
+        verifyCalendarDisplayRange("maximum date clips grid",
+                                   QDate(2026, 6, 1),
+                                   Qt::Monday,
+                                   QDate(2026, 5, 25),
+                                   QDate(2026, 7, 3),
+                                   { },
+                                   QDate(2026, 7, 3));
+    }
+
     void testRecordActions()
     {
         QSettings settings;
@@ -527,6 +627,7 @@ int main(int argc, char* argv[])
 
     testMainWindowStructure();
     testTodayNavigation();
+    testCalendarDisplayRanges();
     testCalendarPresentationSnapshot();
     testRecordActions();
 
