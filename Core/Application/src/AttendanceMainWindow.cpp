@@ -11,6 +11,7 @@
 #include <QApplication>
 #include <QCheckBox>
 #include <QDoubleSpinBox>
+#include <QFrame>
 #include <QGridLayout>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -28,6 +29,7 @@
 #include <QTimeEdit>
 #include <QTimer>
 #include <QVariant>
+#include <QVBoxLayout>
 #include <QWheelEvent>
 
 #include <array>

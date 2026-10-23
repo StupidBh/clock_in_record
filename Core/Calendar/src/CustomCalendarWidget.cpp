@@ -5,6 +5,7 @@
 #include <QFontMetrics>
 #include <QMenu>
 #include <QMouseEvent>
+#include <QPainter>
 #include <QPainterStateGuard>
 #include <QSettings>
 #include <QTableView>
