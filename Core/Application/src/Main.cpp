@@ -1,6 +1,7 @@
 #include "Application/AttendanceMainWindow.h"
 #include "Application/SingleInstance.h"
 #include "Application/Theme.h"
+#include "Application/ThemeController.h"
 
 #include <QApplication>
 #include <QFont>
@@ -14,23 +15,19 @@ using namespace Qt::StringLiterals;
 int main(int argc, char* argv[])
 {
     QApplication app(argc, argv);
+    app.setApplicationName(u"AttendanceApp"_s);
+    app.setOrganizationName(u"MyCompany"_s);
 
     app.setStyle(QStyleFactory::create(u"Fusion"_s));
 
     app.setWindowIcon(QIcon(u":/Icons/logo.ico"_s));
-    app.setApplicationName(u"AttendanceApp"_s);
-    app.setOrganizationName(u"MyCompany"_s);
 
     QFont font = app.font();
     font.setFamily(u"Microsoft YaHei"_s);
     font.setPointSize(9);
     app.setFont(font);
 
-    AttendanceTheme::apply(app, app.styleHints()->colorScheme());
-    QObject::connect(app.styleHints(),
-                     &QStyleHints::colorSchemeChanged,
-                     &app,
-                     [&app](const Qt::ColorScheme colorScheme) { AttendanceTheme::apply(app, colorScheme); });
+    ThemeController themeController(app);
 
     const QString serverName = AttendanceSingleInstance::serverName();
 
@@ -51,7 +48,7 @@ int main(int argc, char* argv[])
         }
     }
 
-    AttendanceMainWindow window;
+    AttendanceMainWindow window(&themeController);
 
     QObject::connect(&localServer, &QLocalServer::newConnection, &window, [&window, &localServer]() {
         AttendanceSingleInstance::acceptPendingConnections(localServer, [&window]() { window.raiseAndActivate(); });

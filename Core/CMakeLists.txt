@@ -6,6 +6,7 @@ target_sources(attendance_core
         Application/src/AttendanceMainWindow.cpp
         Application/src/SingleInstance.cpp
         Application/src/Theme.cpp
+        Application/src/ThemeController.cpp
         Attendance/src/AttendanceFormatter.cpp
         Attendance/src/MonthlyStatisticsCalculator.cpp
         Attendance/src/WorkTimeCalculator.cpp
@@ -21,6 +22,7 @@ target_sources(attendance_core
         Application/AttendanceMainWindow.h
         Application/SingleInstance.h
         Application/Theme.h
+        Application/ThemeController.h
         Attendance/AttendanceFormatter.h
         Attendance/AttendanceTypes.h
         Attendance/MonthlyStatisticsCalculator.h

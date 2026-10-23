@@ -5,11 +5,16 @@
 #include <QMainWindow>
 #include <QMap>
 
+class QAction;
+class QActionGroup;
 class QCheckBox;
 class QDoubleSpinBox;
 class QLabel;
 class QTimer;
 class QTimeEdit;
+class QToolButton;
+class CustomCalendarWidget;
+class ThemeController;
 class CustomCalendarWidget;
 
 // 主窗口
@@ -17,7 +22,7 @@ class AttendanceMainWindow final : public QMainWindow {
     Q_OBJECT
 
 public:
-    explicit AttendanceMainWindow(QWidget* parent = nullptr);
+    explicit AttendanceMainWindow(ThemeController* themeController = nullptr, QWidget* parent = nullptr);
     ~AttendanceMainWindow() override;
 
     void raiseAndActivate();
@@ -34,6 +39,7 @@ private slots:
 
 private:
     void setupUi();
+    void updateThemeButton();
 
     void deleteAttendanceRecord(const QDate& date);
     void reloadMonthData();
@@ -48,6 +54,12 @@ private:
     [[nodiscard]] bool migrateLegacyRecordsToCurrentSchedule();
     [[nodiscard]] AttendanceRecord currentSchedule() const;
 
+    ThemeController* m_themeController = nullptr;
+    QToolButton* m_themeButton = nullptr;
+    QActionGroup* m_themeActionGroup = nullptr;
+    QAction* m_lightThemeAction = nullptr;
+    QAction* m_darkThemeAction = nullptr;
+    QAction* m_autoThemeAction = nullptr;
     CustomCalendarWidget* m_calendar = nullptr;
     QLabel* m_statsPeriodLabel = nullptr;
     QLabel* m_statsWorkDaysValueLabel = nullptr;

@@ -1,5 +1,6 @@
 #include "Application/AttendanceMainWindow.h"
 #include "Application/Theme.h"
+#include "Application/ThemeController.h"
 #include "Attendance/AttendanceFormatter.h"
 #include "Attendance/MonthlyStatisticsCalculator.h"
 #include "Attendance/WorkTimeCalculator.h"
@@ -8,7 +9,32 @@
 #include "Settings/TimeSettingDialog.h"
 #include "Widgets/CollapsibleGroupBox.h"
 
+#include <QActionGroup>
 #include <QApplication>
+#include <QCheckBox>
+#include <QDoubleSpinBox>
+#include <QFrame>
+#include <QGridLayout>
+#include <QHBoxLayout>
+#include <QLabel>
+#include <QLocale>
+#include <QMap>
+#include <QMenu>
+#include <QMessageBox>
+#include <QPushButton>
+#include <QScrollArea>
+#include <QSettings>
+#include <QSizePolicy>
+#include <QSplitter>
+#include <QStringView>
+#include <QStyle>
+#include <QTextCharFormat>
+#include <QTimeEdit>
+#include <QTimer>
+#include <QToolButton>
+#include <QVariant>
+#include <QVBoxLayout>
+#include <QWheelEvent>
 #include <QCheckBox>
 #include <QDoubleSpinBox>
 #include <QFrame>
@@ -40,6 +66,16 @@
 using namespace Qt::StringLiterals;
 
 namespace {
+    [[nodiscard]] QString themeModeLabel(const AttendanceTheme::Mode mode)
+    {
+        switch (mode) {
+        case AttendanceTheme::Mode::Light: return u"主题：浅色"_s;
+        case AttendanceTheme::Mode::Dark : return u"主题：深色"_s;
+        case AttendanceTheme::Mode::Auto : return u"主题：自动"_s;
+        }
+        return u"主题：自动"_s;
+    }
+
     void forwardWheelToScrollArea(QWidget& source, QWheelEvent& event)
     {
         for (QWidget* parent = source.parentWidget(); parent; parent = parent->parentWidget()) {
@@ -224,14 +260,19 @@ namespace {
     }
 } // namespace
 
-AttendanceMainWindow::AttendanceMainWindow(QWidget* parent) :
-    QMainWindow(parent)
+AttendanceMainWindow::AttendanceMainWindow(ThemeController* themeController, QWidget* parent) :
+    QMainWindow(parent),
+    m_themeController(themeController)
 {
     setWindowTitle(u"打卡管理系统"_s);
     setMinimumSize(720, 520);
     resize(980, 700);
 
     setupUi();
+    if (m_themeController) {
+        connect(m_themeController, &ThemeController::modeChanged, this, [this]() { updateThemeButton(); });
+        updateThemeButton();
+    }
     qApp->installEventFilter(this);
 }
 
@@ -313,6 +354,19 @@ void AttendanceMainWindow::onDeleteRequested(const QDate& date)
     }
 }
 
+void AttendanceMainWindow::updateThemeButton()
+{
+    if (!m_themeButton || !m_themeController) {
+        return;
+    }
+
+    const AttendanceTheme::Mode mode = m_themeController->mode();
+    m_themeButton->setText(themeModeLabel(mode));
+    m_lightThemeAction->setChecked(mode == AttendanceTheme::Mode::Light);
+    m_darkThemeAction->setChecked(mode == AttendanceTheme::Mode::Dark);
+    m_autoThemeAction->setChecked(mode == AttendanceTheme::Mode::Auto);
+}
+
 void AttendanceMainWindow::setupUi()
 {
     auto* const centralWidget = new QWidget();
@@ -330,6 +384,31 @@ void AttendanceMainWindow::setupUi()
     titleLabel->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
     titleLayout->addWidget(titleLabel);
     titleLayout->addStretch();
+    m_themeButton = new QToolButton();
+    m_themeButton->setObjectName(u"themeButton"_s);
+    m_themeButton->setPopupMode(QToolButton::InstantPopup);
+    m_themeButton->setToolButtonStyle(Qt::ToolButtonTextOnly);
+    m_themeButton->setEnabled(m_themeController != nullptr);
+    auto* const themeMenu = new QMenu(m_themeButton);
+    m_themeActionGroup = new QActionGroup(themeMenu);
+    m_themeActionGroup->setExclusive(true);
+    m_lightThemeAction = themeMenu->addAction(u"浅色"_s);
+    m_darkThemeAction = themeMenu->addAction(u"深色"_s);
+    m_autoThemeAction = themeMenu->addAction(u"自动"_s);
+    for (QAction* const action : { m_lightThemeAction, m_darkThemeAction, m_autoThemeAction }) {
+        action->setCheckable(true);
+        m_themeActionGroup->addAction(action);
+    }
+    m_lightThemeAction->setData(static_cast<int>(AttendanceTheme::Mode::Light));
+    m_darkThemeAction->setData(static_cast<int>(AttendanceTheme::Mode::Dark));
+    m_autoThemeAction->setData(static_cast<int>(AttendanceTheme::Mode::Auto));
+    m_themeButton->setMenu(themeMenu);
+    connect(m_themeActionGroup, &QActionGroup::triggered, this, [this](QAction* const action) {
+        if (m_themeController) {
+            m_themeController->setMode(static_cast<AttendanceTheme::Mode>(action->data().toInt()));
+        }
+    });
+    titleLayout->addWidget(m_themeButton);
     auto* const todayButton = new QPushButton(u"今天"_s);
     todayButton->setObjectName(u"todayButton"_s);
     todayButton->setToolTip(u"返回并选中今天"_s);

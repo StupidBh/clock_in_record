@@ -27,8 +27,16 @@ namespace {
         QColor link;
     };
 
-    [[nodiscard]] bool isDarkTheme(const QApplication& application, const Qt::ColorScheme colorScheme)
+    [[nodiscard]] bool isDarkTheme(const QApplication& application,
+                                   const AttendanceTheme::Mode mode,
+                                   const Qt::ColorScheme colorScheme)
     {
+        if (mode == AttendanceTheme::Mode::Dark) {
+            return true;
+        }
+        if (mode == AttendanceTheme::Mode::Light) {
+            return false;
+        }
         if (colorScheme == Qt::ColorScheme::Dark) {
             return true;
         }
@@ -368,11 +376,21 @@ QSplitter::handle {
     }
 } // namespace
 
-void AttendanceTheme::apply(QApplication& application, const Qt::ColorScheme colorScheme)
+void AttendanceTheme::apply(QApplication& application, const Mode mode, const Qt::ColorScheme colorScheme)
 {
-    const ThemeColors colors = colorsFor(isDarkTheme(application, colorScheme));
+    const ThemeColors colors = colorsFor(isDarkTheme(application, mode, colorScheme));
     application.setPalette(createPalette(colors));
     application.setStyleSheet(createStyleSheet(colors));
+}
+
+void AttendanceTheme::apply(QApplication& application, const Qt::ColorScheme colorScheme)
+{
+    apply(application, Mode::Auto, colorScheme);
+}
+
+bool AttendanceTheme::resolvesToDark(QApplication& application, const Mode mode, const Qt::ColorScheme colorScheme)
+{
+    return isDarkTheme(application, mode, colorScheme);
 }
 
 QColor AttendanceTheme::attendanceBackground(const QPalette& palette, const bool excludedFromAverage)
