@@ -1,13 +1,18 @@
+#include "Application/AttendanceMainWindow.h"
 #include "Application/Theme.h"
+#include "Application/ThemeController.h"
 #include "Calendar/CustomCalendarWidget.h"
 
 #include <QApplication>
 #include <QColor>
 #include <QLabel>
+#include <QMenu>
 #include <QPalette>
+#include <QSettings>
 #include <QTableView>
+#include <QTemporaryDir>
 #include <QTextCharFormat>
-
+#include <QToolButton>
 #include <algorithm>
 #include <cmath>
 #include <iostream>
@@ -116,11 +121,59 @@ namespace {
                        tableView->palette().color(QPalette::Text),
                        tableView->palette().color(QPalette::Base));
     }
+
+    void testThemeModes(QApplication& application)
+    {
+        using namespace Qt::StringLiterals;
+        QSettings settings;
+        settings.clear();
+        settings.sync();
+
+        expectTrue("light mode overrides dark system",
+                   !AttendanceTheme::resolvesToDark(application, AttendanceTheme::Mode::Light, Qt::ColorScheme::Dark));
+        expectTrue("dark mode overrides light system",
+                   AttendanceTheme::resolvesToDark(application, AttendanceTheme::Mode::Dark, Qt::ColorScheme::Light));
+
+        ThemeController controller(application);
+        expectTrue("theme mode defaults to auto", controller.mode() == AttendanceTheme::Mode::Auto);
+        controller.setMode(AttendanceTheme::Mode::Dark);
+        expectTrue("dark mode is persisted", settings.value(u"appearance/themeMode"_s).toString() == u"dark"_s);
+        controller.setMode(AttendanceTheme::Mode::Auto);
+        expectTrue("auto mode is persisted", settings.value(u"appearance/themeMode"_s).toString() == u"auto"_s);
+
+        AttendanceMainWindow window(&controller);
+        auto* const themeButton = window.findChild<QToolButton*>(u"themeButton"_s);
+        expectTrue("theme button exists", themeButton != nullptr);
+        if (!themeButton || !themeButton->menu()) {
+            return;
+        }
+
+        expectTrue("auto mode is initially checked", themeButton->menu()->actions().at(2)->isChecked());
+        themeButton->menu()->actions().at(0)->trigger();
+        expectTrue("light menu changes mode", controller.mode() == AttendanceTheme::Mode::Light);
+        expectTrue("light menu updates button", themeButton->text() == u"主题：浅色"_s);
+        expectTrue("light mode is checked", themeButton->menu()->actions().at(0)->isChecked());
+
+        themeButton->menu()->actions().at(1)->trigger();
+        expectTrue("dark menu changes mode", controller.mode() == AttendanceTheme::Mode::Dark);
+        expectTrue("dark menu updates button", themeButton->text() == u"主题：深色"_s);
+
+        themeButton->menu()->actions().at(2)->trigger();
+        expectTrue("auto menu changes mode", controller.mode() == AttendanceTheme::Mode::Auto);
+        expectTrue("auto menu updates button", themeButton->text() == u"主题：自动"_s);
+    }
 } // namespace
 
 int main(int argc, char* argv[])
 {
     QApplication application(argc, argv);
+    QCoreApplication::setOrganizationName(u"AttendanceAppTests"_s);
+    QCoreApplication::setApplicationName(u"ApplicationThemeTests"_s);
+    QSettings::setDefaultFormat(QSettings::IniFormat);
+    QTemporaryDir settingsDirectory;
+    QSettings::setPath(QSettings::IniFormat, QSettings::UserScope, settingsDirectory.path());
+
+    testThemeModes(application);
     verifyTheme(application, Qt::ColorScheme::Light);
     verifyTheme(application, Qt::ColorScheme::Dark);
 
