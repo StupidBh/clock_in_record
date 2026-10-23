@@ -128,6 +128,12 @@ namespace {
         QSettings settings;
         settings.clear();
         settings.sync();
+        settings.setValue(u"appearance/themeMode"_s, u"invalid"_s);
+        settings.sync();
+        ThemeController invalidController(application);
+        expectTrue("invalid theme mode falls back to auto", invalidController.mode() == AttendanceTheme::Mode::Auto);
+        settings.clear();
+        settings.sync();
 
         expectTrue("light mode overrides dark system",
                    !AttendanceTheme::resolvesToDark(application, AttendanceTheme::Mode::Light, Qt::ColorScheme::Dark));
