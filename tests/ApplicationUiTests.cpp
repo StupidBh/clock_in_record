@@ -493,7 +493,8 @@ namespace {
         AttendanceRecord record = AttendanceSettings::createRecord(boundedMonth, schedule);
         record.arrivalTime = QTime(8, 30);
         record.departureTime = QTime(18, 30);
-        expectTrue("out of bounds fixture saves record", AttendanceSettings::saveRecord(settings, boundedMonth, record));
+        expectTrue("out of bounds fixture saves record",
+                   AttendanceSettings::saveRecord(settings, boundedMonth, record));
 
         {
             AttendanceMainWindow window;
@@ -505,18 +506,14 @@ namespace {
                 calendar->setCurrentPage(2026, 6);
                 QApplication::processEvents();
 
-                expectTrue("bounded month page shows",
-                           calendar->yearShown() == 2026 && calendar->monthShown() == 6);
-                expectTrue("bounded month record is visible",
-                           !calendar->dateTextFormat(boundedMonth).isEmpty());
+                expectTrue("bounded month page shows", calendar->yearShown() == 2026 && calendar->monthShown() == 6);
+                expectTrue("bounded month record is visible", !calendar->dateTextFormat(boundedMonth).isEmpty());
 
                 calendar->setCurrentPage(2026, 12);
                 QApplication::processEvents();
 
-                expectTrue("out of bounds page clamps",
-                           calendar->yearShown() == 2026 && calendar->monthShown() == 6);
-                expectTrue("clamped navigation refreshes statistics period",
-                           periodLabel->text() == u"2026年6月"_s);
+                expectTrue("out of bounds page clamps", calendar->yearShown() == 2026 && calendar->monthShown() == 6);
+                expectTrue("clamped navigation refreshes statistics period", periodLabel->text() == u"2026年6月"_s);
                 expectTrue("clamped navigation keeps record visible",
                            !calendar->dateTextFormat(boundedMonth).isEmpty());
             }
