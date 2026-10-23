@@ -197,6 +197,10 @@ void CustomCalendarWidget::replaceAttendanceData(QMap<QDate, CalendarAttendanceD
 
 void CustomCalendarWidget::clearDateSelection()
 {
+    if (selectionMode() == QCalendarWidget::NoSelection) {
+        return;
+    }
+
     const QDate previouslySelectedDate = selectedDate();
     setSelectionMode(QCalendarWidget::NoSelection);
     updateCell(previouslySelectedDate);
