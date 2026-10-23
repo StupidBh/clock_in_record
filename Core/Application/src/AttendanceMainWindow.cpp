@@ -279,15 +279,16 @@ void AttendanceMainWindow::onDateClicked(const QDate& date)
 
 void AttendanceMainWindow::onMonthChanged(const int year, const int month)
 {
+    if (m_monthRefreshPending) {
+        return;
+    }
+
     const auto normalizedMonth = boundedMonth(year, month, m_calendar->minimumDate(), m_calendar->maximumDate());
     if (!normalizedMonth) {
         return;
     }
     if (normalizedMonth->year() != year || normalizedMonth->month() != month) {
         m_calendar->setCurrentPage(normalizedMonth->year(), normalizedMonth->month());
-    }
-
-    if (m_monthRefreshPending) {
         return;
     }
 
