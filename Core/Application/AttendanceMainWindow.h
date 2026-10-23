@@ -37,6 +37,7 @@ private:
 
     void deleteAttendanceRecord(const QDate& date);
     void reloadMonthData();
+    void refreshVisibleRecord(const QDate& date);
     void updateCalendarAppearance();
     void updateMonthlyStatistics();
     void scheduleMonthlyStatisticsUpdate();

@@ -632,6 +632,61 @@ namespace {
             }
         }
 
+        {
+            AttendanceMainWindow window;
+            auto* const calendar = window.findChild<CustomCalendarWidget*>();
+            expectTrue("incremental refresh calendar exists", calendar != nullptr);
+            if (calendar) {
+                const QDate refreshDate(2026, 8, 21);
+                window.show();
+                calendar->setCurrentPage(2026, 8);
+                QApplication::processEvents();
+                expectTrue("month without record starts blank", calendar->dateTextFormat(refreshDate).isEmpty());
+
+                AttendanceRecord record = AttendanceSettings::createRecord(refreshDate, AttendanceRecord { });
+                record.arrivalTime = QTime(8, 40);
+                record.departureTime = QTime(18, 40);
+                expectTrue("incremental refresh fixture saves record",
+                           AttendanceSettings::saveRecord(settings, refreshDate, record));
+                expectTrue("stored record stays hidden until refresh", calendar->dateTextFormat(refreshDate).isEmpty());
+
+                QTimer::singleShot(0, []() {
+                    for (QWidget* const widget : QApplication::topLevelWidgets()) {
+                        if (auto* const dialog = qobject_cast<TimeSettingDialog*>(widget)) {
+                            dialog->accept();
+                        }
+                    }
+                });
+                emit calendar->clicked(refreshDate);
+                QApplication::processEvents();
+                expectTrue("accepted dialog incrementally refreshes calendar cell",
+                           !calendar->dateTextFormat(refreshDate).isEmpty());
+
+                QTimer deleteMessageGuard;
+                deleteMessageGuard.setSingleShot(true);
+                QObject::connect(&deleteMessageGuard, &QTimer::timeout, &window, []() {
+                    for (QWidget* const widget : QApplication::topLevelWidgets()) {
+                        if (auto* const messageBox = qobject_cast<QMessageBox*>(widget)) {
+                            if (QAbstractButton* const yesButton = messageBox->button(QMessageBox::Yes)) {
+                                yesButton->click();
+                            }
+                            else {
+                                messageBox->reject();
+                            }
+                        }
+                    }
+                });
+                deleteMessageGuard.start(50);
+                emit calendar->deleteRequested(refreshDate);
+                QApplication::processEvents();
+                deleteMessageGuard.stop();
+                expectTrue("confirmed delete incrementally clears calendar cell",
+                           calendar->dateTextFormat(refreshDate).isEmpty());
+                expectFalse("confirmed delete removes stored record",
+                            AttendanceSettings::hasRecord(settings, refreshDate));
+            }
+        }
+
         settings.clear();
     }
 

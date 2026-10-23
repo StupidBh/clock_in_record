@@ -273,7 +273,7 @@ void AttendanceMainWindow::onDateClicked(const QDate& date)
 {
     TimeSettingDialog dialog(date, this);
     if (dialog.exec() == QDialog::Accepted) {
-        reloadMonthData();
+        refreshVisibleRecord(date);
     }
 }
 
@@ -536,7 +536,23 @@ void AttendanceMainWindow::deleteAttendanceRecord(const QDate& date)
         return;
     }
 
-    reloadMonthData();
+    refreshVisibleRecord(date);
+}
+
+void AttendanceMainWindow::refreshVisibleRecord(const QDate& date)
+{
+    QSettings settings;
+    const AttendanceRecord schedule = currentSchedule();
+    auto storedRecord = AttendanceSettings::loadRecord(settings, date, schedule);
+    if (storedRecord) {
+        m_visibleRecords.insert(date, *storedRecord);
+    }
+    else {
+        m_visibleRecords.remove(date);
+    }
+
+    updateCalendarAppearance();
+    updateMonthlyStatistics();
 }
 
 void AttendanceMainWindow::loadGlobalSettings()
