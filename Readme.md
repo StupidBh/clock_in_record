@@ -62,7 +62,7 @@ cmake --build build --config Release
 - `ApplicationUiTests`：主窗口结构、今天导航、月历记录显示范围与日期边界、日期记录保存和删除
 - `ApplicationThemeTests`：浅色/深色主题及控件对比度
 - `AttendanceSettingsTests`：全局设置、记录持久化、旧格式迁移和月度抵扣
-- `AttendanceSummaryTests`：月度汇总和文本格式化
+- `AttendanceSummaryTests`：月度汇总计算和时长文本格式化
 - `SingleInstanceTests`：本地单实例通道权限、激活握手和错误服务识别
 - `WorkTimeCalculatorTests`：工时、迟到、早退、休息、无效范围和加班计算
 
