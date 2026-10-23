@@ -251,7 +251,7 @@ void AttendanceMainWindow::raiseAndActivate()
 
 bool AttendanceMainWindow::eventFilter(QObject* watched, QEvent* event)
 {
-    if (event->type() == QEvent::MouseButtonPress && m_calendar) {
+    if (event->type() == QEvent::MouseButtonPress && m_calendar && !QApplication::activeModalWidget()) {
         auto* clickedWidget = qobject_cast<QWidget*>(watched);
         if (clickedWidget && !isOwnedBy(clickedWidget, m_calendar)) {
             m_calendar->clearDateSelection();

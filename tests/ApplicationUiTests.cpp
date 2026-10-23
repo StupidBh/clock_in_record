@@ -602,6 +602,39 @@ namespace {
             expectFalse("dialog delete removes record", AttendanceSettings::hasRecord(settings, date));
         }
 
+        {
+            AttendanceMainWindow window;
+            auto* const calendar = window.findChild<CustomCalendarWidget*>();
+            expectTrue("modal interaction calendar exists", calendar != nullptr);
+            if (calendar) {
+                window.show();
+                QApplication::processEvents();
+                calendar->setSelectedDate(QDate(2026, 8, 21));
+
+                TimeSettingDialog modalDialog(QDate(2026, 8, 21), &window);
+                modalDialog.show();
+                QApplication::processEvents();
+                expectTrue("modal dialog is the active modal widget",
+                           QApplication::activeModalWidget() == &modalDialog);
+
+                if (auto* const arrivalEdit = modalDialog.findChild<QTimeEdit*>()) {
+                    const QPoint localPress = arrivalEdit->rect().center();
+                    QMouseEvent pressInsideDialog(QEvent::MouseButtonPress,
+                                                  localPress,
+                                                  arrivalEdit->mapToGlobal(localPress),
+                                                  Qt::LeftButton,
+                                                  Qt::LeftButton,
+                                                  Qt::NoModifier);
+                    QApplication::sendEvent(arrivalEdit, &pressInsideDialog);
+                    QApplication::processEvents();
+                }
+
+                expectTrue("modal interaction preserves calendar selection",
+                           calendar->selectionMode() == QCalendarWidget::SingleSelection &&
+                               calendar->selectedDate() == QDate(2026, 8, 21));
+            }
+        }
+
         settings.clear();
     }
 
