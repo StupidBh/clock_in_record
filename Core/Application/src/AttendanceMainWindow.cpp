@@ -236,6 +236,7 @@ AttendanceMainWindow::AttendanceMainWindow(QWidget* parent) :
 AttendanceMainWindow::~AttendanceMainWindow()
 {
     flushPendingGlobalSettings();
+    qApp->removeEventFilter(this);
 }
 
 void AttendanceMainWindow::raiseAndActivate()
