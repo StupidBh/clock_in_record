@@ -73,7 +73,9 @@ void CustomCalendarWidget::changeEvent(QEvent* event)
 
 void CustomCalendarWidget::paintCell(QPainter* painter, const QRect& rect, const QDate date) const
 {
-    m_dateRects[date] = rect;
+    if (auto it = m_dateRects.constFind(date); it == m_dateRects.constEnd() || it.value() != rect) {
+        m_dateRects.insert(date, rect);
+    }
 
     QCalendarWidget::paintCell(painter, rect, date);
 
@@ -84,26 +86,17 @@ void CustomCalendarWidget::paintCell(QPainter* painter, const QRect& rect, const
 
     const auto it = m_attendanceData.constFind(date);
     if (it != m_attendanceData.constEnd()) {
+        const CalendarAttendanceData& attendanceData = it.value();
         QPainterStateGuard guard(painter);
         painter->setRenderHint(QPainter::Antialiasing);
         painter->setClipRect(rect.adjusted(1, 1, -1, -1));
 
-        const QTextCharFormat format = dateTextFormat(date);
-        QColor background = calendarPalette.color(QPalette::Base);
-        if (format.background().style() != Qt::NoBrush) {
-            background = format.background().color();
-        }
-
         const QRect cellRect = rect.adjusted(1, 3, -1, -3);
         painter->setPen(Qt::NoPen);
-        painter->setBrush(isSelected ? highlight : background);
+        painter->setBrush(isSelected ? highlight : attendanceData.background);
         painter->drawRoundedRect(cellRect, 3, 3);
 
-        QColor foreground = calendarPalette.color(QPalette::Text);
-        if (format.foreground().style() != Qt::NoBrush) {
-            foreground = format.foreground().color();
-        }
-        painter->setPen(isSelected ? highlightedText : foreground);
+        painter->setPen(isSelected ? highlightedText : attendanceData.foreground);
 
         QFont dayFont = painter->font();
         dayFont.setWeight(QFont::DemiBold);
@@ -112,7 +105,6 @@ void CustomCalendarWidget::paintCell(QPainter* painter, const QRect& rect, const
         const QRect dayRect = cellRect.adjusted(5, 1, -5, 0);
         painter->drawText(dayRect, Qt::AlignLeft | Qt::AlignTop, QString::number(date.day()));
 
-        const CalendarAttendanceData& attendanceData = it.value();
         if (attendanceData.excludedFromTarget) {
             QFont statusFont = dayFont;
             statusFont.setWeight(QFont::Normal);
@@ -136,9 +128,8 @@ void CustomCalendarWidget::paintCell(QPainter* painter, const QRect& rect, const
         painter->setFont(timeFont);
 
         const QRect timeRect = cellRect.adjusted(3, dayLineHeight, -3, -2);
-        const QString timeRange = u"%1 - %2"_s.arg(attendanceData.arrivalTime, attendanceData.departureTime);
-        if (QFontMetrics(timeFont).horizontalAdvance(timeRange) <= timeRect.width()) {
-            painter->drawText(timeRect, Qt::AlignCenter, timeRange);
+        if (QFontMetrics(timeFont).horizontalAdvance(attendanceData.timeRange) <= timeRect.width()) {
+            painter->drawText(timeRect, Qt::AlignCenter, attendanceData.timeRange);
         }
         else {
             const int halfHeight = timeRect.height() / 2;

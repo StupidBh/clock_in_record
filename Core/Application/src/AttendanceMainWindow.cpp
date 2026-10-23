@@ -694,12 +694,14 @@ void AttendanceMainWindow::updateCalendarAppearance()
         format.setBackground(AttendanceTheme::attendanceBackground(calendarPalette, !record.needAverageCal));
         format.setForeground(AttendanceTheme::attendanceForeground(calendarPalette));
         dateFormats.insert(it.key(), format);
-        attendanceData.insert(it.key(),
-                              {
-                                  .arrivalTime = record.arrivalTime.toString(u"hh:mm"_s),
-                                  .departureTime = record.departureTime.toString(u"hh:mm"_s),
-                                  .excludedFromTarget = !record.needAverageCal,
-                              });
+        CalendarAttendanceData cellData;
+        cellData.arrivalTime = record.arrivalTime.toString(u"hh:mm"_s);
+        cellData.departureTime = record.departureTime.toString(u"hh:mm"_s);
+        cellData.timeRange = u"%1 - %2"_s.arg(cellData.arrivalTime, cellData.departureTime);
+        cellData.background = format.background().color();
+        cellData.foreground = format.foreground().color();
+        cellData.excludedFromTarget = !record.needAverageCal;
+        attendanceData.insert(it.key(), cellData);
     }
 
     m_calendar->replaceAttendanceData(std::move(attendanceData), dateFormats);

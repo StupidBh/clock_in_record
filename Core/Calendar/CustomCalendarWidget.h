@@ -1,5 +1,6 @@
 #pragma once
 #include <QCalendarWidget>
+#include <QColor>
 #include <QDate>
 #include <QMap>
 #include <QRect>
@@ -13,6 +14,9 @@ struct CalendarAttendanceData
 {
     QString arrivalTime;
     QString departureTime;
+    QString timeRange;
+    QColor background;
+    QColor foreground;
     bool excludedFromTarget = false;
 
     bool operator==(const CalendarAttendanceData&) const = default;
